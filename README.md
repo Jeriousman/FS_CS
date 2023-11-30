@@ -49,7 +49,7 @@ docker exec -it ghost_container /bin/bash
   
 
 ### 6. Train
-
+** AdaptiveWingLoss 별도 다운로드 필요 : https://github.com/NastyaMittseva/AdaptiveWingLoss/tree/6a6e42fcc435dc8fd604f211390099725a4222a6
 ```
 python train.py --run_name {YOUR_RUN_NAME} --pretrained True --G_path {PATH_TO_GPATH} -- D_path {PATH_TO_G_PATH}
 ```
