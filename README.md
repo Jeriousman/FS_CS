@@ -29,7 +29,7 @@ docker run -d -it -v .:/workspace --gpus all --name ghost_container ghost
 docker exec -it ghost_container /bin/bash
 ```
 
-### 4. 기타 (Pretrained Model - Kakao ML epoch 75회 학습)
+### 4. 기타 (Pretrained Model 다운로드 - Kakao ML epoch 75회 학습)
 
 구글 드라이브 : [ckpt_epoch75 - Google Drive](https://drive.google.com/drive/folders/1JmS-y-zAH0-DtC-oG0OPVcidVOU99sNA?usp=sharing)
 
@@ -51,6 +51,5 @@ docker exec -it ghost_container /bin/bash
 ### 6. Train
 
 ```
-python train.py --run_name {YOUR_RUN_NAME} --pretrained True --G_path {PATH_TO_GPATH} -- D_PATH {PATH_TO_G_PATH}
+python train.py --run_name {YOUR_RUN_NAME} --pretrained True --G_path {PATH_TO_GPATH} -- D_path {PATH_TO_G_PATH}
 ```
-
