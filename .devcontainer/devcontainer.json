@@ -10,7 +10,9 @@
 		"--gpus", "device=5",
 		// 컨테이너의 이름을 짓는 옵션
 		"--name", "ghost",
-		"-v", "/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets",
+		"-v", "/IM_data/:/datasets/DOB",
+		"-v", "/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets/FFHQ",
+		"-v", "/dev_storage/tory/data/CelebAMask-HQ:/datasets/CelebHQ",
 		// 사용자가 멈추지 않았는데 꺼진 경우 다시 켜주는 옵션
 		"--restart=unless-stopped"
 	],

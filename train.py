@@ -21,7 +21,7 @@ sys.path.append('./apex/')
 from apex import amp
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
-from utils.training.Dataset import FaceEmbedVGG2, FaceEmbed
+from utils.training.Dataset import FaceEmbedVGG2, FaceEmbed, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedDOB
 from utils.training.image_processing import make_image_list, get_faceswap
 from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
 from utils.training.detector import detect_landmarks, paint_eyes
@@ -222,7 +222,18 @@ def train(args, device):
             print("Not found pretrained weights. Continue without any pretrained weights.")
     
     if args.vgg:
-        dataset = FaceEmbedVGG2(args.dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        # vgg_dataset = FaceEmbedVGG2(args.dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        # hhfq_dataset = FaceEmbedFFHQ(args.dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        # celeba_dataset = FaceEmbedCelebA(args.dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        
+        vgg_dataset = FaceEmbedVGG2(args.vgg_dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        dob_dataset = FaceEmbedDOB(args.dob_dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        hhfq_dataset = FaceEmbed(args.hhfq_dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        celeba_dataset = FaceEmbed(args.celeba_dataset_path, same_prob=args.same_person, same_identity=args.same_identity)
+        
+        
+        
+        dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
     else:
         dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
         
@@ -259,7 +270,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     # dataset params
-    parser.add_argument('--dataset_path', default='/VggFace2-crop/', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--vgg_dataset_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--ffhq_dataset_path', default='/datasets/FFHQ', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--celeba_dataset_path', default='/datasets/CelebHQ', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--dob_dataset_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
     parser.add_argument('--vgg', default=True, type=bool, help='When using VGG2 dataset (or any other dataset with several photos for one identity)')

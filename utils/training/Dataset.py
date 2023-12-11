@@ -12,19 +12,30 @@ sys.path.append('..')
 # from utils.cap_aug import CAP_AUG
 
 
-    
 class FaceEmbed(TensorDataset):
     def __init__(self, data_path_list, same_prob=0.8):
         datasets = []
         # embeds = []
         self.N = []
-        self.same_prob = same_prob ##same probability?
+        self.same_prob = same_prob
         for data_path in data_path_list:
             image_list = glob.glob(f'{data_path}/*.*g')
-            datasets.append(image_list) 
+            datasets.append(image_list)
+            self.N.append(len(image_list))
+            # with open(f'{data_path}/embed.pkl', 'rb') as f:
+            #     embed = pickle.load(f)
+            #     embeds.append(embed)
+        self.datasets = datasets
+        # self.embeds = embeds
+        self.transforms_arcface = transforms.Compose([
+            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        
         self.transforms_base = transforms.Compose([
             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
             transforms.Resize((256, 256)),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -42,16 +53,16 @@ class FaceEmbed(TensorDataset):
         Xs = cv2.imread(image_path)[:, :, ::-1]
         Xs = Image.fromarray(Xs)
 
-        if random.random() > self.same_prob:  ##same_prob 확률 밖이면,
-            image_path = random.choice(self.datasets[random.randint(0, len(self.datasets)-1)])  ## target 데이터를 랜덤하게 가져온다.
+        if random.random() > self.same_prob:
+            image_path = random.choice(self.datasets[random.randint(0, len(self.datasets)-1)])
             Xt = cv2.imread(image_path)[:, :, ::-1]
             Xt = Image.fromarray(Xt)
             same_person = 0
-        else:   #same_prob 확률에 속하면,
-            Xt = Xs.copy()  ##source와 target을 같게하라 
+        else:
+            Xt = Xs.copy()
             same_person = 1
             
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person  ##ArcFace는 indentity feature를 추출하기 위해 사용되기 때문에 source face에서만 필요하다.
+        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
     def __len__(self):
         return sum(self.N)
@@ -190,15 +201,14 @@ class FaceEmbedFFHQ(TensorDataset):
 
 
 
-
-
+##/datasets/CelebHQ/CelebA-HQ-img
 class FaceEmbedCelebA(TensorDataset):
     def __init__(self, data_path, same_prob=0.8, same_identity=False):
 
         self.same_prob = same_prob
         self.same_identity = same_identity
                 
-        self.images_list = glob.glob(f'{data_path}/*/*.*g')
+        self.images_list = glob.glob(f'{data_path}/*.*g')
         self.folders_list = glob.glob(f'{data_path}/*')
         
         self.folder2imgs = {}
@@ -206,6 +216,106 @@ class FaceEmbedCelebA(TensorDataset):
         for folder in tqdm.tqdm(self.folders_list):
             folder_imgs = glob.glob(f'{folder}/*')
             self.folder2imgs[folder] = folder_imgs
+             
+        self.N = len(self.images_list)
+        
+        self.transforms_arcface = transforms.Compose([
+            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        
+        self.transforms_base = transforms.Compose([
+            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
+    def __getitem__(self, item):
+            
+        image_path = self.images_list[item]  ##self.images_list =  '/datasets/CelebHQ/CelebA-HQ-img/6615.jpg', '/datasets/CelebHQ/CelebA-HQ-img/10425.jpg',...
+
+        Xs = cv2.imread(image_path)[:, :, ::-1] ##Xs.shape (1024, 1024, 3)
+        Xs = Image.fromarray(Xs)
+        
+        if self.same_identity:
+            folder_name = '/'.join(image_path.split('/')[:-1])
+
+        if random.random() > self.same_prob:
+            image_path = random.choice(self.images_list)
+            Xt = cv2.imread(image_path)[:, :, ::-1]
+            Xt = Image.fromarray(Xt)
+            same_person = 0
+            
+        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+
+    def __len__(self):
+        return self.N
+    
+    
+    
+
+
+self.same_prob = same_prob
+self.same_identity = same_identity
+import time
+
+s = time.time()
+# images_list = tqdm.tqdm(glob.glob(f'/datasets/DOB/imagefile/*/*.*g'))
+folders_list = glob.glob(f'/datasets/DOB/*/*')
+e = time.time() -s
+print(e)
+
+folder2imgs = {}
+folder2imgs
+for folder in tqdm.tqdm(folders_list):
+    folder_imgs = glob.glob(f'{folder}/*')
+    folder2imgs[folder] = folder_imgs
+    break
+        
+self.N = len(self.images_list)
+
+self.transforms_arcface = transforms.Compose([
+    transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
+self.transforms_base = transforms.Compose([
+    transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+    transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+    transforms.Resize((256, 256)),
+    transforms.ToTensor(),
+    # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+    
+
+    
+
+
+##/datasets/DOB/imagefile/DOB04F118SEC
+class FaceEmbedDOB(TensorDataset):
+    def __init__(self, data_path, same_prob=0.8, same_identity=False):
+
+        self.same_prob = same_prob
+        self.same_identity = same_identity
+        
+        self.images_list = glob.glob(f'{data_path}/*/*/*.*g') ##모든이미지의 ful
+        self.folders_list = glob.glob(f'{data_path}/*/*')  ##  '/datasets/DOB/imagefile/DOB04F215SEC', '/datasets/DOB/imagefile/KTT03M008FIR', ...
+        
+        self.folder2imgs = {}
+
+        for folder in tqdm.tqdm(self.folders_list): ##folder는 이미지를 가지고 있는 각각 폴더명
+            folder_imgs = glob.glob(f'{folder}/*')  ##폴더명 아래에 있는 모든 파일을 가지고 와서 리스팅
+            self.folder2imgs[folder] = folder_imgs ## 모든 이미지를 폴더경로 key에 저장하는 dict 생성. key의 예: folder2imgs['/datasets/DOB/imagefile2/CDW04F003FIR']
              
         self.N = len(self.images_list)
         
@@ -255,11 +365,3 @@ class FaceEmbedCelebA(TensorDataset):
     def __len__(self):
         return self.N
     
-    
-    
-    
-    
-    
-    
-
-
