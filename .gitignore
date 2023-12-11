@@ -12,5 +12,4 @@ weights/*
 *.pyc
 ckpt/*.pth
 dataset/*
-!dataset/!.py
 experiments/*

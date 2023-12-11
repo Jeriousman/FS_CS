@@ -147,18 +147,21 @@ class FaceEmbedVGG2(TensorDataset):
 
 class FaceEmbedFFHQ(TensorDataset):
     def __init__(self, data_path, same_prob=0.8, same_identity=False):
-
+        '''
+        data_path: should be ffhq-dataset/images1024x1024
+        
+        '''
         self.same_prob = same_prob
         self.same_identity = same_identity
                 
         self.images_list = glob.glob(f'{data_path}/*/*.*g')
-        self.folders_list = glob.glob(f'{data_path}/*')
+        # self.folders_list = glob.glob(f'{data_path}/*')
         
-        self.folder2imgs = {}
+        # self.folder2imgs = {}
 
-        for folder in tqdm.tqdm(self.folders_list):
-            folder_imgs = glob.glob(f'{folder}/*')
-            self.folder2imgs[folder] = folder_imgs
+        # for folder in tqdm.tqdm(self.folders_list):
+        #     folder_imgs = glob.glob(f'{folder}/*')
+        #     self.folder2imgs[folder] = folder_imgs
              
         self.N = len(self.images_list)
         
