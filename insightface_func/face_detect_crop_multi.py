@@ -40,8 +40,8 @@ class Face_detect_crop:
         self.det_model = self.models['detection']
 
 
-    def prepare(self, ctx_id, det_thresh=0.5, det_size=(640, 640)):
-        self.det_thresh = det_thresh
+    def preare(self, ctx_id, det_thresh=0.5, det_size=(640, 640)):
+        seplf.det_thresh = det_thresh
         assert det_size is not None
         print('set det-size:', det_size)
         self.det_size = det_size

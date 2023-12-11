@@ -42,3 +42,7 @@ def paint_eyes(images, eyes):
         list_eyes.append(mask)
     tensor_eyes = torch.stack(list_eyes)
     return tensor_eyes
+
+
+
+

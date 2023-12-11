@@ -1,0 +1,140 @@
+version: '3.9'
+services:
+  ghost1:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost1
+    env_file:
+      - envs/env1.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost2:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost2
+    env_file:
+      - envs/env2.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost3:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost3
+    env_file:
+      - envs/env3.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost4:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost4
+    env_file:
+      - envs/env4.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['3']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost5:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost5
+    env_file:
+      - envs/env5.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['4']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost6:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost6
+    env_file:
+      - envs/env6.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['5']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost7:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost7
+    env_file:
+      - envs/env7.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['6']
+              capabilities: [gpu]
+    command: python train2.py
+  ghost8:
+    restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - /home/tory/dev/dataset:/dataset
+    image: ghost_base:latest
+    container_name: ghost8
+    env_file:
+      - envs/env8.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['7']
+              capabilities: [gpu]
+    command: python train2.py
+
+

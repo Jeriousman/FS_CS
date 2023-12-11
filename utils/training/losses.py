@@ -4,9 +4,9 @@ l1_loss = torch.nn.L1Loss()
 l2_loss = torch.nn.MSELoss()
 
 
-def hinge_loss(X, positive=True):
+def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/222666100291
     if positive:
-        return torch.relu(1-X)
+        return torch.relu(1-X) ##X = y_hat * true_y
     else:
         return torch.relu(X+1)
     
@@ -20,7 +20,8 @@ def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, los
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()
+    L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+    ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss
     if args.optim_level == "O2" or args.optim_level == "O3":
@@ -29,11 +30,11 @@ def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, los
         Y_attr = G.get_attr(Y)
     
     L_attr = 0
-    for i in range(len(Xt_attr)):
+    for i in range(len(Xt_attr)): 
         L_attr += torch.mean(torch.pow(Xt_attr[i] - Y_attr[i], 2).reshape(args.batch_size, -1), dim=1).mean()
-    L_attr /= 2.0
+    L_attr /= 2.0 ##2 bcuz ?
 
-    # reconstruction loss
+    # reconstruction loss ##같은 인물이지만 같은 데이터일 필요는 없다고 생각하기 때문에 같은 사람것을 사용 
     L_rec = torch.sum(0.5 * torch.mean(torch.pow(Y - Xt, 2).reshape(args.batch_size, -1), dim=1) * same_person) / (same_person.sum() + 1e-6)
     
     # l2 eyes loss

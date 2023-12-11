@@ -27,6 +27,10 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
+import torch
+
+
+
 
 print("finished imports")
 
@@ -59,7 +63,7 @@ def train_one_epoch(G: 'generator model',
         with torch.no_grad():
             embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
 
-        diff_person = torch.ones_like(same_person)
+        diff_person = torch.ones_like(same_person)  ##same_person과 같은 shape로 모두1 을 넣는다 
 
         if args.diff_eq_same:
             same_person = diff_person
@@ -67,14 +71,14 @@ def train_one_epoch(G: 'generator model',
         # generator training
         opt_G.zero_grad()
         
-        Y, Xt_attr = G(Xt, embed)
-        Di = D(Y)
-        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))
+        Y, Xt_attr = G(Xt, embed) ##Target이미지와 Source의 identity 엠베딩을 인풋으로 generator로 결과를 뽑는다. Y가 swapped face일 것 같고, Xt_attr는 target attribute일듯.
+        Di = D(Y) ##이제 Dsicriminator에 Swapped Face를 넣고 진짜인지 아닌지 가리게 한다. 
+        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))  ##Swapped Face를 인풋으로 넣어서 여기의 identity embedding도 뽑아낸다. (Source identity embedding과 비교할듯)
         
         if args.eye_detector_loss:
-            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)
-            Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)
-            eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]
+            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##Target 눈 랜드마크 찾기
+            Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)  ##Swapped face 눈 랜드마크 찾기
+            eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]  
         else:
             eye_heatmaps = None
             
@@ -82,7 +86,7 @@ def train_one_epoch(G: 'generator model',
                                                                              embed, ZY, eye_heatmaps,loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
-        with amp.scale_loss(lossG, opt_G) as scaled_loss:
+        with amp.scale_loss(lossG, opt_G) as scaled_loss:  ##lets search for scaled_loss
             scaled_loss.backward()
         opt_G.step()
         if args.scheduler:
@@ -107,12 +111,12 @@ def train_one_epoch(G: 'generator model',
             if args.eye_detector_loss:
                 Xt_eyes_img = paint_eyes(Xt, Xt_eyes)
                 Yt_eyes_img = paint_eyes(Y, Y_eyes)
-                images.extend([Xt_eyes_img, Yt_eyes_img])
+                images.extend([Xt_eyes_img, Yt_eyes_img]) ##이미지 리스트에 eye 랜드마크 사진도 같이 붙여넣기
             image = make_image_list(images)
             if args.use_wandb:
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
             else:
-                cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
+                cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1]) ##RGB
         
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
@@ -161,7 +165,6 @@ def train_one_epoch(G: 'generator model',
             wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
 
             G.train()
-
 
 def train(args, device):
     # training params

@@ -1,3 +1,8 @@
+'''
+U-NET like architecture
+
+'''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -41,7 +46,7 @@ class deconv4x4(nn.Module):
             return torch.cat((x, skip), dim=1)
     
     
-class MLAttrEncoder(nn.Module):
+class MLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):
         super(MLAttrEncoder, self).__init__()
         self.backbone = backbone
@@ -121,7 +126,7 @@ class AADGenerator(nn.Module):
 
     def forward(self, z_attr, z_id):
         m = self.up1(z_id.reshape(z_id.shape[0], -1, 1, 1))
-        m2 = F.interpolate(self.AADBlk1(m, z_attr[0], z_id), scale_factor=2, mode='bilinear', align_corners=True)
+        m2 = F.interpolate(self.AADBlk1(m, z_attr[0], z_id), scale_factor=2, mode='bilinear', align_corners=True) ##F.interpolate 작은 사이즈의 이미지를 큰 사이즈로 키울 때 사용된다
         m3 = F.interpolate(self.AADBlk2(m2, z_attr[1], z_id), scale_factor=2, mode='bilinear', align_corners=True)
         m4 = F.interpolate(self.AADBlk3(m3, z_attr[2], z_id), scale_factor=2, mode='bilinear', align_corners=True)
         m5 = F.interpolate(self.AADBlk4(m4, z_attr[3], z_id), scale_factor=2, mode='bilinear', align_corners=True)
@@ -130,7 +135,6 @@ class AADGenerator(nn.Module):
         m8 = F.interpolate(self.AADBlk7(m7, z_attr[6], z_id), scale_factor=2, mode='bilinear', align_corners=True)
         y = self.AADBlk8(m8, z_attr[7], z_id)
         return torch.tanh(y)
-
 
 
 class AEI_Net(nn.Module):

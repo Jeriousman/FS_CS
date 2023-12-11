@@ -8,19 +8,20 @@ class NLayerDiscriminator(nn.Module):
         self.getIntermFeat = getIntermFeat
         self.n_layers = n_layers
 
-        kw = 4
-        padw = int(np.ceil((kw-1.0)/2))
-        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]
+        kw = 4  ## kernel size
+        padw = int(np.ceil((kw-1.0)/2))  ##pad size
+        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]  ##ndf here means output channel
 
         nf = ndf
         for n in range(1, n_layers):
             nf_prev = nf
-            nf = min(nf * 2, 512)
+            nf = min(nf * 2, 512) ##무조건 512보다는 작게하자는 것 
             sequence += [[
                 nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=2, padding=padw),
                 norm_layer(nf), nn.LeakyReLU(0.2, True)
             ]]
 
+        ##for the one before last layer
         nf_prev = nf
         nf = min(nf * 2, 512)
         sequence += [[
@@ -28,6 +29,7 @@ class NLayerDiscriminator(nn.Module):
             norm_layer(nf),
             nn.LeakyReLU(0.2, True)
         ]]
+
 
         sequence += [[nn.Conv2d(nf, 1, kernel_size=kw, stride=1, padding=padw)]]
 
@@ -41,12 +43,12 @@ class NLayerDiscriminator(nn.Module):
             sequence_stream = []
             for n in range(len(sequence)):
                 sequence_stream += sequence[n]
-            self.model = nn.Sequential(*sequence_stream)
+            self.model = nn.Sequential(*sequence_stream) ##this is to construct the sequential nn.module in the end. before this, there was just a list
 
     def forward(self, input):
         if self.getIntermFeat:
             res = [input]
-            for n in range(self.n_layers+2):
+            for n in range(self.n_layers+2):  ##+2 is for the one before last layer and last layer??
                 model = getattr(self, 'model'+str(n))
                 res.append(model(res[-1]))
             return res[1:]

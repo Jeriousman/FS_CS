@@ -1,3 +1,8 @@
+'''
+I think this has something to do with face detection
+'''
+
+
 import cv2
 import numpy as np
 import os
@@ -10,28 +15,28 @@ from insightface_func.face_detect_crop_single import Face_detect_crop
 import kornia
 
 
-M = np.array([[ 0.57142857, 0., 32.],[ 0.,0.57142857, 32.]])
-IM = np.array([[[1.75, -0., -56.],[ -0., 1.75, -56.]]])
+M = np.array([[ 0.57142857, 0., 32.],[ 0.,0.57142857, 32.]]) ##??
+IM = np.array([[[1.75, -0., -56.],[ -0., 1.75, -56.]]])  ##??
 
 
-def square_crop(im, S):
-    if im.shape[0] > im.shape[1]:
-        height = S
-        width = int(float(im.shape[1]) / im.shape[0] * S)
+def square_crop(im, S):  ##im = img
+    if im.shape[0] > im.shape[1]: ##height가 더 크면
+        height = S    ##S를 height로 바꾸라 
+        width = int(float(im.shape[1]) / im.shape[0] * S)  ##new width = original width / S * height 즉, S만큼 height에 더 주고, widgh에서 제외하라는것 
         scale = float(S) / im.shape[0]
-    else:
+    else:  ##아니면 height를 S예 비례하게 작게하고 width를 크게하라 
         width = S
         height = int(float(im.shape[0]) / im.shape[1] * S)
         scale = float(S) / im.shape[1]
-    resized_im = cv2.resize(im, (width, height))
-    det_im = np.zeros((S, S, 3), dtype=np.uint8)
-    det_im[:resized_im.shape[0], :resized_im.shape[1], :] = resized_im
+    resized_im = cv2.resize(im, (width, height))  ##새로운 사이즈로 다시 리사이즈 한다 
+    det_im = np.zeros((S, S, 3), dtype=np.uint8)   ## detected img를 0값으로 만든다
+    det_im[:resized_im.shape[0], :resized_im.shape[1], :] = resized_im   ##det_im에 detecting part를 껴넣는다
     return det_im, scale
 
 
-def transform(data, center, output_size, scale, rotation):
+def transform(data, center, output_size, scale, rotation): ##what is the value of center? -> (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2 즉, 센터는 픽셀의 위치 index
     scale_ratio = scale
-    rot = float(rotation) * np.pi / 180.0
+    rot = float(rotation) * np.pi / 180.0 ##각도 로테이션 주는 것 
     #translation = (output_size/2-center[0]*scale_ratio, output_size/2-center[1]*scale_ratio)
     t1 = trans.SimilarityTransform(scale=scale_ratio)
     cx = center[0] * scale_ratio
@@ -42,15 +47,15 @@ def transform(data, center, output_size, scale, rotation):
                                                 output_size / 2))
     t = t1 + t2 + t3 + t4
     M = t.params[0:2]
-    cropped = cv2.warpAffine(data,
+    cropped = cv2.warpAffine(data,  ##data를 M 매트리스 만큼 transformation을 줘라라는 뜻 
                              M, (output_size, output_size),
                              borderValue=0.0)
     return cropped, M
 
 
 def trans_points2d_batch(pts, M):
-    new_pts = np.zeros(shape=pts.shape, dtype=np.float32)
-    for j in range(pts.shape[0]):
+    new_pts = np.zeros(shape=pts.shape, dtype=np.float32)  ##pts = model prediction 결과물
+    for j in range(pts.shape[0]):  ##shape[0] = batch_size?  shape[1] = output len?
         for i in range(pts.shape[1]):
             pt = pts[j][i]
             new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32)
@@ -87,7 +92,7 @@ def trans_points3d(pts, M):
 
 
 def trans_points(pts, M):
-    if pts.shape[1] == 2:
+    if pts.shape[1] == 2: ##2개의 값을 가지고있으면 2D이고 3개이면 3D일것이다 
         return trans_points2d(pts, M)
     else:
         return trans_points3d(pts, M)
@@ -97,24 +102,24 @@ class Handler:
     def __init__(self, prefix, epoch, im_size=192, det_size=224, ctx_id=0, root='./insightface_func/models'):
         print('loading', prefix, epoch)
         if ctx_id >= 0:
-            ctx = mx.gpu(ctx_id)
+            ctx = mx.gpu(ctx_id)  ##ctx_id = GPU 넘버를 말하는 것??
         else:
             ctx = mx.cpu()
         image_size = (im_size, im_size)
 #         self.detector = insightface.model_zoo.get_model(
 #             'retinaface_mnet025_v2')  #can replace with your own face detector
-        self.detector = Face_detect_crop(name='antelope', root=root)
+        self.detector = Face_detect_crop(name='antelope', root=root)  ##face 인식한 후 그 부분만 crop 하는 모델 
         self.detector.prepare(ctx_id=ctx_id, det_thresh=0.6, det_size=(640,640))
         #self.detector = insightface.model_zoo.get_model('retinaface_r50_v1')
         #self.detector.prepare(ctx_id=ctx_id)
         self.det_size = det_size
-        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
+        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)  ##pre-trained 모델 가져오기 
         all_layers = sym.get_internals()
-        sym = all_layers['fc1_output']
+        sym = all_layers['fc1_output']  ##fc1_output만 가져와라
         self.image_size = image_size
-        model = mx.mod.Module(symbol=sym, context=ctx, label_names=None)
+        model = mx.mod.Module(symbol=sym, context=ctx, label_names=None)  ##모듈중에 fc1_output 레이어 값만 가져와라 
         model.bind(for_training=False,
-                   data_shapes=[('data', (1, 3, image_size[0], image_size[1]))
+                   data_shapes=[('data', (1, 3, image_size[0], image_size[1]))  ## (batch_size, 3 cheannels, height, width)
                                 ])
         model.set_params(arg_params, aux_params)
         self.model = model
@@ -122,8 +127,9 @@ class Handler:
     
     
     def get_without_detection_batch(self, img, M, IM):
-        rimg = kornia.warp_affine(img, M.repeat(img.shape[0],1,1), (192, 192), padding_mode='zeros')
-        rimg = kornia.bgr_to_rgb(rimg)
+        rimg = kornia.warp_affine(img, M.repeat(img.shape[0],1,1), (192, 192), padding_mode='zeros')  ##M.repeat = (channel, 1, 1) | (192, 192) = dsize – size of the output image (height, width).
+        ##rimg  = (B,C,D,H,W)
+        rimg = kornia.bgr_to_rgb(rimg) ## result rimg = (batchsize, 3, H,W)
         
         data = mx.nd.array(rimg)
         db = mx.io.DataBatch(data=(data, ))
@@ -158,8 +164,8 @@ class Handler:
     
     
     def get_without_detection(self, img):
-        bbox = [0, 0, img.shape[0], img.shape[1]]
-        input_blob = np.zeros((1, 3) + self.image_size, dtype=np.float32)
+        bbox = [0, 0, img.shape[0], img.shape[1]]  ##img.shape[0] = height?, img.shape[1] = width
+        input_blob = np.zeros((1, 3) + self.image_size, dtype=np.float32)  ##1 for batch, 3 for channel, self.image_size = H, W
         
         w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
         center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2

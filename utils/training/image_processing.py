@@ -13,7 +13,7 @@ transformer_Arcface = transforms.Compose([
     ])
 
 
-def torch2image(torch_image: torch.tensor) -> np.ndarray:
+def torch2image(torch_image: torch.tensor) -> np.ndarray:  ##torch 텐서를 이미지 255로 de-normalization을 취하기 위한 reverse 프로세스
     batch = False
     
     if torch_image.dim() == 4:

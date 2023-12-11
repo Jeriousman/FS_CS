@@ -15,13 +15,13 @@ def transform_target_to_torch(resized_frs: np.ndarray, half=True) -> torch.tenso
     Transform target, so it could be used by model
     """
     target_batch_rs = torch.from_numpy(resized_frs.copy()).cuda()
-    target_batch_rs = target_batch_rs[:, :, :, [2,1,0]]/255.
+    target_batch_rs = target_batch_rs[:, :, :, [2,1,0]]/255.  ##RGB로 바꾸고 정규화
         
     if half:
-        target_batch_rs = target_batch_rs.half()
+        target_batch_rs = target_batch_rs.half()  ##self.half() is equivalent to self.to(torch.float16)
         
     target_batch_rs = (target_batch_rs - 0.5)/0.5 # normalize
-    target_batch_rs = target_batch_rs.permute(0, 3, 1, 2)
+    target_batch_rs = target_batch_rs.permute(0, 3, 1, 2) ##(B, C, H, W)
     
     return target_batch_rs
 
@@ -31,7 +31,7 @@ def model_inference(full_frames: List[np.ndarray],
                     target: List, 
                     netArc: Callable,
                     G: Callable,
-                    app: Callable,
+                    app: Callable,  ##app = Face_detect_crop(name='antelope', root='./insightface_func/models')
                     set_target: bool,
                     similarity_th=0.15,
                     crop_size=224,
@@ -41,11 +41,11 @@ def model_inference(full_frames: List[np.ndarray],
     Using original frames get faceswaped frames and transofrmations
     """
     # Get Arcface embeddings of target image
-    target_norm = normalize_and_torch_batch(np.array(target))
-    target_embeds = netArc(F.interpolate(target_norm, scale_factor=0.5, mode='bilinear', align_corners=True))
+    target_norm = normalize_and_torch_batch(np.array(target)) ##이미지를 정규화해주고 torch tensor로 만든다
+    target_embeds = netArc(F.interpolate(target_norm, scale_factor=0.5, mode='bilinear', align_corners=True))  ##target identity를 extract하기 위해 arcface사용
     
     # Get the cropped faces from original frames and transformations to get those crops
-    crop_frames_list, tfm_array_list = crop_frames_and_get_transforms(full_frames, target_embeds, app, netArc, crop_size, set_target, similarity_th=similarity_th)
+    crop_frames_list, tfm_array_list = crop_frames_and_get_transforms(full_frames, target_embeds, app, netArc, crop_size, set_target, similarity_th=similarity_th) ##app ->##app = Face_detect_crop(name='antelope', root='./insightface_func/models')
     
     # Normalize source images and transform to torch and get Arcface embeddings
     source_embeds = []
