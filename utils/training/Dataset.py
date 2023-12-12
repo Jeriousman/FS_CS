@@ -13,6 +13,9 @@ sys.path.append('..')
 
 
 class FaceEmbed(TensorDataset):
+    '''
+    data_path안에 각 인물별로 폴더가 따로 존재하지 않고 모든이미지가 바로 폴더 하위에 저장되 있을때는 이 클래스를 쓴다. FFHQ, CelebA가 여기에 속한다
+    '''
     def __init__(self, data_path_list, same_prob=0.8):
         datasets = []
         # embeds = []
@@ -53,13 +56,13 @@ class FaceEmbed(TensorDataset):
         Xs = cv2.imread(image_path)[:, :, ::-1]
         Xs = Image.fromarray(Xs)
 
-        if random.random() > self.same_prob:
-            image_path = random.choice(self.datasets[random.randint(0, len(self.datasets)-1)])
+        if random.random() > self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
+            image_path = random.choice(self.datasets[random.randint(0, len(self.datasets)-1)])  ##Xs에 대조될 Xt를 랜덤하게 뽑는것
             Xt = cv2.imread(image_path)[:, :, ::-1]
             Xt = Image.fromarray(Xt)
             same_person = 0
         else:
-            Xt = Xs.copy()
+            Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함 
             same_person = 1
             
         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
@@ -68,255 +71,45 @@ class FaceEmbed(TensorDataset):
         return sum(self.N)
 
 
-class FaceEmbedVGG2(TensorDataset):
-    def __init__(self, data_path, same_prob=0.8, same_identity=False):
-
-        self.same_prob = same_prob
-        self.same_identity = same_identity
-                
-        self.images_list = glob.glob(f'{data_path}/*/*.*g')
-        self.folders_list = glob.glob(f'{data_path}/*')
-        
-        self.folder2imgs = {}
-
-        for folder in tqdm.tqdm(self.folders_list):
-            folder_imgs = glob.glob(f'{folder}/*')
-            self.folder2imgs[folder] = folder_imgs
-             
-        self.N = len(self.images_list)
-        
-        self.transforms_arcface = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        
-        self.transforms_base = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-    def __getitem__(self, item):
-            
-        image_path = self.images_list[item]
-
-        Xs = cv2.imread(image_path)[:, :, ::-1]
-        Xs = Image.fromarray(Xs)
-        
-        if self.same_identity:
-            folder_name = '/'.join(image_path.split('/')[:-1])
-
-        if random.random() > self.same_prob:
-            image_path = random.choice(self.images_list)
-            Xt = cv2.imread(image_path)[:, :, ::-1]
-            Xt = Image.fromarray(Xt)
-            same_person = 0
-        else:
-            if self.same_identity:
-                image_path = random.choice(self.folder2imgs[folder_name])
-                Xt = cv2.imread(image_path)[:, :, ::-1]
-                Xt = Image.fromarray(Xt)
-            else:
-                Xt = Xs.copy()
-            same_person = 1
-            
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
-
-    def __len__(self):
-        return self.N
-    
-    
-    
-    
-    
-    
-class FaceEmbedFFHQ(TensorDataset):
-    def __init__(self, data_path, same_prob=0.8, same_identity=False):
-        '''
-        data_path: should be ffhq-dataset/images1024x1024
-        
-        '''
-        self.same_prob = same_prob
-        self.same_identity = same_identity
-                
-        self.images_list = glob.glob(f'{data_path}/*/*.*g')  ##images_list = /datasets/40000/40340.png ...
-        # self.folders_list = glob.glob(f'{data_path}/*')
-        
-        # self.folder2imgs = {}
-
-        # for folder in tqdm.tqdm(self.folders_list):
-        #     folder_imgs = glob.glob(f'{folder}/*')
-        #     self.folder2imgs[folder] = folder_imgs
-             
-        self.N = len(self.images_list)  
-        
-        self.transforms_arcface = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        
-        self.transforms_base = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-    def __getitem__(self, item):
-            
-        image_path = self.images_list[item]  ##'/datasets/40000/40340.png' 이런식으로 하나씩 불러온다
-
-        Xs = cv2.imread(image_path)[:, :, ::-1]  ## (1024, 1024, 3)
-        Xs = Image.fromarray(Xs)  ##이미지로 저장하는것 
-        
-        if self.same_identity:
-            folder_name = '/'.join(image_path.split('/')[:-1])  ##'/datasets/40000/40340.png'에서  ##'/datasets/40000 로 한칸 상위디렉토리로 올라가는것
-
-        if random.random() > self.same_prob:
-            image_path = random.choice(self.images_list)  ##랜덤하게 아무 이미지의 path를 가져와서
-            Xt = cv2.imread(image_path)[:, :, ::-1]  ##unnormalized (1024, 1024, 3) 타겟이미지
-            Xt = Image.fromarray(Xt)  ##타겟이미지도 사진으로 저장 
-            same_person = 0
-
-            
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
-
-    def __len__(self):
-        return self.N
-    
-    
-    
-
-
-
-
-##/datasets/CelebHQ/CelebA-HQ-img
-class FaceEmbedCelebA(TensorDataset):
-    def __init__(self, data_path, same_prob=0.8, same_identity=False):
-
-        self.same_prob = same_prob
-        self.same_identity = same_identity
-                
-        self.images_list = glob.glob(f'{data_path}/*.*g')
-        self.folders_list = glob.glob(f'{data_path}/*')
-        
-        self.folder2imgs = {}
-
-        for folder in tqdm.tqdm(self.folders_list):
-            folder_imgs = glob.glob(f'{folder}/*')
-            self.folder2imgs[folder] = folder_imgs
-             
-        self.N = len(self.images_list)
-        
-        self.transforms_arcface = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        
-        self.transforms_base = transforms.Compose([
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-    def __getitem__(self, item):
-            
-        image_path = self.images_list[item]  ##self.images_list =  '/datasets/CelebHQ/CelebA-HQ-img/6615.jpg', '/datasets/CelebHQ/CelebA-HQ-img/10425.jpg',...
-
-        Xs = cv2.imread(image_path)[:, :, ::-1] ##Xs.shape (1024, 1024, 3)
-        Xs = Image.fromarray(Xs)
-        
-        if self.same_identity:
-            folder_name = '/'.join(image_path.split('/')[:-1])
-
-        if random.random() > self.same_prob:
-            image_path = random.choice(self.images_list)
-            Xt = cv2.imread(image_path)[:, :, ::-1]
-            Xt = Image.fromarray(Xt)
-            same_person = 0
-            
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
-
-    def __len__(self):
-        return self.N
-    
-    
-    
-
-
-self.same_prob = same_prob
-self.same_identity = same_identity
-import time
-
-s = time.time()
-# images_list = tqdm.tqdm(glob.glob(f'/datasets/DOB/imagefile/*/*.*g'))
-folders_list = glob.glob(f'/datasets/DOB/*/*')
-e = time.time() -s
-print(e)
-
-folder2imgs = {}
-folder2imgs
-for folder in tqdm.tqdm(folders_list):
-    folder_imgs = glob.glob(f'{folder}/*')
-    folder2imgs[folder] = folder_imgs
-    break
-        
-self.N = len(self.images_list)
-
-self.transforms_arcface = transforms.Compose([
-    transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-
-self.transforms_base = transforms.Compose([
-    transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-    transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-    # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-    
-
-    
-
 
 ##/datasets/DOB/imagefile/DOB04F118SEC
-class FaceEmbedDOB(TensorDataset):
-    def __init__(self, data_path, same_prob=0.8, same_identity=False):
+class FaceEmbedSubdir(TensorDataset):
+    '''
+    VGG와 DOB데이터처럼 안에 각 인물마다 디렉토리가 따로 있는 경우 이 클래스를 사용한다
+    '''
+    
+    def __init__(self, data_path, same_prob=0.8, same_identity=False, vggdata=True, dobdata=True):
 
         self.same_prob = same_prob
         self.same_identity = same_identity
+        self.vggdata = vggdata
+        self.dobdata = dobdata
         
-        self.images_list = glob.glob(f'{data_path}/*/*/*.*g') ##모든이미지의 ful
-        self.folders_list = glob.glob(f'{data_path}/*/*')  ##  '/datasets/DOB/imagefile/DOB04F215SEC', '/datasets/DOB/imagefile/KTT03M008FIR', ...
-        
-        self.folder2imgs = {}
+        if self.vggdata==True:
+                
+            self.images_list = glob.glob(f'{data_path}/*/*.*g')
+            self.folders_list = glob.glob(f'{data_path}/*')
+            
+            self.folder2imgs = {}
 
-        for folder in tqdm.tqdm(self.folders_list): ##folder는 이미지를 가지고 있는 각각 폴더명
-            folder_imgs = glob.glob(f'{folder}/*')  ##폴더명 아래에 있는 모든 파일을 가지고 와서 리스팅
-            self.folder2imgs[folder] = folder_imgs ## 모든 이미지를 폴더경로 key에 저장하는 dict 생성. key의 예: folder2imgs['/datasets/DOB/imagefile2/CDW04F003FIR']
+            for folder in tqdm.tqdm(self.folders_list):
+                folder_imgs = glob.glob(f'{folder}/*')
+                self.folder2imgs[folder] = folder_imgs
              
+        elif self.dobdata==True:
+            '''
+            디오비 데이터를 모두 로딩하기 위해 걸린시간: 1930.1818947792053초
+            '''
+            self.images_list = glob.glob(f'{data_path}/*/*/*.*g') ##모든이미지의 full image list 
+            self.folders_list = glob.glob(f'{data_path}/*/*')  ##  '/datasets/DOB/imagefile/DOB04F215SEC', '/datasets/DOB/imagefile/KTT03M008FIR', ...
+            self.folder2imgs = {}
+
+            for folder in tqdm.tqdm(self.folders_list): ##folder는 이미지를 가지고 있는 각각 폴더명
+                folder_imgs = glob.glob(f'{folder}/*')  ##폴더명 아래에 있는 모든 파일을 가지고 와서 리스팅
+                self.folder2imgs[folder] = folder_imgs ## 모든 이미지를 폴더경로 key에 저장하는 dict 생성. key의 예: folder2imgs['/datasets/DOB/imagefile2/CDW04F003FIR']
+                
+        
+        
         self.N = len(self.images_list)
         
         self.transforms_arcface = transforms.Compose([
@@ -364,4 +157,243 @@ class FaceEmbedDOB(TensorDataset):
 
     def __len__(self):
         return self.N
+    
+
+
+
+    
+    
+    
+    
+# class FaceEmbedFFHQ(TensorDataset):
+#     def __init__(self, data_path, same_prob=0.8, same_identity=False):
+#         '''
+#         data_path: should be ffhq-dataset/images1024x1024
+        
+#         '''
+#         self.same_prob = same_prob
+#         self.same_identity = same_identity
+                
+#         self.images_list = glob.glob(f'{data_path}/*/*.*g')  ##images_list = /datasets/40000/40340.png ...
+#         # self.folders_list = glob.glob(f'{data_path}/*')
+        
+#         # self.folder2imgs = {}
+
+#         # for folder in tqdm.tqdm(self.folders_list):
+#         #     folder_imgs = glob.glob(f'{folder}/*')
+#         #     self.folder2imgs[folder] = folder_imgs
+             
+#         self.N = len(self.images_list)  
+        
+#         self.transforms_arcface = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.Resize((224, 224)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+        
+#         self.transforms_base = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+#             transforms.Resize((256, 256)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+
+#     def __getitem__(self, item):
+            
+#         image_path = self.images_list[item]  ##'/datasets/40000/40340.png' 이런식으로 하나씩 불러온다
+
+#         Xs = cv2.imread(image_path)[:, :, ::-1]  ## (1024, 1024, 3)
+#         Xs = Image.fromarray(Xs)  ##이미지로 저장하는것 
+        
+#         if self.same_identity:
+#             folder_name = '/'.join(image_path.split('/')[:-1])  ##'/datasets/40000/40340.png'에서  ##'/datasets/40000 로 한칸 상위디렉토리로 올라가는것
+
+#         if random.random() > self.same_prob:
+#             image_path = random.choice(self.images_list)  ##랜덤하게 아무 이미지의 path를 가져와서
+#             Xt = cv2.imread(image_path)[:, :, ::-1]  ##unnormalized (1024, 1024, 3) 타겟이미지
+#             Xt = Image.fromarray(Xt)  ##타겟이미지도 사진으로 저장 
+#             same_person = 0
+
+            
+#         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+
+#     def __len__(self):
+#         return self.N
+    
+    
+    
+
+
+
+
+# ##/datasets/CelebHQ/CelebA-HQ-img
+# class FaceEmbedCelebA(TensorDataset):
+#     def __init__(self, data_path, same_prob=0.8, same_identity=False):
+
+#         self.same_prob = same_prob
+#         self.same_identity = same_identity
+                
+#         self.images_list = glob.glob(f'{data_path}/*.*g')
+#         self.folders_list = glob.glob(f'{data_path}/*')
+        
+#         self.folder2imgs = {}
+
+#         for folder in tqdm.tqdm(self.folders_list):
+#             folder_imgs = glob.glob(f'{folder}/*')
+#             self.folder2imgs[folder] = folder_imgs
+             
+#         self.N = len(self.images_list)
+        
+#         self.transforms_arcface = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.Resize((224, 224)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+        
+#         self.transforms_base = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+#             transforms.Resize((256, 256)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+
+#     def __getitem__(self, item):
+            
+#         image_path = self.images_list[item]  ##self.images_list =  '/datasets/CelebHQ/CelebA-HQ-img/6615.jpg', '/datasets/CelebHQ/CelebA-HQ-img/10425.jpg',...
+
+#         Xs = cv2.imread(image_path)[:, :, ::-1] ##Xs.shape (1024, 1024, 3)
+#         Xs = Image.fromarray(Xs)
+        
+#         if self.same_identity:
+#             folder_name = '/'.join(image_path.split('/')[:-1])
+
+#         if random.random() > self.same_prob:
+#             image_path = random.choice(self.images_list)
+#             Xt = cv2.imread(image_path)[:, :, ::-1]
+#             Xt = Image.fromarray(Xt)
+#             same_person = 0
+            
+#         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+
+#     def __len__(self):
+#         return self.N
+    
+    
+    
+
+
+# self.same_prob = same_prob
+# self.same_identity = same_identity
+
+
+# import time
+# import tqdm
+# import glob
+# s = time.time()
+# images_list = tqdm.tqdm(glob.glob(f'/datasets/DOB/imagefile/*/*.*g'))
+# folders_list = glob.glob(f'/datasets/DOB/*/*')
+# e = time.time() -s
+# print(e)
+
+# folder2imgs = {}
+# folder2imgs
+# for folder in tqdm.tqdm(folders_list):
+#     folder_imgs = glob.glob(f'{folder}/*')
+#     folder2imgs[folder] = folder_imgs
+#     break
+        
+# self.N = len(self.images_list)
+
+# self.transforms_arcface = transforms.Compose([
+#     transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#     transforms.Resize((224, 224)),
+#     transforms.ToTensor(),
+#     # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+# ])
+
+# self.transforms_base = transforms.Compose([
+#     transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#     transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+#     transforms.Resize((256, 256)),
+#     transforms.ToTensor(),
+#     # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+# ])
+    
+
+    
+
+
+# ##/datasets/DOB/imagefile/DOB04F118SEC
+# class FaceEmbedDOB(TensorDataset):
+#     def __init__(self, data_path, same_prob=0.8, same_identity=False):
+
+#         self.same_prob = same_prob
+#         self.same_identity = same_identity
+        
+#         self.images_list = glob.glob(f'{data_path}/*/*/*.*g') ##모든이미지의 ful
+#         self.folders_list = glob.glob(f'{data_path}/*/*')  ##  '/datasets/DOB/imagefile/DOB04F215SEC', '/datasets/DOB/imagefile/KTT03M008FIR', ...
+        
+#         self.folder2imgs = {}
+
+#         for folder in tqdm.tqdm(self.folders_list): ##folder는 이미지를 가지고 있는 각각 폴더명
+#             folder_imgs = glob.glob(f'{folder}/*')  ##폴더명 아래에 있는 모든 파일을 가지고 와서 리스팅
+#             self.folder2imgs[folder] = folder_imgs ## 모든 이미지를 폴더경로 key에 저장하는 dict 생성. key의 예: folder2imgs['/datasets/DOB/imagefile2/CDW04F003FIR']
+             
+#         self.N = len(self.images_list)
+        
+#         self.transforms_arcface = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.Resize((224, 224)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+        
+#         self.transforms_base = transforms.Compose([
+#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+#             transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+#             transforms.Resize((256, 256)),
+#             transforms.ToTensor(),
+#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#         ])
+
+#     def __getitem__(self, item):
+            
+#         image_path = self.images_list[item]
+
+#         Xs = cv2.imread(image_path)[:, :, ::-1]
+#         Xs = Image.fromarray(Xs)
+        
+#         if self.same_identity:
+#             folder_name = '/'.join(image_path.split('/')[:-1])
+
+#         if random.random() > self.same_prob:
+#             image_path = random.choice(self.images_list)
+#             Xt = cv2.imread(image_path)[:, :, ::-1]
+#             Xt = Image.fromarray(Xt)
+#             same_person = 0
+#         else:
+#             if self.same_identity:
+#                 image_path = random.choice(self.folder2imgs[folder_name])
+#                 Xt = cv2.imread(image_path)[:, :, ::-1]
+#                 Xt = Image.fromarray(Xt)
+#             else:
+#                 Xt = Xs.copy()
+#             same_person = 1
+            
+#         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+
+#     def __len__(self):
+#         return self.N
     
