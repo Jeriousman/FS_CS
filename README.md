@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # FS-Ghost
 
 ## Face Swap Model Ghost (Sber-Swap) Code & Docs
