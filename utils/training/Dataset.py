@@ -273,9 +273,8 @@ def MergeDict(dict1, dict2):
 ##/datasets/DOB/imagefile/DOB04F118SEC
 class FaceEmbedCombined(TensorDataset):
     '''
-    VGG와 DOB데이터처럼 안에 각 인물마다 디렉토리가 따로 있는 경우 이 클래스를 사용한다
+    CelebA나 FFHQ중 하나는 무조건 사용되어야 하게 설정되어있다.
     '''
-    
     def __init__(self, vgg_data_path=None, celeba_data_path=None, dob_data_path=None, ffhq_data_path=None, same_prob=0.8, same_identity=False):
 
         self.vgg_data_path = vgg_data_path
@@ -286,19 +285,17 @@ class FaceEmbedCombined(TensorDataset):
         
         self.same_prob = same_prob
         self.same_identity = same_identity
+        
         ##data_path='/datasets/FFHQ'
-        # if self.ffhq_data_path==True:
-                
-        # self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*.*g', recursive=True)
-        # self.ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
-        # self.ffhq_len = len(self.ffhq_dataset)
-
-                    
+        if bool(self.ffhq_data_path)==True:
+            self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*.*g', recursive=True)
+            self.ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
+            self.ffhq_len = len(self.ffhq_dataset)
 
         ##'/datasets/CelebHQ/CelebA-HQ-img'
-        # if self.celeba_data_path==True:
-        self.celeba_dataset = glob.glob(f'{self.celeba_data_path}/**.*g', recursive=True)
-        self.celeba_len = len(self.celeba_dataset)
+        if bool(self.celeba_data_path)==True:
+            self.celeba_dataset = glob.glob(f'{self.celeba_data_path}/**.*g', recursive=True)
+            self.celeba_len = len(self.celeba_dataset)
         # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
         
         
@@ -450,162 +447,8 @@ class FaceEmbedCombined(TensorDataset):
         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
 
-# vgg_dataset_path =  '/datasets/VGG'
-# ffhq_data_path='/datasets/FFHQ'
-# celeba_data_path='/datasets/CelebHQ'
-# dob_dataset_path='/datasets/DOB'
-
-
-# ffhq_dataset = glob.glob(f'{ffhq_data_path}/**/*.*g', recursive=True)
-# ffhq_folders = glob.glob(f'{ffhq_data_path}/*', recursive=True)
-# ffhq_len = len(ffhq_dataset)
-# ffhq_len
-# ##'/datasets/CelebHQ/CelebA-HQ-img'
-# celeba_dataset = glob.glob(f'{celeba_data_path}/**.*g', recursive=True)
-# celeba_len = len(celeba_dataset)
-# # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
-
-# total_dataset = ffhq_dataset + celeba_dataset 
-# idx = 77
-# total_dataset[idx]
-# if idx < ffhq_len + celeba_len:
-#     image_path = total_dataset[idx]
-    
-#     Xs = cv2.imread(image_path)[:, :, ::-1]
-#     Xs = Image.fromarray(Xs)
-# Xs
-
-
-
-
-
-
-
-
-
-
-# ##/datasets/CelebHQ/CelebA-HQ-img
-# class FaceEmbedCelebA(TensorDataset):
-#     def __init__(self, data_path, same_prob=0.8, same_identity=False):
-
-#         self.same_prob = same_prob
-#         self.same_identity = same_identity
-                
-#         self.images_list = glob.glob(f'{data_path}/*.*g')
-#         self.folders_list = glob.glob(f'{data_path}/*')
-        
-#         self.folder2imgs = {}
-
-#         for folder in tqdm.tqdm(self.folders_list):
-#             folder_imgs = glob.glob(f'{folder}/*')
-#             self.folder2imgs[folder] = folder_imgs
-             
-#         self.N = len(self.images_list)
-        
-#         self.transforms_arcface = transforms.Compose([
-#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-#             transforms.Resize((224, 224)),
-#             transforms.ToTensor(),
-#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-#         ])
-        
-#         self.transforms_base = transforms.Compose([
-#             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-#             transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-#             transforms.Resize((256, 256)),
-#             transforms.ToTensor(),
-#             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-#             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-#         ])
-
-#     def __getitem__(self, item):
-            
-#         image_path = self.images_list[item]  ##self.images_list =  '/datasets/CelebHQ/CelebA-HQ-img/6615.jpg', '/datasets/CelebHQ/CelebA-HQ-img/10425.jpg',...
-
-#         Xs = cv2.imread(image_path)[:, :, ::-1] ##Xs.shape (1024, 1024, 3)
-#         Xs = Image.fromarray(Xs)
-        
-#         if self.same_identity:
-#             folder_name = '/'.join(image_path.split('/')[:-1])
-
-#         if random.random() > self.same_prob:
-#             image_path = random.choice(self.images_list)
-#             Xt = cv2.imread(image_path)[:, :, ::-1]
-#             Xt = Image.fromarray(Xt)
-#             same_person = 0
-            
-#         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
-
-#     def __len__(self):
-#         return self.N
-    
-    
-    
-
-
-# self.same_prob = same_prob
-# self.same_identity = same_identity
-
-
-# import time
-# import tqdm
-# import glob
-# s = time.time()
-# images_list = tqdm.tqdm(glob.glob(f'/datasets/DOB/imagefile/*/*.*g'))
-# folders_list = glob.glob(f'/datasets/DOB/*/*')
-# e = time.time() -s
-# print(e)
-
-# folder2imgs = {}
-# folder2imgs
-# for folder in tqdm.tqdm(folders_list):
-#     folder_imgs = glob.glob(f'{folder}/*')
-#     folder2imgs[folder] = folder_imgs
-#     break
-        
-# self.N = len(self.images_list)
-
-# self.transforms_arcface = transforms.Compose([
-#     transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-#     transforms.Resize((224, 224)),
-#     transforms.ToTensor(),
-#     # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-#     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-# ])
-
-# self.transforms_base = transforms.Compose([
-#     transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-#     transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
-#     transforms.Resize((256, 256)),
-#     transforms.ToTensor(),
-#     # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-#     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-# ])
-    
-
-# ##data_path='/datasets/FFHQ'
-# self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*.*g', recursive=True)
-# self.ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
-# self.ffhq_len = len(self.ffhq_dataset)
-
-# ##'/datasets/CelebHQ/CelebA-HQ-img'
-# self.celeba_dataset = glob.glob(f'{self.celeba_data_path}/**.*g', recursive=True)
-# self.celeba_len = len(self.celeba_dataset)
-# # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
-
-# self.total_dataset = self.ffhq_dataset + self.celeba_dataset     
-
-
-
-
-# def MergeDict(dict1, dict2):  ##only above python 3.9
-#     res = dict1 | dict2
-#     return res 
-
-
-#data_path='/datasets/FFHQ'
-##/datasets/DOB/imagefile/DOB04F118SEC
+# data_path='/datasets/FFHQ'
+# #/datasets/DOB/imagefile/DOB04F118SEC
 # class FaceEmbedCombined(TensorDataset):
 #     '''
 #     VGG와 DOB데이터처럼 안에 각 인물마다 디렉토리가 따로 있는 경우 이 클래스를 사용한다

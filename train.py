@@ -34,7 +34,6 @@ import torch
 
 print("finished imports")
 
-
 def train_one_epoch(G: 'generator model', 
                     D: 'discriminator model', 
                     opt_G: "generator opt", 
@@ -63,48 +62,22 @@ def train_one_epoch(G: 'generator model',
         with torch.no_grad():
             embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
 
-        diff_person = torch.ones_like(same_person)  ##same_person과 같은 shape로 모두1 을 넣는다 
+        diff_person = torch.ones_like(same_person)
 
-        if args.diff_eq_same:print("started imports")
-
-import sys
-import argparse
-import time
-import cv2
-import wandb
-from PIL import Image
-import os
-
-from torch.utils.data import DataLoader
-import torch.optim as optim
-import torch.nn.functional as F
-import torch
-import torchvision.transforms as transforms
-import torch.optim.lr_scheduler as scheduler
-
-# # custom imports
-# sys.path.append('./apex/')
-# from apex import amp
-
-from network.AEI_Net import *
-from network.MultiscaleDiscriminator import *
-from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA#FaceEmbedAllFlat
-from utils.training.image_processing import make_image_list, get_faceswap
-from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
-from utils.training.detector import detect_landmarks, paint_eyes
-from AdaptiveWingLoss.core import models
-from arcface_model.iresnet import iresnet100
-import torch
-
-
-        Y, Xt_attr = G(Xt, embed) ##Target이미지와 Source의 identity 엠베딩을 인풋으로 generator로 결과를 뽑는다. Y가 swapped face일 것 같고, Xt_attr는 target attribute일듯.
-        Di = D(Y) ##이제 Dsicriminator에 Swapped Face를 넣고 진짜인지 아닌지 가리게 한다. 
-        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))  ##Swapped Face를 인풋으로 넣어서 여기의 identity embedding도 뽑아낸다. (Source identity embedding과 비교할듯)
+        if args.diff_eq_same:
+            same_person = diff_person
+    
+        # generator training
+        opt_G.zero_grad()
+        
+        Y, Xt_attr = G(Xt, embed)
+        Di = D(Y)
+        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))
         
         if args.eye_detector_loss:
-            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##Target 눈 랜드마크 찾기
-            Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)  ##Swapped face 눈 랜드마크 찾기
-            eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]  
+            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)
+            Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)
+            eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]
         else:
             eye_heatmaps = None
             
@@ -112,44 +85,23 @@ import torch
                                                                              embed, ZY, eye_heatmaps,loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
-        with amp.scale_loss(lossG, opt_G) as scaled_loss:  ##lets search for scaled_loss
+        with amp.scale_loss(lossG, opt_G) as scaled_loss:
             scaled_loss.backward()
         opt_G.step()
         if args.scheduler:
             scheduler_G.step()
         
-        # discriminator trainingprint("started imports")
+        # discriminator training
+        opt_D.zero_grad()
+        lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
+        with amp.scale_loss(lossD, opt_D) as scaled_loss:
+            scaled_loss.backward()
 
-import sys
-import argparse
-import time
-import cv2
-import wandb
-from PIL import Image
-import os
-
-from torch.utils.data import DataLoader
-import torch.optim as optim
-import torch.nn.functional as F
-import torch
-import torchvision.transforms as transforms
-import torch.optim.lr_scheduler as scheduler
-
-# # custom imports
-# sys.path.append('./apex/')
-# from apex import amp
-
-from network.AEI_Net import *
-from network.MultiscaleDiscriminator import *
-from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA#FaceEmbedAllFlat
-from utils.training.image_processing import make_image_list, get_faceswap
-from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
-from utils.training.detector import detect_landmarks, paint_eyes
-from AdaptiveWingLoss.core import models
-from arcface_model.iresnet import iresnet100
-import torch
-
-
+        if (not args.discr_force) or (loss_adv_accumulated < 4.):
+            opt_D.step()
+        if args.scheduler:
+            scheduler_D.step()
+        
         
         batch_time = time.time() - start_time
 
@@ -158,12 +110,12 @@ import torch
             if args.eye_detector_loss:
                 Xt_eyes_img = paint_eyes(Xt, Xt_eyes)
                 Yt_eyes_img = paint_eyes(Y, Y_eyes)
-                images.extend([Xt_eyes_img, Yt_eyes_img]) ##이미지 리스트에 eye 랜드마크 사진도 같이 붙여넣기
+                images.extend([Xt_eyes_img, Yt_eyes_img])
             image = make_image_list(images)
             if args.use_wandb:
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
             else:
-                cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1]) ##RGB
+                cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
         
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
@@ -195,7 +147,7 @@ import torch
         if (iteration % 250 == 0) and (args.use_wandb):
             ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
             G.eval()
-                 
+
             res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
             res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
             res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
@@ -268,19 +220,14 @@ def train(args, device):
         except FileNotFoundError as e:
             print("Not found pretrained weights. Continue without any pretrained weights.")
     
-    if args.vgg:
+    # if args.vgg:
 
-        # vgg_dataset = FaceEmbedSubdir(args.vgg_dataset_path, same_prob=args.same_person, same_identity=args.same_identity, dataname='vgg')
-        # dob_dataset = FaceEmbedSubdir(args.dob_dataset_path, same_prob=args.same_person, same_identity=args.same_identity, dataname='dob')
-        # hhfq_dataset = FaceEmbedFFHQ(args.ffhq_dataset_path, same_prob=args.same_person)
-        # celeba_dataset = FaceEmbedCelebA(args.celeba_dataset_path, same_prob=args.same_person)
-
-        # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-        dataset = FaceEmbedCombined(vgg_data_path=args.vgg_dataset_path, celeba_data_path=args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
+    # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
+    dataset = FaceEmbedCombined(vgg_data_path=args.vgg_dataset_path, celeba_data_path=args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
 
         # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
-    else:
-        dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
+    # else:
+    #     dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
         
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
 
@@ -315,11 +262,12 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # dataset params
-    ##the 4 arguments are newly added by Hojun
+    ##the 6 arguments are newly added by Hojun
     parser.add_argument('--vgg_dataset_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--ffhq_dataset_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
     parser.add_argument('--celeba_dataset_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--dob_dataset_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--dataname', default='dob', type=bool, help='When using VGG2 dataset (or any other dataset with several photos for one identity)')
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
@@ -345,7 +293,7 @@ if __name__ == "__main__":
     parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
-    parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
+    # parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
@@ -360,24 +308,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     
-    if args.vgg==False and args.same_identity==True:
+    if bool(args.vgg_dataset_path)==False and args.same_identity==True:
         raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
     
     if args.use_wandb==True:
         wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
 
         config = wandb.config
-        config.vgg_dataset_path = args.vgg_dataset_path
-        config.ffhq_dataset_path = args.ffhq_dataset_path
-        config.celeba_dataset_path = args.celeba_dataset_path
-        config.dob_dataset_path = args.dob_dataset_path
+        config.dataset_path = args.dataset_path
         config.weight_adv = args.weight_adv
         config.weight_attr = args.weight_attr
         config.weight_id = args.weight_id
         config.weight_rec = args.weight_rec
         config.weight_eyes = args.weight_eyes
         config.same_person = args.same_person
-        config.Vgg2Face = args.vgg
         config.same_identity = args.same_identity
         config.diff_eq_same = args.diff_eq_same
         config.discr_force = args.discr_force
