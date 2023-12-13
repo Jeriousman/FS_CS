@@ -311,13 +311,14 @@ class FaceEmbedCombined(TensorDataset):
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')
 
-
+        self.folder2imgs = {}
+        
         if bool(self.vgg_data_path)==True:
                     
             self.vgg_dataset = glob.glob(f'{self.vgg_data_path}/*/*.*g')
             self.vgg_folders_list = glob.glob(f'{self.vgg_data_path}/*')
             
-            self.folder2imgs = {}
+
 
             for folder in tqdm.tqdm(self.vgg_folders_list):
                 folder_imgs = glob.glob(f'{folder}/*')
