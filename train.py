@@ -16,8 +16,8 @@ import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
 # # custom imports
-# sys.path.append('./apex/')
-# from apex import amp
+sys.path.append('./apex/')
+from apex import amp
 
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
@@ -262,12 +262,11 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # dataset params
-    ##the 6 arguments are newly added by Hojun
+    ##the 4 arguments are newly added by Hojun
     parser.add_argument('--vgg_dataset_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--ffhq_dataset_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
     parser.add_argument('--celeba_dataset_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--dob_dataset_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    parser.add_argument('--dataname', default='dob', type=bool, help='When using VGG2 dataset (or any other dataset with several photos for one identity)')
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
@@ -293,7 +292,7 @@ if __name__ == "__main__":
     parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
-    # parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
+    parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
@@ -313,9 +312,11 @@ if __name__ == "__main__":
     
     if args.use_wandb==True:
         wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
-
         config = wandb.config
-        config.dataset_path = args.dataset_path
+        config.vgg_dataset_path = args.vgg_dataset_path
+        config.ffhq_dataset_path = args.ffhq_dataset_path
+        config.celeba_dataset_path = args.celeba_dataset_path
+        config.dob_dataset_path = args.dob_dataset_path
         config.weight_adv = args.weight_adv
         config.weight_attr = args.weight_attr
         config.weight_id = args.weight_id
