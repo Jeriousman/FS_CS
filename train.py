@@ -60,7 +60,7 @@ def train_one_epoch(G: 'generator model',
 
         # get the identity embeddings of Xs
         with torch.no_grad():
-            embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+            embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False)) 
 
         diff_person = torch.ones_like(same_person)
 
@@ -68,14 +68,14 @@ def train_one_epoch(G: 'generator model',
             same_person = diff_person
     
         # generator training
-        opt_G.zero_grad()
+        opt_G.zero_grad() ##축적된 gradients를 비워준다
         
-        Y, Xt_attr = G(Xt, embed)
-        Di = D(Y)
-        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))
+        Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
         
         if args.eye_detector_loss:
-            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)
+            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
             Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)
             eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]
         else:

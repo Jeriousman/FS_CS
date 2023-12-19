@@ -6,7 +6,7 @@ l2_loss = torch.nn.MSELoss()
 
 def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/222666100291
     if positive:
-        return torch.relu(1-X) ##X = y_hat * true_y
+        return torch.relu(1-X) ##X = y_hat * true_y if normal hinge loss
     else:
         return torch.relu(X+1)
     
