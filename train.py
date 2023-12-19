@@ -28,7 +28,7 @@ from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 import torch
-
+from models.mae import models_mae
 
 
 
@@ -60,7 +60,9 @@ def train_one_epoch(G: 'generator model',
 
         # get the identity embeddings of Xs
         with torch.no_grad():
-            embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False)) 
+            loss, Xs_mae, mask = mae_model(Xs.float(), mask_ratio=0.75)
+            Xs_mae = mae_model.unpatchify(Xs_mae)
+            # embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False)) 
 
         diff_person = torch.ones_like(same_person)
 
