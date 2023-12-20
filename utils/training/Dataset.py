@@ -410,7 +410,7 @@ class FaceEmbedCombined(TensorDataset):
             Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함 
             same_person = 1
             
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+        return self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
     def fetch_vgg_dob(self, image_path):
 
@@ -445,7 +445,7 @@ class FaceEmbedCombined(TensorDataset):
                 Xt = Xs.copy()
             same_person = 1
             
-        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+        return self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
 
 # data_path='/datasets/FFHQ'
