@@ -27,12 +27,22 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
+from models import FlowFaceCrossAttention
 import torch
 from models.mae import models_mae
-
-
-
 print("finished imports")
+
+
+def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
+    # build model
+    model = getattr(models_mae, arch)()
+    # load model
+    checkpoint = torch.load(chkpt_dir, map_location='cpu')
+    msg = model.load_state_dict(checkpoint['model'], strict=False)
+    print(msg)
+    return model
+
+
 
 def train_one_epoch(G: 'generator model', 
                     D: 'discriminator model', 
@@ -40,13 +50,17 @@ def train_one_epoch(G: 'generator model',
                     opt_D: "discriminator opt",
                     scheduler_G: "scheduler G opt",
                     scheduler_D: "scheduler D opt",
-                    netArc: 'ArcFace model',
+                    MAE: 'MAE model',
                     model_ft: 'Landmark Detector',
                     args: 'Args Namespace',
                     dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
                     loss_adv_accumulated:int):
+    
+    
+    MAE.to(device)
+    
     
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
@@ -56,16 +70,21 @@ def train_one_epoch(G: 'generator model',
         Xs = Xs.to(device)
         Xt = Xt.to(device)
         same_person = same_person.to(device)
+        realtime_batch_size = Xs.shape[0] 
+        seq_len = Xs.shape[1]  ##(H*W)
+        
+        
 
         # get the identity embeddings of Xs
         with torch.no_grad():
-            loss, Xs_mae_emb, mask = mae_model(Xs.float(), mask_ratio=0.75)
-            Xs_mae_emb = mae_model.unpatchify(Xs_mae_emb)
+            source_mae_emb = MAE.patch_embed(Xs)    ##mae_emb -> [batch size, 196 or 256, 1024]
+            target_mae_emb = MAE.patch_embed(Xt)
             
-            loss, Xt_mae_emb, mask = mae_model(Xt.float(), mask_ratio=0.75)
-            Xt_mae_emb = mae_model.unpatchify(Xt_mae)
-            # embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False)) 
-
+        
+        
+        
+            
+            
         diff_person = torch.ones_like(same_person)
 
         if args.diff_eq_same:
