@@ -27,7 +27,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models import FlowFaceCrossAttention
+from models import FlowFaceCrossAttentionBlock
 import torch
 from models.mae import models_mae
 print("finished imports")
@@ -60,6 +60,7 @@ def train_one_epoch(G: 'generator model',
     
     
     MAE.to(device)
+    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.q_dim, q_dim=args.q_dim, kv_dim=args.q_dim)
     
     
     for iteration, data in enumerate(dataloader):
@@ -71,7 +72,7 @@ def train_one_epoch(G: 'generator model',
         Xt = Xt.to(device)
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
-        seq_len = Xs.shape[1]  ##(H*W)
+ ##(H*W)
         
         
 
@@ -80,8 +81,9 @@ def train_one_epoch(G: 'generator model',
             source_mae_emb = MAE.patch_embed(Xs)    ##mae_emb -> [batch size, 196 or 256, 1024]
             target_mae_emb = MAE.patch_embed(Xt)
             
+
         
-        
+        swapped_emb = FFCA(target_mae_emb, source_mae_emb)
         
             
             
@@ -307,6 +309,10 @@ if __name__ == "__main__":
     
     parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
+    
+    parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
+    parser.add_argument('--head_dim', default=2, type=int, help='attention mechanism dimension of one big head before dividing by num head')
+    
     parser.add_argument('--same_person', default=0.2, type=float, help='Probability of using same person identity during training')
     parser.add_argument('--same_identity', default=True, type=bool, help='Using simswap approach, when source_id = target_id. Only possible with vgg=True')
     parser.add_argument('--diff_eq_same', default=False, type=bool, help='Don\'t use info about where is defferent identities')
