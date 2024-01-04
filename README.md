@@ -2,14 +2,22 @@
 
 ## Face Swap Model Ghost (Sber-Swap) Code & Docs
 
-### 1. 파일설치 (tory 브랜치 기준)
+### 1. 환경설정 (hojun-mae 기준)
 
 ```
-git clone -b tory --single-branch https://github.com/dob-world/FS-Ghost.git
+https를 사용하여 git clone을 할것이라면
+1-1. git clone git@github.com:dob-world/FS-Ghost.git 
+or
+ssh를 이용하여 git clone을 할 것이라면
+1-2. git clone https://github.com/dob-world/FS-Ghost.git
 
-cd FS-Ghost/ghost
-git submodule init
-git submodule update
+2. cd FS-Ghost
+3. git checkout hojun-mae
+4. git submodule init
+5. git submodule update
+6. ./mae/models_mae.py 의 line 40, 54에서 qk_scale=None를 제거
+7. from util.pos_embed import get_2d_sincos_pos_embed을 from mae.util.pos_embed import get_2d_sincos_pos_embed
+8. root 디렉토리에 .devcontainer에서 두개의 --name 파트를 도커 컨테이너를 짓고 싶은 이름으로 바꾸어 넣는다. --name 두개에 모두 같은 이름으로 넣는다 (만에하나 모르니)
 ```
 
 ### 2. Weight 다운로드

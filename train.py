@@ -84,14 +84,18 @@ def train_one_epoch(G: 'generator model',
 
         
         swapped_emb = FFCA(target_mae_emb, source_mae_emb)
-        
-            
-            
+
         diff_person = torch.ones_like(same_person)
 
         if args.diff_eq_same:
             same_person = diff_person
-    
+        ##Generator
+        ##Generator option 1 = ViT decoder
+        MAE
+        
+        ##Generator option 2 = UMAP multiscale convolutional decoder
+        
+        
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
         
