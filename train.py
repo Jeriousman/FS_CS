@@ -16,8 +16,8 @@ import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
 # # custom imports
-sys.path.append('./apex/')
-from apex import amp
+# sys.path.append('./apex/')
+# from apex import amp
 
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
@@ -27,9 +27,9 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models import FlowFaceCrossAttentionBlock
+from models.models import FlowFaceCrossAttentionBlock
 import torch
-from models.mae import models_mae
+from mae import models_mae
 print("finished imports")
 
 

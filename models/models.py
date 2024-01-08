@@ -307,7 +307,7 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         ## (batch_size, seq_len, q_dim)
         return output
 
-class FeedForward(nn.module):
+class FeedForward(nn.Module):
     def __init__(self, in_dim: int, out_dim: int):#, activation: str='relu'):
         super.__init__()
         
@@ -331,7 +331,7 @@ class FeedForward(nn.module):
 
 
 
-class FlowFaceCrossAttentionBlock(nn.module):
+class FlowFaceCrossAttentionBlock(nn.Module):
     def __init__(self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
         super(FlowFaceCrossAttentionBlock).__init__()
         
