@@ -183,21 +183,23 @@ class ArcMarginModel(nn.Module):
 
 
 class SelfAttentionLayer(nn.Module):
-    def __init__(self, n_head: int, embed_dim: int, cross_embed_dim: int):
-        super(SelfAttentionLayer, self).__init()
+    def __init__(self, n_head: int, embed_dim: int):
+        super(SelfAttentionLayer, self).__init__()
         '''
         embed_dim = 전체 엠베딩 디멘션 (n_head로 나누기 전의 엠베딩 디멘션)
+        cross_embed_dim = key and key`s value dimension
         '''
         self.n_head = n_head
         self.embed_dim = embed_dim
+        # self.cross_embed_dim = cross_embed_dim
         self.head_dim = self.embed_dim // self.n_head
 
 
-        self.qlayer = nn.Linear(embed_dim, embed_dim)
-        self.klayer = nn.Linear(cross_embed_dim, embed_dim)
-        self.vlayer = nn.Linear(cross_embed_dim, embed_dim)
+        self.qlayer = nn.Linear(self.embed_dim, self.embed_dim)
+        self.klayer = nn.Linear(self.embed_dim, self.embed_dim)
+        self.vlayer = nn.Linear(self.embed_dim, self.embed_dim)
     
-        self.ffn = nn.Linear(embed_dim, embed_dim)
+        self.ffn = nn.Linear(self.embed_dim, self.embed_dim)
 
         # self.qkvlayer = nn.Linear(embed_dim, embed_dim*3)
         # self.ffn = nn.Linear(embed_dim, embed_dim)
@@ -215,6 +217,10 @@ class SelfAttentionLayer(nn.Module):
 
         ## (batch_size, seq_len, dim) -> (batch_size, seq_len, dim * 3) -> 3 tensors of (batch_size, seq_len, dim)
         # q, k, v = self.qkvlayer(x).chunk(3, -1)
+        
+        q = self.qlayer(x)
+        k = self.klayer(x)
+        v = self.vlayer(x) 
 
         multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim)
 
@@ -256,11 +262,13 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         super(FlowFaceCrossAttentionLayer, self).__init__()
         '''
         Paper FLowFace uses Cross attention where values are stemming from both key and query
+        self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
+        self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
         '''
         
         # self.embed_dim = embed_dim
-        self.k_dim = k_dim
-        self.q_dim = q_dim
+        self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
+        self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
         self.kv_dim = kv_dim
         self.n_head = n_head
         assert self.q_dim // self.n_head, 'embed_dim must be divisible by n_head'
