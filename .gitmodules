@@ -3,4 +3,4 @@
 	url = https://github.com/NastyaMittseva/AdaptiveWingLoss
 [submodule "mae"]
 	path = mae
-	url = https://github.com/facebookresearch/mae
+	url = https://github.com/facebookresearch/mae.git

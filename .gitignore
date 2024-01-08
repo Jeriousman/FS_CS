@@ -13,3 +13,4 @@ weights/*
 ckpt/*.pth
 dataset/*
 experiments/*
+mae
