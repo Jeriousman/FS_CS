@@ -184,8 +184,10 @@ class ArcMarginModel(nn.Module):
 
 class SelfAttentionLayer(nn.Module):
     def __init__(self, n_head: int, embed_dim: int):
-        super(SelfAttentionLayer).__init()
-
+        super(SelfAttentionLayer, self).__init()
+        '''
+        embed_dim = 전체 엠베딩 디멘션 (n_head로 나누기 전의 엠베딩 디멘션)
+        '''
         self.n_head = n_head
         self.embed_dim = embed_dim
         self.head_dim = self.embed_dim // self.n_head
@@ -206,7 +208,7 @@ class SelfAttentionLayer(nn.Module):
         ## (batch_size, seq_len, dim) -> (batch_size, seq_len, dim * 3) -> 3 tensors of (batch_size, seq_len, dim)
         q, k, v = self.qkvlayer(x).chunk(3, -1)
 
-        multihead_inter_shape = (batch_size, seq_len, self.n_head, self.head_dim)
+        multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim)
 
         ## (batch_size, seq_len, dim) -> (batch_size, seq_len, n_head, head_dim) -> (batch_size, n_head, seq_len, head_dim)
         q = q.view(multihead_inter_shape).transpose(1, 2)
@@ -243,7 +245,7 @@ class SelfAttentionLayer(nn.Module):
 
 class FlowFaceCrossAttentionLayer(nn.Module):
     def __init__(self, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
-        super(FlowFaceCrossAttentionLayer).__init__()
+        super(FlowFaceCrossAttentionLayer, self).__init__()
         '''
         Paper FLowFace uses Cross attention where values are stemming from both key and query
         '''
@@ -309,7 +311,7 @@ class FlowFaceCrossAttentionLayer(nn.Module):
 
 class FeedForward(nn.Module):
     def __init__(self, in_dim: int, out_dim: int):#, activation: str='relu'):
-        super.__init__()
+        super(FeedForward, self).__init__()
         
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -333,7 +335,7 @@ class FeedForward(nn.Module):
 
 class FlowFaceCrossAttentionBlock(nn.Module):
     def __init__(self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
-        super(FlowFaceCrossAttentionBlock).__init__()
+        super(FlowFaceCrossAttentionBlock, self).__init__()
         
         self.seq_len = seq_len
         self.n_head = n_head

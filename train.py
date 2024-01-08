@@ -21,7 +21,7 @@ import torch.optim.lr_scheduler as scheduler
 
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
-from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA#FaceEmbedAllFlat
+from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
 from utils.training.image_processing import make_image_list, get_faceswap
 from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
 from utils.training.detector import detect_landmarks, paint_eyes
@@ -208,11 +208,15 @@ def train(args, device):
     G.train()
     D.train()
     
-    # initializing model for identity extraction
-    netArc = iresnet100(fp16=False)
-    netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
-    netArc=netArc.cuda()
-    netArc.eval()
+    # # initializing model for identity extraction
+    # netArc = iresnet100(fp16=False)
+    # netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
+    # netArc=netArc.cuda()
+    # netArc.eval()
+    MAE = prepare_model('/datasets/pretrained/mae_visualize_vit_large_ganloss.pth', 'mae_vit_large_patch16')
+    MAE.eval()
+    
+    
     
     if args.eye_detector_loss:
         model_ft = models.FAN(4, "False", "False", 98)
@@ -236,8 +240,8 @@ def train(args, device):
     opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
     opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
-    G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
-    D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
+    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
+    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     
     if args.scheduler:
         scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
@@ -257,13 +261,15 @@ def train(args, device):
     # if args.vgg:
 
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    dataset = FaceEmbedCombined(vgg_data_path=args.vgg_dataset_path, celeba_data_path=args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-
+    # dataset = FaceEmbedCombined(vgg_data_path=args.vgg_dataset_path, celeba_data_path=args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
+    # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
+    dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
         # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
     # else:
     #     dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
         
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
+    
 
     # Будем считать аккумулированный adv loss, чтобы обучать дискриминатор только когда он ниже порога, если discr_force=True
     loss_adv_accumulated = 20.
@@ -305,6 +311,8 @@ if __name__ == "__main__":
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
     
+
+    
     # weights for loss
     parser.add_argument('--weight_adv', default=1, type=float, help='Adversarial Loss weight')
     parser.add_argument('--weight_attr', default=10, type=float, help='Attributes weight')
@@ -313,10 +321,17 @@ if __name__ == "__main__":
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
     # training params you may want to change
     
+    
+    ##parameters for model configs
     parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
-    
-    parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
+
+    parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
+    parser.add_argument('--n_head', default=4, type=int, help='number of multi attention head')
+    parser.add_argument('--q_dim', default=512, type=int, help='query dim')
+    parser.add_argument('--k_dim', default=512, type=int, help='key dim')
+    parser.add_argument('--kv_dim', default=512, type=int, help='value dim of key')
+    # parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
     parser.add_argument('--head_dim', default=2, type=int, help='attention mechanism dimension of one big head before dividing by num head')
     
     parser.add_argument('--same_person', default=0.2, type=float, help='Probability of using same person identity during training')
