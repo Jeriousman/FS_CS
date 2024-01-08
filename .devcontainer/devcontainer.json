@@ -1,5 +1,5 @@
 {
-	"name": "ghost",
+	"name": "ghost-mae",
 	"build": {
 		"dockerfile": "../tmp/Dockerfile",
 		"context": ".."
@@ -9,11 +9,13 @@
 		// GPU 사용을 위한 옵션(nvidia 관련 설정 필요)
 		"--gpus", "device=5",
 		// 컨테이너의 이름을 짓는 옵션
-		"--name", "ghost",
+		"--name", "ghost-mae",
 		"-v", "/IM_data/:/datasets/DOB",
 		"-v", "/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets/FFHQ",
 		"-v", "/dev_storage/tory/data/CelebAMask-HQ:/datasets/CelebHQ",
 		"-v", "/dev_storage/tory/data/parsedVGG:/datasets/VGG",
+		"-v", "/dev_storage/tory/data/pretrained:/datasets/pretrained",
+		
 
 		// 사용자가 멈추지 않았는데 꺼진 경우 다시 켜주는 옵션
 		"--restart=unless-stopped"

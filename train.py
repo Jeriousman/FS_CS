@@ -216,7 +216,9 @@ def train(args, device):
     
     if args.eye_detector_loss:
         model_ft = models.FAN(4, "False", "False", 98)
-        checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
+        # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
+        checkpoint = torch.load('/datasets/pretrained/WFLW_4HG.pth')
+        
         if 'state_dict' not in checkpoint:
             model_ft.load_state_dict(checkpoint)
         else:
@@ -325,10 +327,11 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler', default=False, type=bool, help='If True decreasing LR is used for learning of generator and discriminator')
     parser.add_argument('--scheduler_step', default=5000, type=int)
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
-    parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
+    parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
+    parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
-    parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
+    # parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
@@ -338,7 +341,8 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=500, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--optim_level', default='O2', type=str)
+    # parser.add_argument('--optim_level', default='O2', type=str)
+    parser.add_argument('--optim_level', default='None', type=str)
 
     args = parser.parse_args()
     
