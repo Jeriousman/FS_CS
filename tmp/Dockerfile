@@ -1,4 +1,6 @@
 FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
+# FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
+# FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-devel
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
@@ -17,8 +19,23 @@ RUN conda remove --force ffmpeg -y
 
 WORKDIR /workspace
 
+# RUN pip3 install --no-cache-dir -Iv \
+#     numpy==1.20.3 opencv-python==4.5.5.64 onnx==1.12.0 \
+#     onnxruntime-gpu==1.7.0 mxnet-cu111 mxnet-mkl scikit-image \
+#     insightface==0.2.0 requests kornia==0.5.11 dill wandb \
+#     notebook ipython ipykernel psutil==5.9.2
+
 RUN pip3 install --no-cache-dir -Iv \
     numpy==1.20.3 opencv-python==4.5.5.64 onnx==1.12.0 \
+    # numpy opencv-python==4.5.5.64 onnx \
     onnxruntime-gpu==1.7.0 mxnet-cu111 mxnet-mkl scikit-image \
+    # onnxruntime-gpu mxnet-cu116 mxnet-mkl scikit-image \
     insightface==0.2.0 requests kornia==0.5.11 dill wandb \
-    notebook ipython ipykernel psutil==5.9.2
+    # insightface requests kornia dill wandb \
+    # insightface requests kornia==0.5.11 dill wandb \
+    notebook ipython ipykernel psutil==5.9.2 \ 
+    ##from here it is for MAE environment
+    timm==0.4.12 matplotlib
+    # timm matplotlib
+
+# COPY models/mae/helpers.py /opt/conda/lib/python3.7/site-packages/timm/layers/helpers.py   
