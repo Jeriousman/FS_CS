@@ -183,7 +183,7 @@ class ArcMarginModel(nn.Module):
 
 
 class SelfAttentionLayer(nn.Module):
-    def __init__(self, n_head: int, embed_dim: int):
+    def __init__(self, n_head: int, embed_dim: int, cross_embed_dim: int):
         super(SelfAttentionLayer, self).__init()
         '''
         embed_dim = 전체 엠베딩 디멘션 (n_head로 나누기 전의 엠베딩 디멘션)
@@ -192,8 +192,16 @@ class SelfAttentionLayer(nn.Module):
         self.embed_dim = embed_dim
         self.head_dim = self.embed_dim // self.n_head
 
-        self.qkvlayer = nn.Linear(embed_dim, embed_dim*3)
+
+        self.qlayer = nn.Linear(embed_dim, embed_dim)
+        self.klayer = nn.Linear(cross_embed_dim, embed_dim)
+        self.vlayer = nn.Linear(cross_embed_dim, embed_dim)
+    
         self.ffn = nn.Linear(embed_dim, embed_dim)
+
+        # self.qkvlayer = nn.Linear(embed_dim, embed_dim*3)
+        # self.ffn = nn.Linear(embed_dim, embed_dim)
+
 
 
     def forward(self, x: torch.Tensor, future_mask=False):
@@ -206,7 +214,7 @@ class SelfAttentionLayer(nn.Module):
         batch_size, sequence_length, embedding_size = input_shape
 
         ## (batch_size, seq_len, dim) -> (batch_size, seq_len, dim * 3) -> 3 tensors of (batch_size, seq_len, dim)
-        q, k, v = self.qkvlayer(x).chunk(3, -1)
+        # q, k, v = self.qkvlayer(x).chunk(3, -1)
 
         multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim)
 
