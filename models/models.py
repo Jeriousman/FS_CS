@@ -258,27 +258,27 @@ class SelfAttentionLayer(nn.Module):
 
 
 class FlowFaceCrossAttentionLayer(nn.Module):
-    def __init__(self, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
+    def __init__(self, total_embed_dim: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
         super(FlowFaceCrossAttentionLayer, self).__init__()
         '''
         Paper FLowFace uses Cross attention where values are stemming from both key and query
         self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
         self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
         '''
-        
+        self.total_embed_dim = total_embed_dim
         # self.embed_dim = embed_dim
         self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
         self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
         self.kv_dim = kv_dim
         self.n_head = n_head
-        assert self.q_dim // self.n_head, 'embed_dim must be divisible by n_head'
-
+        
+        assert self.q_dim // self.n_head, 'embed_dim (q_dim) must be divisible by n_head'
+        self.head_dim = self.q_dim // self.n_head
+        
         self.qlayer = nn.Linear(self.q_dim, self.q_dim)
         self.qvlayer = nn.Linear(self.q_dim, self.q_dim)
-        
         self.klayer = nn.Linear(self.k_dim, self.q_dim)
         self.kvlayer = nn.Linear(self.kv_dim, self.q_dim)
-
         self.ffn = nn.Linear(self.q_dim, self.q_dim)
 
     
@@ -287,24 +287,51 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         x: first input  (batch_size, seq_len (h*w), q_dim). x gets query. Query is Target Face
         y: second input (batch_size, seq_len (h*w), k_dim. y gets key. Key is Source Face
         '''        
+        qlayer = nn.Linear(args.q_dim, args.q_dim)
+        qvlayer = nn.Linear(args.q_dim, args.q_dim)
+        
+        klayer = nn.Linear(args.k_dim, args.q_dim)
+        kvlayer = nn.Linear(args.kv_dim, args.q_dim)
+
+        ffn = nn.Linear(args.q_dim, args.q_dim)
+        
+        x_inputshape = target_mae_emb.shape
+        y_inputshape = source_mae_emb.shape
+        
         x_inputshape = x.shape
         y_inputshape = y.shape
 
-        batch_size, seq_len, self.q_dim = x_inputshape
-        
+        batch_size, seq_len, q_dim = x_inputshape ## q_dim = total embed dim
 
         ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
+        q = qlayer(target_mae_emb)
+        q.shape
+        qv = qvlayer(target_mae_emb)
+        ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
+        k = klayer(source_mae_emb)
+        kv = kvlayer(source_mae_emb)
+        k.shape
+        kv.shape
+        args.head_dim = args.q_dim // args.n_head
+        
+        ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, q_dim) -> 
         q = self.qlayer(x)
         qv = self.qvlayer(x)
-        ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
+        ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, q_dim) -> 
         k = self.klayer(y)
         kv = self.kvlayer(y)
+        source_mae_emb.shape
         
+        
+        q.view(multihead_inter_shape).shape
+        multihead_inter_shape = (batch_size, -1, seq_len, args.n_head) ##batch
+        multihead_inter_shape = (batch_size, -1, seq_len, args.n_head) ##batch
 
-        multihead_inter_shape = (batch_size, seq_len, self.n_head, self.q_dim)
+        multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim) ## (batch_size, 196, 4, 1024)  ##4 is number of head
 
-        ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> (batch_size, self.n_head, seq_len, self.q_dim)
+        ## (batch_size, seq_len, q_dim) -> (batch_size, head_dim, seq_len, self.q_dim) -> (batch_size, seq_len , head_dim, self.n_head)
         q = q.view(multihead_inter_shape).transpose(1, 2)
+        q.shape
         qv = qv.view(multihead_inter_shape).transpose(1, 2)
         
         k = k.view(multihead_inter_shape).transpose(1, 2)
@@ -372,7 +399,7 @@ class FlowFaceCrossAttentionBlock(nn.Module):
     def forward(self, x, y):
         
         raw_x = x
-        x = self.FFCA(x)
+        x = self.FFCA(x, y)
         x = x + raw_x
         x = self.LN(x)
         inter_x = self.FFN(x)

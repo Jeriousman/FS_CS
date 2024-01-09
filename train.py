@@ -27,7 +27,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models.models import FlowFaceCrossAttentionBlock
+from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer
 import torch
 from mae import models_mae
 print("finished imports")
@@ -57,6 +57,10 @@ def train_one_epoch(G: 'generator model',
                     device: 'torch device',
                     epoch:int,
                     loss_adv_accumulated:int):
+
+
+    zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
+
     
     
     MAE.to(device)
@@ -70,23 +74,25 @@ def train_one_epoch(G: 'generator model',
         Xs_mae, Xs, Xt, same_person = data
 
 
-        Xs_mae.to(device)
+        Xs_mae.to(device)  ##Xs_mae = batch_size, 3, 224, 224
         Xs = Xs.to(device)
         Xt = Xt.to(device)
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
-
+        # break
         
         
 
         # get the identity embeddings of Xs
         with torch.no_grad():
-            source_mae_emb = MAE.patch_embed(Xs_mae)    ##mae_emb -> [batch size, 196 or 256, 1024]
-            target_mae_emb = MAE.patch_embed(Xt)
+            source_mae_emb = MAE.patch_embed(Xs)   ##224,224 일때는 MAE.patch_embed가 워킹함 ##mae_emb -> [batch size, 196 or 256, 1024]
+            target_mae_emb = MAE.patch_embed(Xt)   ## ##256,256 일때는 MAE.patch_embed가 안됨   [batch_size, 196, 1024]
             
-
+            z = FFCA(source_mae_emb)
+            
+        zz
         
-        swapped_emb = FFCA(target_mae_emb, source_mae_emb)
+        swapped_emb = zz(target_mae_emb, source_mae_emb)
 
         diff_person = torch.ones_like(same_person)
 
@@ -296,6 +302,7 @@ def train(args, device):
 
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = 'cpu'
     if not torch.cuda.is_available():
         print('cuda is not available. using cpu. check if it\'s ok')
     
@@ -331,7 +338,8 @@ if __name__ == "__main__":
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
 
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
-    parser.add_argument('--n_head', default=4, type=int, help='number of multi attention head')
+    parser.add_argument('--n_head', default=2, type=int, help='number of multi attention head')
+    parser.add_argument('--total_embed_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
     parser.add_argument('--q_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
     parser.add_argument('--k_dim', default=512, type=int, help="Full key dim (and/or key's value dimension) before dividing by num head ")
     parser.add_argument('--kv_dim', default=512, type=int, help='value dim of key before dividing by num head. Key value dimension doesnt neccessarily have to be same as key dim')
