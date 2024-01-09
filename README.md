@@ -16,7 +16,7 @@ ssh를 이용하여 git clone을 할 것이라면
 4. git submodule init
 5. git submodule update
 6. ./mae/models_mae.py 의 line 40, 54에서 qk_scale=None를 제거
-7. from util.pos_embed import get_2d_sincos_pos_embed을 from mae.util.pos_embed import get_2d_sincos_pos_embed
+7. ./mae/models_mae.py의 from util.pos_embed import get_2d_sincos_pos_embed을 from mae.util.pos_embed import get_2d_sincos_pos_embed 로 변경한다
 8. root 디렉토리에 .devcontainer에서 두개의 --name 파트를 도커 컨테이너를 짓고 싶은 이름으로 바꾸어 넣는다. --name 두개에 모두 같은 이름으로 넣는다 (만에하나 모르니)
 ```
 

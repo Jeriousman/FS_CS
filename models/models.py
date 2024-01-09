@@ -273,13 +273,13 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         self.n_head = n_head
         assert self.q_dim // self.n_head, 'embed_dim must be divisible by n_head'
 
-        self.qlayer = nn.Linear(q_dim, q_dim)
-        self.qvlayer = nn.Linear(q_dim, q_dim)
+        self.qlayer = nn.Linear(self.q_dim, self.q_dim)
+        self.qvlayer = nn.Linear(self.q_dim, self.q_dim)
         
-        self.klayer = nn.Linear(kv_dim, q_dim)
-        self.kvlayer = nn.Linear(kv_dim, q_dim)
+        self.klayer = nn.Linear(self.k_dim, self.q_dim)
+        self.kvlayer = nn.Linear(self.kv_dim, self.q_dim)
 
-        self.ffn = nn.Linear(q_dim, q_dim)
+        self.ffn = nn.Linear(self.q_dim, self.q_dim)
 
     
     def forward(self, x, y):  ## two different inputs x and y for cross attention
@@ -381,3 +381,5 @@ class FlowFaceCrossAttentionBlock(nn.Module):
         x = self.SA2(x)
         
         return x
+
+

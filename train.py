@@ -60,25 +60,28 @@ def train_one_epoch(G: 'generator model',
     
     
     MAE.to(device)
-    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.q_dim, q_dim=args.q_dim, kv_dim=args.q_dim)
-    
+    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.q_dim)
+    FFCA.to(device)
+    FFCA.train()
     
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
         
-        Xs, Xt, same_person = data
+        Xs_mae, Xs, Xt, same_person = data
 
+
+        Xs_mae.to(device)
         Xs = Xs.to(device)
         Xt = Xt.to(device)
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
- ##(H*W)
+
         
         
 
         # get the identity embeddings of Xs
         with torch.no_grad():
-            source_mae_emb = MAE.patch_embed(Xs)    ##mae_emb -> [batch size, 196 or 256, 1024]
+            source_mae_emb = MAE.patch_embed(Xs_mae)    ##mae_emb -> [batch size, 196 or 256, 1024]
             target_mae_emb = MAE.patch_embed(Xt)
             
 
@@ -265,6 +268,7 @@ def train(args, device):
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
     dataset = FaceEmbedCustom('/workspace/examples/images/training')
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+
         # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
     # else:
     #     dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
@@ -328,11 +332,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
     parser.add_argument('--n_head', default=4, type=int, help='number of multi attention head')
-    parser.add_argument('--q_dim', default=512, type=int, help='query dim')
-    parser.add_argument('--k_dim', default=512, type=int, help='key dim')
-    parser.add_argument('--kv_dim', default=512, type=int, help='value dim of key')
+    parser.add_argument('--q_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
+    parser.add_argument('--k_dim', default=512, type=int, help="Full key dim (and/or key's value dimension) before dividing by num head ")
+    parser.add_argument('--kv_dim', default=512, type=int, help='value dim of key before dividing by num head. Key value dimension doesnt neccessarily have to be same as key dim')
     # parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
-    parser.add_argument('--head_dim', default=2, type=int, help='attention mechanism dimension of one big head before dividing by num head')
+    
     
     parser.add_argument('--same_person', default=0.2, type=float, help='Probability of using same person identity during training')
     parser.add_argument('--same_identity', default=True, type=bool, help='Using simswap approach, when source_id = target_id. Only possible with vgg=True')
@@ -350,7 +354,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=16, type=int)
+    parser.add_argument('--batch_size', default=2, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
