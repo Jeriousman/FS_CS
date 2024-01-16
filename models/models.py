@@ -187,11 +187,12 @@ class SelfAttentionLayer(nn.Module):
         super(SelfAttentionLayer, self).__init__()
         '''
         embed_dim = 전체 엠베딩 디멘션 (n_head로 나누기 전의 엠베딩 디멘션)
-        cross_embed_dim = key and key`s value dimension
+ 
         '''
         self.n_head = n_head
         self.embed_dim = embed_dim
         # self.cross_embed_dim = cross_embed_dim
+        assert self.embed_dim // self.n_head,  'embed_dim must be divisible by n_head'
         self.head_dim = self.embed_dim // self.n_head
 
 
@@ -232,10 +233,10 @@ class SelfAttentionLayer(nn.Module):
         ## (batch_size, n_head, seq_len, head_dim) @ (batch_size, n_head, head_dim, seq_len) -> (batch_size, n_head, seq_len, seq_len)
         qk_weight = q @ k.transpose(-1, -2)  
 
-        if future_mask:
-            mask = torch.ones_like(qk_weight, dtype=torch.bool).triu(diagonal = 1)  ##if diagonal =1, the diagonal lives by 1
-            qk_weight.masked_fill(mask, -torch.inf)
-
+        # ##maybe turning this off as we do not have to hide future mask
+        # if future_mask:
+        #     mask = torch.ones_like(qk_weight, dtype=torch.bool).triu(diagonal = 1)  ##if diagonal =1, the diagonal lives by 1
+        #     qk_weight.masked_fill(mask, -torch.inf)
 
         qk_weight /= math.sqrt(self.head_dim)
         qk_weight_softmaxed = F.softmax(qk_weight, dim=-1)
@@ -363,6 +364,7 @@ class FlowFaceCrossAttentionLayer(nn.Module):
            
         ## (batch_size, self.n_head, self.q_dim, seq_len) -> (batch_size, self.n_head, seq_len, seq_len) 
         qk_weight = q @ k.transpose(-1, -2)   
+        qk_weight /= math.sqrt(self.head_dim)
         # qk_weight.shape 
 
         qk_weight_softmaxed = F.softmax(qk_weight, dim = -1)
@@ -371,7 +373,7 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         
         ## (batch_size, self.n_head, seq_len, head_dim) -> (batch_size, seq_len, self.n_head, head_dim)
         output = output.transpose(1, 2).contiguous() ##https://jimmy-ai.tistory.com/122#google_vignette
-        output.shape
+        # output.shape
         ##[B, Seq_len, q_dim (total_dim)]
         output = output.view(x_inputshape)
         ##[B, Seq_len, q_dim (total_dim)]
@@ -404,9 +406,9 @@ class FeedForward(nn.Module):
 
 
 
-class FlowFaceCrossAttentionBlock(nn.Module):
+class FlowFaceCrossAttentionModel(nn.Module):
     def __init__(self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
-        super(FlowFaceCrossAttentionBlock, self).__init__()
+        super(FlowFaceCrossAttentionModel, self).__init__()
         
         self.seq_len = seq_len
         self.n_head = n_head

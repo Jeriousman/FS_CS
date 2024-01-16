@@ -27,7 +27,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer, SelfAttentionLayer, LayerNormalization, FeedForward
+from models.models import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
 import torch
 from mae import models_mae
 print("finished imports")
@@ -59,12 +59,10 @@ def train_one_epoch(G: 'generator model',
                     loss_adv_accumulated:int):
 
 
-    zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
-
-    
-    
-    MAE.to(device)
-    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
+    # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
+    # MAE.to(device)
+    # MAE.eval()
+    FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
     FFCA.to(device)
     FFCA.train()
     
@@ -88,11 +86,10 @@ def train_one_epoch(G: 'generator model',
             source_mae_emb = MAE.patch_embed(Xs)   ##224,224 일때는 MAE.patch_embed가 워킹함 ##mae_emb -> [batch size, 196 or 256, 1024]
             target_mae_emb = MAE.patch_embed(Xt)   ## ##256,256 일때는 MAE.patch_embed가 안됨   [batch_size, 196, 1024]
             
-            z = FFCA(target_mae_emb, source_mae_emb)
+            swapped_emb = FFCA(target_mae_emb, source_mae_emb)  ## output = [B, seq_len(196), dim(1024)]
+            swapped_emb.shape
             
-        zz
-        
-        swapped_emb = zz(target_mae_emb, source_mae_emb)
+
 
         diff_person = torch.ones_like(same_person)
 
@@ -100,7 +97,6 @@ def train_one_epoch(G: 'generator model',
             same_person = diff_person
         ##Generator
         ##Generator option 1 = ViT decoder
-        MAE
         
         ##Generator option 2 = UMAP multiscale convolutional decoder
         
@@ -224,6 +220,7 @@ def train(args, device):
     # netArc.eval()
     MAE = prepare_model('/datasets/pretrained/mae_visualize_vit_large_ganloss.pth', 'mae_vit_large_patch16')
     MAE.eval()
+    MAE.to(device)
     
     
     
@@ -291,7 +288,7 @@ def train(args, device):
                         opt_D,
                         scheduler_G,
                         scheduler_D,
-                        netArc,
+                        MAE,
                         model_ft,
                         args,
                         dataloader,
