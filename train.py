@@ -62,9 +62,9 @@ def train_one_epoch(G: 'generator model',
     # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
     # MAE.to(device)
     # MAE.eval()
-    FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
-    FFCA.to(device)
-    FFCA.train()
+    # FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
+    # FFCA.to(device)
+    # FFCA.train()
     
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
@@ -74,17 +74,22 @@ def train_one_epoch(G: 'generator model',
 
         Xs_mae.to(device)  ##Xs_mae = batch_size, 3, 224, 224
         Xs = Xs.to(device)
+        Xs.shape
         Xt = Xt.to(device)
+        Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
         
         
 
-        # get the identity embeddings of Xs
         with torch.no_grad():
             source_mae_emb = MAE.patch_embed(Xs)   ##224,224 일때는 MAE.patch_embed가 워킹함 ##mae_emb -> [batch size, 196 or 256, 1024]
             target_mae_emb = MAE.patch_embed(Xt)   ## ##256,256 일때는 MAE.patch_embed가 안됨   [batch_size, 196, 1024]
+            
+            
+            source_mae_emb.shape
+            source_mae_emb.view(2,)
             
             swapped_emb = FFCA(target_mae_emb, source_mae_emb)  ## output = [B, seq_len(196), dim(1024)]
             swapped_emb.shape
@@ -210,6 +215,8 @@ def train(args, device):
     # initializing main models
     G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)
+    
+    
     G.train()
     D.train()
     
