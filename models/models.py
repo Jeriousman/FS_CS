@@ -254,21 +254,36 @@ class SelfAttentionLayer(nn.Module):
 
         return output
 
+class LayerNormalization(nn.Module):
 
+    def __init__(self, features: int, eps:float=10**-6) -> None:
+        super().__init__()
+        self.eps = eps
+        self.alpha = nn.Parameter(torch.ones(features)) # alpha is a learnable parameter
+        self.bias = nn.Parameter(torch.zeros(features)) # bias is a learnable parameter
+
+    def forward(self, x):
+        # x: (batch, seq_len, hidden_size)
+         # Keep the dimension for broadcasting
+        mean = x.mean(dim = -1, keepdim = True) # (batch, seq_len, 1)
+        # Keep the dimension for broadcasting
+        std = x.std(dim = -1, keepdim = True) # (batch, seq_len, 1)
+        # eps is to prevent dividing by zero or when std is very small
+        return self.alpha * (x - mean) / (std + self.eps) + self.bias
 
 
 class FlowFaceCrossAttentionLayer(nn.Module):
-    def __init__(self, total_embed_dim: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
+    def __init__(self, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
         super(FlowFaceCrossAttentionLayer, self).__init__()
         '''
         Paper FLowFace uses Cross attention where values are stemming from both key and query
         self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
         self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
         '''
-        self.total_embed_dim = total_embed_dim
+        # self.total_embed_dim = total_embed_dim
         # self.embed_dim = embed_dim
-        self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before dividing by n_head. 
-        self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before dividing by n_head. 
+        self.k_dim = k_dim  ##k_dim = entire cross(k) embed_dim before divided by n_head. 
+        self.q_dim = q_dim  ##q_dim = entire embed(q)_dim before divided by n_head. 
         self.kv_dim = kv_dim
         self.n_head = n_head
         
@@ -284,72 +299,85 @@ class FlowFaceCrossAttentionLayer(nn.Module):
     
     def forward(self, x, y):  ## two different inputs x and y for cross attention
         '''
-        x: first input  (batch_size, seq_len (h*w), q_dim). x gets query. Query is Target Face
-        y: second input (batch_size, seq_len (h*w), k_dim. y gets key. Key is Source Face
+        x: first input  (batch_size, seq_lenQ(h*w), mae_dimQ). x gets query. Query is Target Face 
+        y: second input (batch_size, seq_lenK (h*w), mae_dimK). y gets key. Key is Source Face
         '''        
-        qlayer = nn.Linear(args.q_dim, args.q_dim)
-        qvlayer = nn.Linear(args.q_dim, args.q_dim)
+        # qlayer = nn.Linear(args.q_dim, args.q_dim).to(device)
+        # qvlayer = nn.Linear(args.q_dim, args.q_dim).to(device)
         
-        klayer = nn.Linear(args.k_dim, args.q_dim)
-        kvlayer = nn.Linear(args.kv_dim, args.q_dim)
+        # klayer = nn.Linear(args.k_dim, args.q_dim).to(device)
+        # kvlayer = nn.Linear(args.kv_dim, args.q_dim).to(device)
 
-        ffn = nn.Linear(args.q_dim, args.q_dim)
+        # ffn = nn.Linear(args.q_dim, args.q_dim).to(device)
         
-        x_inputshape = target_mae_emb.shape
-        y_inputshape = source_mae_emb.shape
+        # x_inputshape = target_mae_emb.shape
+        # y_inputshape = source_mae_emb.shape
         
         x_inputshape = x.shape
         y_inputshape = y.shape
 
         batch_size, seq_len, q_dim = x_inputshape ## q_dim = total embed dim
 
-        ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
-        q = qlayer(target_mae_emb)
-        q.shape
-        qv = qvlayer(target_mae_emb)
-        ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
-        k = klayer(source_mae_emb)
-        kv = kvlayer(source_mae_emb)
-        k.shape
-        kv.shape
-        args.head_dim = args.q_dim // args.n_head
+        # ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
+        # q = qlayer(target_mae_emb)
+        # q.shape
+        # qv = qvlayer(target_mae_emb)
+        # qv.shape
+        # ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
+        # k = klayer(source_mae_emb)
+        # kv = kvlayer(source_mae_emb)
+        # k.shape
+        # kv.shape
+        # args.head_dim = args.q_dim // args.n_head
         
         ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, q_dim) -> 
-        q = self.qlayer(x)
-        qv = self.qvlayer(x)
+        q = self.qlayer(x)    ##[B, seq_len(196), q_dim(1024)]
+        qv = self.qvlayer(x)  ##[B, seq_len(196), q_dim(1024)]
         ## (batch_size, seq_len, kv_dim) -> (batch_size, seq_len, q_dim) -> 
         k = self.klayer(y)
         kv = self.kvlayer(y)
-        source_mae_emb.shape
+        # source_mae_emb.shape
         
         
-        q.view(multihead_inter_shape).shape
-        multihead_inter_shape = (batch_size, -1, seq_len, args.n_head) ##batch
-        multihead_inter_shape = (batch_size, -1, seq_len, args.n_head) ##batch
+        
+        # multihead_inter_shape = (batch_size, -1, args.n_head, args.head_dim) ##batch
+        # multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim) ##batch
 
-        multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim) ## (batch_size, 196, 4, 1024)  ##4 is number of head
+        # q.view(multihead_inter_shape).shape
+        
+        multihead_inter_shape = (batch_size, -1, self.n_head, self.head_dim) ##[B, seq_len(196), q_dim(1024)] ->  (batch_size, seq_len(196), num_head(2), head_dim(512))
+
+
 
         ## (batch_size, seq_len, q_dim) -> (batch_size, head_dim, seq_len, self.q_dim) -> (batch_size, seq_len , head_dim, self.n_head)
-        q = q.view(multihead_inter_shape).transpose(1, 2)
-        q.shape
-        qv = qv.view(multihead_inter_shape).transpose(1, 2)
+        q = q.view(multihead_inter_shape).transpose(1, 2) ##(batch_size, seq_len(196), num_head(2), head_dim(512)) -> (batch_size, num_head, seq_len, head_dim) 
+        qv = qv.view(multihead_inter_shape).transpose(1, 2) ##(batch_size, seq_len(196), num_head(2), head_dim(512)) -> (batch_size, num_head, seq_len, head_dim)        
+        k = k.view(multihead_inter_shape).transpose(1, 2)  ##(batch_size, seq_len(196), num_head(2), head_dim(512)) -> (batch_size, num_head, seq_len, head_dim) 
+        kv = kv.view(multihead_inter_shape).transpose(1, 2)  ##(batch_size, seq_len(196), num_head(2), head_dim(512)) -> (batch_size, num_head, seq_len, head_dim) 
         
-        k = k.view(multihead_inter_shape).transpose(1, 2)
-        kv = kv.view(multihead_inter_shape).transpose(1, 2)
+        # qv.shape
+        # q.shape
+        # kv.shape
+        # k.shape
         
            
         ## (batch_size, self.n_head, self.q_dim, seq_len) -> (batch_size, self.n_head, seq_len, seq_len) 
-        qk_weight = q @ k.transpose(-1, -2)  
-        qk_weight_softmaxed = F.softmax(qk_weight, dim = -1)
-        ## (batch_size, self.n_head, seq_len, seq_len) @ (batch_size, self.n_head, self.q_dim, seq_len) ->  (batch_size, self.n_head, self.q_dim, seq_len)
-        output = qk_weight_softmaxed @ kv + qv
-        ## (batch_size, self.n_head, self.q_dim, seq_len) -> (batch_size, self.q_dim, self.n_head, seq_len)
-        output = output.transpose(1, 2)
+        qk_weight = q @ k.transpose(-1, -2)   
+        # qk_weight.shape 
 
+        qk_weight_softmaxed = F.softmax(qk_weight, dim = -1)
+        ## (batch_size, self.n_head, seq_len, seq_len) @ (batch_size, self.n_head, self.seq_len, self.head_dim) ->  (batch_size, self.n_head, seq_len, head_dim)
+        output = qk_weight_softmaxed @ kv + qv
+        
+        ## (batch_size, self.n_head, seq_len, head_dim) -> (batch_size, seq_len, self.n_head, head_dim)
+        output = output.transpose(1, 2).contiguous() ##https://jimmy-ai.tistory.com/122#google_vignette
+        output.shape
+        ##[B, Seq_len, q_dim (total_dim)]
         output = output.view(x_inputshape)
+        ##[B, Seq_len, q_dim (total_dim)]
         output = self.ffn(output)
         
-        ## (batch_size, seq_len, q_dim)
+        ##[B, Seq_len, q_dim (total_dim)]
         return output
 
 class FeedForward(nn.Module):
@@ -385,10 +413,11 @@ class FlowFaceCrossAttentionBlock(nn.Module):
         self.k_dim = k_dim
         self.q_dim = q_dim
         self.kv_dim = kv_dim
-        
+        assert self.q_dim // self.n_head, 'embed_dim (q_dim) must be divisible by n_head'
+        self.head_dim = self.q_dim // self.n_head
         
         self.FFCA = FlowFaceCrossAttentionLayer(n_head=self.n_head, k_dim=self.k_dim, q_dim=self.q_dim, kv_dim=self.kv_dim)
-        self.LN = torch.nn.LayerNorm([self.seq_len, self.q_dim]) 
+        self.LN = LayerNormalization()
         self.FFN = FeedForward(in_dim=self.q_dim, out_dim=self.q_dim)
         self.SA1 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
         self.SA2 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)

@@ -27,7 +27,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer
+from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer, LayerNormalization
 import torch
 from mae import models_mae
 print("finished imports")
@@ -340,9 +340,9 @@ if __name__ == "__main__":
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
     parser.add_argument('--n_head', default=2, type=int, help='number of multi attention head')
     parser.add_argument('--total_embed_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
-    parser.add_argument('--q_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
-    parser.add_argument('--k_dim', default=512, type=int, help="Full key dim (and/or key's value dimension) before dividing by num head ")
-    parser.add_argument('--kv_dim', default=512, type=int, help='value dim of key before dividing by num head. Key value dimension doesnt neccessarily have to be same as key dim')
+    parser.add_argument('--q_dim', default=1024, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
+    parser.add_argument('--k_dim', default=1024, type=int, help="Full key dim (and/or key's value dimension) before dividing by num head ")
+    parser.add_argument('--kv_dim', default=1024, type=int, help='value dim of key before dividing by num head. Key value dimension doesnt neccessarily have to be same as key dim')
     # parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
     
     
