@@ -27,7 +27,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer, LayerNormalization
+from models.models import FlowFaceCrossAttentionBlock, FlowFaceCrossAttentionLayer, SelfAttentionLayer, LayerNormalization, FeedForward
 import torch
 from mae import models_mae
 print("finished imports")
@@ -64,7 +64,7 @@ def train_one_epoch(G: 'generator model',
     
     
     MAE.to(device)
-    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.q_dim)
+    FFCA = FlowFaceCrossAttentionBlock(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
     FFCA.to(device)
     FFCA.train()
     
@@ -88,7 +88,7 @@ def train_one_epoch(G: 'generator model',
             source_mae_emb = MAE.patch_embed(Xs)   ##224,224 일때는 MAE.patch_embed가 워킹함 ##mae_emb -> [batch size, 196 or 256, 1024]
             target_mae_emb = MAE.patch_embed(Xt)   ## ##256,256 일때는 MAE.patch_embed가 안됨   [batch_size, 196, 1024]
             
-            z = FFCA(source_mae_emb)
+            z = FFCA(target_mae_emb, source_mae_emb)
             
         zz
         

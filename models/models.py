@@ -417,7 +417,7 @@ class FlowFaceCrossAttentionBlock(nn.Module):
         self.head_dim = self.q_dim // self.n_head
         
         self.FFCA = FlowFaceCrossAttentionLayer(n_head=self.n_head, k_dim=self.k_dim, q_dim=self.q_dim, kv_dim=self.kv_dim)
-        self.LN = LayerNormalization()
+        self.LN = LayerNormalization(self.q_dim)
         self.FFN = FeedForward(in_dim=self.q_dim, out_dim=self.q_dim)
         self.SA1 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
         self.SA2 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
@@ -426,7 +426,10 @@ class FlowFaceCrossAttentionBlock(nn.Module):
         
         
     def forward(self, x, y):
-        
+        '''
+        x: first input  (batch_size, seq_lenQ(h*w), mae_dimQ). x gets query. Query is Target Face 
+        y: second input (batch_size, seq_lenK (h*w), mae_dimK). y gets key. Key is Source Face
+        '''             
         raw_x = x
         x = self.FFCA(x, y)
         x = x + raw_x
