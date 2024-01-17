@@ -151,16 +151,16 @@ class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
         self.conv3 = conv4x4(128, 256) ## 64 -> 32
         self.conv4 = conv4x4(256, 512) ## 32 -> 16
         self.conv5 = conv4x4(512, 1024) ## 16 -> 8
-        # self.conv6 = conv4x4(512, 1024) ## 4 -> 2
+        self.conv6 = conv4x4(1024, 1024) ## 8 -> 4
         # self.conv7 = conv4x4(1024, 1024) ## 2 - > 1
-        
+
         if backbone == 'unet':
-            self.deconv1 = deconv4x4(1024, 512)  ## 8 ->  16
-            self.deconv2 = deconv4x4(512, 256)  ## 16 > 32
-            self.deconv3 = deconv4x4(256, 128) ## 32 > 64
-            self.deconv4 = deconv4x4(128, 64) ## 64 > 128
-            self.deconv5 = deconv4x4(64, 32) ## 128 > 256
-            # self.deconv6 = deconv4x4(128, 32) ## 128 > 256
+            self.deconv1 = deconv4x4(1024, 1024)  ## 8 ->  16
+            self.deconv2 = deconv4x4(2048, 512)  ## 16 > 32
+            self.deconv3 = deconv4x4(1024, 256) ## 32 > 64
+            self.deconv4 = deconv4x4(512, 128) ## 64 > 128
+            self.deconv5 = deconv4x4(256, 64) ## 128 > 256
+            self.deconv6 = deconv4x4(128, 3) ## 128 > 256
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
             self.deconv2 = deconv4x4(1024, 512)
@@ -171,12 +171,13 @@ class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
         self.apply(weight_init)
 
     def forward(self, x):
+        # 64x128x128
         feat1 = self.conv1(x)
-        # 32x128x128
+        # 128x64x64
         feat2 = self.conv2(feat1)
-        # 64x64x64
+        # 256x128x128
         feat3 = self.conv3(feat2)
-        # 128x32x32
+        # 512x256x256
         feat4 = self.conv4(feat3)
         # 256x16xx16
         z_attr1 = self.conv5(feat4)
@@ -187,11 +188,12 @@ class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
         # z_attr1 = self.conv7(feat6)
         # 1024x2x2
 
-        z_attr2 = self.deconv1(z_attr1, feat4, self.backbone) ## 8 > 16
+        z_attr2 = self.deconv1(z_attr1, feat4, self.backbone) ## 8 > 16  ##feat4 = skip connection the same size with same level counterpart
         z_attr3 = self.deconv2(z_attr2, feat3, self.backbone) ## 16 > 32
         z_attr4 = self.deconv3(z_attr3, feat2, self.backbone) ## 32 > 64
         z_attr5 = self.deconv4(z_attr4, feat1, self.backbone) ## 64 > 128
-        z_attr6 = F.interpolate(z_attr5, scale_factor=2, mode='bilinear', align_corners=True)  ## 128 > 256
+        z_attr6 = self.deconv5(z_attr5, feat1, self.backbone) ## 128 > 256
+        # z_attr6 = F.interpolate(z_attr5, scale_factor=2, mode='bilinear', align_corners=True)  ## 128 > 256
         # z_attr6 = self.deconv5(feat1, , self.backbone)
         # z_attr7 = self.deconv6(z_attr6, feat1, self.backbone)
         
