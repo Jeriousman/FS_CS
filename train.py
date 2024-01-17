@@ -62,7 +62,7 @@ def train_one_epoch(G: 'generator model',
     # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
     # MAE.to(device)
     # MAE.eval()
-    # FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
+    FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
     # FFCA.to(device)
     # FFCA.train()
     
