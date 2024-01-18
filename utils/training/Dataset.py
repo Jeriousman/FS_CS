@@ -442,20 +442,20 @@ class FaceEmbedCombined(TensorDataset):
                 image_path = self.total_dataset[idx]
                 transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
                 
-        elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
-            if idx < self.celeba_len:
-                image_path = self.total_dataset[idx]
-                transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_ffhq_celeba(image_path)
-            elif idx >= self.celeba_len:
-                image_path = self.total_dataset[idx]
-                transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
+        # elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
+        #     if idx < self.celeba_len:
+        #         image_path = self.total_dataset[idx]
+        #         transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_ffhq_celeba(image_path)
+        #     elif idx >= self.celeba_len:
+        #         image_path = self.total_dataset[idx]
+        #         transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
                 
-        elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
-            if idx < self.ffhq_len:
-                image_path = self.total_dataset[idx]
-                transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_ffhq_celeba(image_path)
-            elif idx >= self.ffhq_len:
-                transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
+        # elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+        #     if idx < self.ffhq_len:
+        #         image_path = self.total_dataset[idx]
+        #         transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_ffhq_celeba(image_path)
+        #     elif idx >= self.ffhq_len:
+        #         transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')        
 
@@ -478,7 +478,7 @@ class FaceEmbedCombined(TensorDataset):
             Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함 
             same_person = 1
             
-        return self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
     def fetch_vgg_dob(self, image_path):
 
@@ -492,14 +492,14 @@ class FaceEmbedCombined(TensorDataset):
             if bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
                 image_path = random.choice(self.ffhq_len+self.celeba_len, self.total_dataset_len)
 
-            elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
-                image_path = random.choice(self.celeba_len, self.total_dataset_len)
+            # elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
+            #     image_path = random.choice(self.celeba_len, self.total_dataset_len)
             
-            elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
-                image_path = random.choice(self.ffhq_len, self.total_dataset_len)
+            # elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+            #     image_path = random.choice(self.ffhq_len, self.total_dataset_len)
                 
             else:
-                raise ValueError('At least either CelebA and/or FFHQ data must be used')
+                raise ValueError('At least either CelebA and FFHQ data must be used')
             
             Xt = cv2.imread(image_path)[:, :, ::-1]
             Xt = Image.fromarray(Xt)
@@ -513,7 +513,7 @@ class FaceEmbedCombined(TensorDataset):
                 Xt = Xs.copy()
             same_person = 1
             
-        return self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
 
 
 # data_path='/datasets/FFHQ'

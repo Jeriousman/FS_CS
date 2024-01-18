@@ -274,9 +274,9 @@ def train(args, device):
     # if args.vgg:
 
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    # dataset = FaceEmbedCombined(vgg_data_path=args.vgg_dataset_path, celeba_data_path=args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
+    dataset = FaceEmbedCombined(vgg_data_path=args.ffhq_data_path, celeba_data_path=args.celeba_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
 
         # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
@@ -313,15 +313,15 @@ def main(args):
     print("Starting traing")
     train(args, device=device)
 
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # dataset params
     ##the 4 arguments are newly added by Hojun
-    parser.add_argument('--vgg_dataset_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    parser.add_argument('--ffhq_dataset_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
-    parser.add_argument('--celeba_dataset_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    parser.add_argument('--dob_dataset_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    # parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
+    parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
@@ -378,16 +378,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     
-    if bool(args.vgg_dataset_path)==False and args.same_identity==True:
+    if bool(args.vgg_data_path)==False and args.same_identity==True:
         raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
     
     if args.use_wandb==True:
         wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
         config = wandb.config
-        config.vgg_dataset_path = args.vgg_dataset_path
-        config.ffhq_dataset_path = args.ffhq_dataset_path
-        config.celeba_dataset_path = args.celeba_dataset_path
-        config.dob_dataset_path = args.dob_dataset_path
+        config.vgg_data_path = args.vgg_data_path
+        config.ffhq_data_path = args.ffhq_data_path
+        config.celeba_data_path = args.celeba_data_path
+        config.dob_data_path = args.dob_data_path
         config.weight_adv = args.weight_adv
         config.weight_attr = args.weight_attr
         config.weight_id = args.weight_id

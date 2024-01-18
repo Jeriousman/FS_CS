@@ -1,5 +1,5 @@
 {
-	"name": "ghost-mae",
+	"name": "ghost-crossu",
 	"build": {
 		"dockerfile": "../tmp/Dockerfile",
 		"context": ".."
@@ -9,7 +9,7 @@
 		// GPU 사용을 위한 옵션(nvidia 관련 설정 필요)
 		"--gpus", "device=7",
 		// 컨테이너의 이름을 짓는 옵션
-		"--name", "ghost-mae",
+		"--name", "ghost-crossu",
 		"-v", "/IM_data/:/datasets/DOB",
 		"-v", "/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets/FFHQ",
 		"-v", "/dev_storage/tory/data/CelebAMask-HQ:/datasets/CelebHQ",
