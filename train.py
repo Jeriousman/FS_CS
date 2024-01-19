@@ -344,6 +344,7 @@ def train(args, gpu_config):
                         gpu_config)
 
 def main(args):
+    
     gpu_config = dict()
     gpu_config['local_rank'] = int(os.environ(['LOCAL_RANK']))
     gpu_config['global_rank'] = int(os.environ(['RANK']))
