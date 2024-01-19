@@ -8,6 +8,12 @@ import wandb
 from PIL import Image
 import os
 
+##For Native Torch multi GPUs
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel
+from torch.distributed import init_process_group, destroy_process_group
+
+
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn.functional as F
@@ -56,7 +62,21 @@ def train_one_epoch(G: 'generator model',
                     dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
-                    loss_adv_accumulated:int):
+                    loss_adv_accumulated:int,
+                    gpu_config:dict
+                    ):
+    
+    # Only initialize W&B on the global rank 0 node
+    if gpu_config['global_rank'] == 0:
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project=args.wandb_project,
+            # allow resuming existing run with the same name (in case the rank 0 node crashed)
+            id=args.wandb_entity,
+            resume="allow",
+            # track hyperparameters and run metadata
+            config=args
+        )
 
 
     # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
@@ -179,14 +199,17 @@ def train_one_epoch(G: 'generator model',
                        "loss_attr": L_attr.item(),
                        "loss_rec": L_rec.item()})
         
-        if iteration % 5000 == 0:
-            torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
-            torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
+        if iteration % 10000 == 0:
+            
+            if gpu_config['global_rank'] == 0:
+                
+                torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+                torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-            torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-            torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-        if (iteration % 250 == 0) and (args.use_wandb):
+        if (iteration % 250 == 0) and (args.use_wandb) and gpu_config['global_rank'] == 0:
             ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
             G.eval()
 
@@ -207,14 +230,26 @@ def train_one_epoch(G: 'generator model',
 
             G.train()
 
-def train(args, device):
+def train(args, gpu_config):
+    ##Multi GPU setting
+    assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
+    device = torch.device('cuda')
+    print(f"GPU {gpu_config['local_rank']} is using device: {device}")
+    print(f"GPU {gpu_config['local_rank']} is loading dataset")
+    
+
+    
+    
+    
     # training params
     batch_size = args.batch_size
     max_epoch = args.max_epoch
     
     # initializing main models
-    G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
-    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)
+    G = DistributedDataParallel(AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512), device_ids=[gpu_config['local_rank']])
+    G = DistributedDataParallel(FlowFaceCrossAttentionModel(args.backbone, num_blocks=args.num_blocks, c_id=512), device_ids=[gpu_config['local_rank']])
+    
+    D = DistributedDataParallel(MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d), device_ids=[gpu_config['local_rank']])
     
     
     G.train()
@@ -225,14 +260,14 @@ def train(args, device):
     # netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
     # netArc=netArc.cuda()
     # netArc.eval()
-    MAE = prepare_model('/datasets/pretrained/mae_visualize_vit_large_ganloss.pth', 'mae_vit_large_patch16')
+    MAE = DistributedDataParallel(prepare_model('/datasets/pretrained/mae_visualize_vit_large_ganloss.pth', 'mae_vit_large_patch16'), device_ids=[gpu_config['local_rank']])
     MAE.eval()
     MAE.to(device)
     
     
     
     if args.eye_detector_loss:
-        model_ft = models.FAN(4, "False", "False", 98)
+        model_ft = DistributedDataParallel(models.FAN(4, "False", "False", 98), device_ids=[gpu_config['local_rank']])
         # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
         checkpoint = torch.load('/datasets/pretrained/WFLW_4HG.pth')
         
@@ -272,12 +307,15 @@ def train(args, device):
             print("Not found pretrained weights. Continue without any pretrained weights.")
     
     # if args.vgg:
-
+    
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    dataset = FaceEmbedCombined(vgg_data_path=args.ffhq_data_path, celeba_data_path=args.celeba_data_path, same_prob=0.8, same_identity=args.same_identity)
+    # dataset = FaceEmbedCombined(vgg_data_path=args.ffhq_data_path, celeba_data_path=args.celeba_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    
+    # dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    ##In case of multi GPU, turn off shuffle
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=DistributedSampler(dataset, shuffle=True))
 
         # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
     # else:
@@ -302,31 +340,56 @@ def train(args, device):
                         device,
                         device,
                         epoch,
-                        loss_adv_accumulated)
+                        loss_adv_accumulated,
+                        gpu_config)
 
 def main(args):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    gpu_config = dict()
+    gpu_config['local_rank'] = int(os.environ(['LOCAL_RANK']))
+    gpu_config['global_rank'] = int(os.environ(['RANK']))
+
+    assert gpu_config['local_rank'] != -1, "LOCAL_RANK environment variable not set"
+    assert gpu_config['global_rank'] != -1, "RANK environment variable not set"
+
+
+    # Print configuration (only once per server)
+    if gpu_config['local_rank'] == 0:
+        print("Configuration:")
+        for key, value in gpu_config.items():
+            print(f"{key:>20}: {value}")
+            
+    # Setup distributed training
+    init_process_group(backend='nccl')
+    torch.cuda.set_device(config.local_rank)
+    
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     # device = 'cpu'
     if not torch.cuda.is_available():
         print('cuda is not available. using cpu. check if it\'s ok')
     
-    print("Starting traing")
-    train(args, device=device)
+    print("Starting training")
+    train(args, gpu_config)
+    
+    # Clean up distributed training
+    destroy_process_group()
+
+
+
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # dataset params
     ##the 4 arguments are newly added by Hojun
-    # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    # parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
+    parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
     parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
     
-
     
     # weights for loss
     parser.add_argument('--weight_adv', default=1, type=float, help='Adversarial Loss weight')
