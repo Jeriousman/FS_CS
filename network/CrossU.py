@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.models import FlowFaceCrossAttentionModel
-from network.FFGenerator import CrossUMLAttrEncoder, deconv4x4, noskip_deconv4x4
+from network.FFGenerator import UNet, deconv4x4, noskip_deconv4x4
 
 class CrossUnetAttentionGenerator(nn.Module):
     # def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
@@ -26,8 +26,8 @@ class CrossUnetAttentionGenerator(nn.Module):
         # self.FFCA7 = FlowFaceCrossAttentionModel(seq_len=65536, n_head=2, q_dim=3, k_dim=3, kv_dim=3)  ##computationally expensive
         
         
-        self.CUMAE_src = CrossUMLAttrEncoder(backbone='unet')
-        self.CUMAE_tgt = CrossUMLAttrEncoder(backbone='unet')
+        self.CUMAE_src = UNet(backbone='unet')
+        self.CUMAE_tgt = UNet(backbone='unet')
         # CUMAE_cross = CrossUMLAttrEncoder(backbone='unet')
 
 
@@ -40,7 +40,7 @@ class CrossUnetAttentionGenerator(nn.Module):
 
 
 
-    def forward(self,source, target):
+    def forward(self, source, target):
         '''
         src나 tgt나 다 똑같다.
         z_src_attr1 = 1024x4x4

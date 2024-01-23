@@ -42,7 +42,7 @@ class deconv4x4(nn.Module):
 
 class noskip_deconv4x4(nn.Module):
     def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
-        super(deconv4x4, self).__init__()
+        super(noskip_deconv4x4, self).__init__()
         self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
         self.bn = norm(out_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
@@ -169,9 +169,9 @@ class AEI_Net(nn.Module):
 ## CrossU
 
 
-class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
+class UNet(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):
-        super(CrossUMLAttrEncoder, self).__init__()
+        super(UNet, self).__init__()
         self.backbone = backbone
         self.conv1 = conv4x4(3, 64)  ##256 -> 128
         self.conv2 = conv4x4(64, 128)  ## 128 -> 64
