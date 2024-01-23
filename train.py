@@ -22,8 +22,8 @@ import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
 # # custom imports
-# sys.path.append('./apex/')
-# from apex import amp
+sys.path.append('./apex/')
+from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
@@ -35,18 +35,18 @@ from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 from models.models import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
 import torch
-from mae import models_mae
+# from mae import models_mae
 print("finished imports")
 
 
-def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
-    # build model
-    model = getattr(models_mae, arch)()
-    # load model
-    checkpoint = torch.load(chkpt_dir, map_location='cpu')
-    msg = model.load_state_dict(checkpoint['model'], strict=False)
-    print(msg)
-    return model
+# def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
+#     # build model
+#     model = getattr(models_mae, arch)()
+#     # load model
+#     checkpoint = torch.load(chkpt_dir, map_location='cpu')
+#     msg = model.load_state_dict(checkpoint['model'], strict=False)
+#     print(msg)
+#     return model
 
 
 
@@ -56,27 +56,27 @@ def train_one_epoch(G: 'generator model',
                     opt_D: "discriminator opt",
                     scheduler_G: "scheduler G opt",
                     scheduler_D: "scheduler D opt",
-                    MAE: 'MAE model',
+                    netArc: 'ArcFace model',
                     model_ft: 'Landmark Detector',
                     args: 'Args Namespace',
                     dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
-                    loss_adv_accumulated:int,
-                    gpu_config:dict
+                    loss_adv_accumulated:int
+                    # config:dict
                     ):
     
-    # Only initialize W&B on the global rank 0 node
-    if gpu_config['global_rank'] == 0:
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project=args.wandb_project,
-            # allow resuming existing run with the same name (in case the rank 0 node crashed)
-            id=args.wandb_entity,
-            resume="allow",
-            # track hyperparameters and run metadata
-            config=args
-        )
+    # # Only initialize W&B on the global rank 0 node
+    # if config['global_rank'] == 0:
+    #     wandb.init(
+    #         # set the wandb project where this run will be logged
+    #         project=args.wandb_project,
+    #         # allow resuming existing run with the same name (in case the rank 0 node crashed)
+    #         id=args.wandb_entity,
+    #         resume="allow",
+    #         # track hyperparameters and run metadata
+    #         config=args
+    #     )
 
 
     # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
@@ -102,17 +102,9 @@ def train_one_epoch(G: 'generator model',
         # break
         
         
-
+        # get the identity embeddings of Xs
         with torch.no_grad():
-            source_mae_emb = MAE.patch_embed(Xs)   ##224,224 일때는 MAE.patch_embed가 워킹함 ##mae_emb -> [batch size, 196 or 256, 1024]
-            target_mae_emb = MAE.patch_embed(Xt)   ## ##256,256 일때는 MAE.patch_embed가 안됨   [batch_size, 196, 1024]
-            
-            
-            source_mae_emb.shape
-            source_mae_emb.view(2,)
-            
-            swapped_emb = FFCA(target_mae_emb, source_mae_emb)  ## output = [B, seq_len(196), dim(1024)]
-            swapped_emb.shape
+            embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
             
 
 
@@ -129,12 +121,10 @@ def train_one_epoch(G: 'generator model',
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
         
-        # Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        Y, Xt_attr = G(Xt_mae_emb, Xs_mae_emb) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
-        # ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corn"ers=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
-        loss, Xy_mae_emb, mask = mae_model(Y.float(), mask_ratio=0.75)
-        Xy_mae_emb = mae_model.unpatchify(Xy_mae_emb)   ##swapped face의 identity를 구하는 것 
+        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
+        
     
         if args.eye_detector_loss:
             Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
@@ -144,7 +134,7 @@ def train_one_epoch(G: 'generator model',
             eye_heatmaps = None
             
         lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes = compute_generator_losses(G, Y, Xt, Xt_attr, Di,
-                                                                             Xs_mae_emb, Xy_mae_emb, eye_heatmaps, loss_adv_accumulated, 
+                                                                             embed, ZY, eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
         with amp.scale_loss(lossG, opt_G) as scaled_loss:
@@ -230,12 +220,14 @@ def train_one_epoch(G: 'generator model',
 
             G.train()
 
-def train(args, gpu_config):
-    ##Multi GPU setting
-    assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
-    device = torch.device('cuda')
-    print(f"GPU {gpu_config['local_rank']} is using device: {device}")
-    print(f"GPU {gpu_config['local_rank']} is loading dataset")
+# def train(args, config):
+def train(args, device):
+    
+    # ##Multi GPU setting
+    # assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
+    # device = torch.device('cuda')
+    # print(f"GPU {gpu_config['local_rank']} is using device: {device}")
+    # print(f"GPU {gpu_config['local_rank']} is loading dataset")
     
 
     
@@ -246,28 +238,23 @@ def train(args, gpu_config):
     max_epoch = args.max_epoch
     
     # initializing main models
-    G = DistributedDataParallel(AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512), device_ids=[gpu_config['local_rank']])
-    G = DistributedDataParallel(FlowFaceCrossAttentionModel(args.backbone, num_blocks=args.num_blocks, c_id=512), device_ids=[gpu_config['local_rank']])
+    G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
     
-    D = DistributedDataParallel(MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d), device_ids=[gpu_config['local_rank']])
-    
+    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)    
     
     G.train()
     D.train()
     
-    # # initializing model for identity extraction
-    # netArc = iresnet100(fp16=False)
-    # netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
-    # netArc=netArc.cuda()
-    # netArc.eval()
-    MAE = DistributedDataParallel(prepare_model('/datasets/pretrained/mae_visualize_vit_large_ganloss.pth', 'mae_vit_large_patch16'), device_ids=[gpu_config['local_rank']])
-    MAE.eval()
-    MAE.to(device)
-    
+    # initializing model for identity extraction
+    netArc = iresnet100(fp16=False)
+    netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
+    netArc=netArc.cuda()
+    netArc.eval()
+
     
     
     if args.eye_detector_loss:
-        model_ft = DistributedDataParallel(models.FAN(4, "False", "False", 98), device_ids=[gpu_config['local_rank']])
+        model_ft = models.FAN(4, "False", "False", 98)
         # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
         checkpoint = torch.load('/datasets/pretrained/WFLW_4HG.pth')
         
@@ -288,8 +275,8 @@ def train(args, gpu_config):
     opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
     opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
-    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
-    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
+    G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
+    D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     
     if args.scheduler:
         scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
@@ -309,18 +296,15 @@ def train(args, gpu_config):
     # if args.vgg:
     
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    # dataset = FaceEmbedCombined(vgg_data_path=args.ffhq_data_path, celeba_data_path=args.celeba_data_path, same_prob=0.8, same_identity=args.same_identity)
+    dataset = FaceEmbedCombined(celeba_data_path=args.celeba_data_path, ffhq_data_path=args.ffhq_data_path, vgg_data_path=args.ffhq_data_path, dob_data_path=args.dob_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
-    # dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     ##In case of multi GPU, turn off shuffle
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=DistributedSampler(dataset, shuffle=True))
+    # dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=DistributedSampler(dataset, shuffle=True))
 
-        # dataset = torch.utils.data.ConcatDataset([vgg_dataset, hhfq_dataset, celeba_dataset])
-    # else:
-    #     dataset = FaceEmbed([args.dataset_path], same_prob=args.same_person)
-        
+
     
 
     # Будем считать аккумулированный adv loss, чтобы обучать дискриминатор только когда он ниже порога, если discr_force=True
@@ -333,50 +317,55 @@ def train(args, gpu_config):
                         opt_D,
                         scheduler_G,
                         scheduler_D,
-                        MAE,
+                        netArc,
                         model_ft,
                         args,
                         dataloader,
                         device,
                         device,
                         epoch,
-                        loss_adv_accumulated,
-                        gpu_config)
+                        loss_adv_accumulated)
+                        # config)
 
 def main(args):
     
-    gpu_config = dict()
-    gpu_config['local_rank'] = int(os.environ(['LOCAL_RANK']))
-    gpu_config['global_rank'] = int(os.environ(['RANK']))
+    # config = dict()
+    # config['local_rank'] = int(os.environ(['LOCAL_RANK']))
+    # config['global_rank'] = int(os.environ(['RANK']))
 
-    assert gpu_config['local_rank'] != -1, "LOCAL_RANK environment variable not set"
-    assert gpu_config['global_rank'] != -1, "RANK environment variable not set"
+    # assert config['local_rank'] != -1, "LOCAL_RANK environment variable not set"
+    # assert config['global_rank'] != -1, "RANK environment variable not set"
 
 
-    # Print configuration (only once per server)
-    if gpu_config['local_rank'] == 0:
-        print("Configuration:")
-        for key, value in gpu_config.items():
-            print(f"{key:>20}: {value}")
+    # # Print configuration (only once per server)
+    # if config['local_rank'] == 0:
+    #     print("Configuration:")
+    #     for key, value in config.items():
+    #         print(f"{key:>20}: {value}")
             
-    # Setup distributed training
-    init_process_group(backend='nccl')
-    torch.cuda.set_device(config.local_rank)
+    # # Setup distributed training
+    # init_process_group(backend='nccl')
+    # torch.cuda.set_device(config.local_rank)
     
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # device = 'cpu'
+    # # device = 'cpu'
+    # if not torch.cuda.is_available():
+    #     print('cuda is not available. using cpu. check if it\'s ok')
+    
+    # print("Starting training")
+    # train(args, gpu_config)
+    
+    # # Clean up distributed training
+    # destroy_process_group()
+
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if not torch.cuda.is_available():
         print('cuda is not available. using cpu. check if it\'s ok')
     
-    print("Starting training")
-    train(args, gpu_config)
-    
-    # Clean up distributed training
-    destroy_process_group()
-
-
-
+    print("Starting traing")
+    train(args, device=device)
 
 
 if __name__ == "__main__":
