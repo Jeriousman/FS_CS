@@ -86,6 +86,10 @@ def train_one_epoch(G: 'generator model',
     # FFCA.to(device)
     # FFCA.train()
     
+    # unet = UNet(backbone='unet').to(device)
+    # z = unet(Xs)
+    
+    # Xs.shape
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
         
@@ -99,9 +103,9 @@ def train_one_epoch(G: 'generator model',
         Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
-        # break
+        break
         
-        
+        z,zz,zzz = G(Xs, Xt)
         # get the identity embeddings of Xs
         with torch.no_grad():
             embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
@@ -296,9 +300,9 @@ def train(args, device):
     # if args.vgg:
     
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    dataset = FaceEmbedCombined(celeba_data_path=args.celeba_data_path, ffhq_data_path=args.ffhq_data_path, vgg_data_path=args.ffhq_data_path, dob_data_path=args.dob_data_path, same_prob=0.8, same_identity=args.same_identity)
+    # dataset = FaceEmbedCombined(celeba_data_path=args.celeba_data_path, ffhq_data_path=args.ffhq_data_path, vgg_data_path=args.ffhq_data_path, dob_data_path=args.dob_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     ##In case of multi GPU, turn off shuffle
