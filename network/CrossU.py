@@ -6,9 +6,16 @@ from models.models import FlowFaceCrossAttentionModel
 from network.FFGenerator import CrossUMLAttrEncoder, deconv4x4, noskip_deconv4x4
 
 class CrossUnetAttentionGenerator(nn.Module):
-    def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
+    # def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
+    def __init__(self, backbone='unet'):
         super(CrossUnetAttentionGenerator, self).__init__()
         self.backbone = backbone
+        # self.seq_len = seq_len
+        # self.n_head = n_head
+        # self.q_dim = q_dim
+        # self.k_dim = k_dim
+        # self.kv_dim = kv_dim
+        
         # (self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
         self.FFCA1 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024)
         self.FFCA2 = FlowFaceCrossAttentionModel(seq_len=64, n_head=2, q_dim=512, k_dim=512, kv_dim=512)

@@ -4,6 +4,17 @@ import torch.nn.functional as F
 
 
 
+def weight_init(m):
+    if isinstance(m, nn.Linear):
+        m.weight.data.normal_(0, 0.001)
+        m.bias.data.zero_()
+    if isinstance(m, nn.Conv2d):
+        nn.init.xavier_normal_(m.weight.data)
+
+    if isinstance(m, nn.ConvTranspose2d):
+        nn.init.xavier_normal_(m.weight.data)
+
+
 def conv4x4(in_c, out_c, norm=nn.BatchNorm2d):
     return nn.Sequential(
         nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False), ## halving feature map size. e.g., 256 -> 128

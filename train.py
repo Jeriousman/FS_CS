@@ -22,8 +22,8 @@ import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
 # # custom imports
-sys.path.append('./apex/')
-from apex import amp
+# sys.path.append('./apex/')
+# from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
@@ -238,8 +238,8 @@ def train(args, device):
     max_epoch = args.max_epoch
     
     # initializing main models
-    G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
-    
+    # G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
+    G = CrossUnetAttentionGenerator(backbone='unet').to(device)
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)    
     
     G.train()
