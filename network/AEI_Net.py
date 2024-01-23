@@ -27,12 +27,18 @@ def conv4x4(in_c, out_c, norm=nn.BatchNorm2d):
         norm(out_c),
         nn.LeakyReLU(0.1, inplace=True)
     )
-
-
+# (16-1) -2*0 + 1*(1-1) + 0 +1  ##padding 0 stride 1 kernel size 1
+# (16-1)*2 -2*1 + 1*(4-1) + 0 +1
 class deconv4x4(nn.Module):
-    def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
+    def __init__(self, in_c, out_c, kernel_size=4, stride=2, padding=1, norm=nn.BatchNorm2d):
         super(deconv4x4, self).__init__()
-        self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
+        self.in_c = in_c
+        self.out_c = out_c
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        # self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
+        self.deconv = nn.ConvTranspose2d(in_channels=self.in_c, out_channels=self.out_c, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding, bias=False)
         self.bn = norm(out_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
 

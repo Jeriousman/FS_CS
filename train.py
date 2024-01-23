@@ -86,8 +86,59 @@ def train_one_epoch(G: 'generator model',
     # FFCA.to(device)
     # FFCA.train()
     
-    # unet = UNet(backbone='unet').to(device)
-    # z = unet(Xs)
+    unet = UNet(backbone='unet').to(device)
+    z = unet(Xs)
+    
+
+        conv1 = conv4x4(3, 64).to(device)  ##
+        z1 = conv1(Xs)
+        z1.shape
+        
+        conv2 = conv4x4(64, 128).to(device) 
+        z2 = conv2(z1)
+        z2.shape
+        
+        conv3 = conv4x4(128, 256).to(device)
+        z3 = conv3(z2)
+        z3.shape
+        conv4 = conv4x4(256, 512).to(device)
+        z4 = conv4(z3)
+        z4.shape
+        conv5 = conv4x4(512, 1024).to(device)
+        z5 = conv5(z4)
+        z5.shape
+        conv6 = conv4x4(1024, 1024).to(device)
+        z6 = conv6(z5)
+        z6.shape
+        
+
+        deconv1 = deconv4x4(1024, 1024).to(device)
+        o1 = deconv1(z6, z5 ,backbone='unet')
+        o1.shape
+        z6.shape
+        z5.shape
+        z4.shape
+        deconv2 = deconv4x4(2048, 512).to(device)  ## 8 ->  16
+        o2 = deconv2(o1, z4 ,backbone='unet')
+        o2.shape
+        deconv3 = deconv4x4(1024, 256).to(device)  ## 16 > 32
+        o3 =  deconv3(o2, z3, backbone='unet')
+        o3.shape
+        deconv4 = deconv4x4(512, 128).to(device) ## 32 > 64
+        o4 =  deconv4(o3, z2, backbone='unet')
+        o4.shape
+        deconv5 = deconv4x4(256, 64).to(device) ## 64 > 128
+        o5 =  deconv5(o4, z1, backbone='unet')
+        o5.shape
+        
+        z_attr8 = F.interpolate(o5, scale_factor=2, mode='bilinear', align_corners=True)
+        
+        deconv6 = deconv4x4(128, 3).to(device) ## 128 > 256
+        o6 =  deconv6(o5, Xs, backbone='unet')
+        o6.shape
+
+        
+    
     
     # Xs.shape
     for iteration, data in enumerate(dataloader):
@@ -105,7 +156,7 @@ def train_one_epoch(G: 'generator model',
         realtime_batch_size = Xs.shape[0] 
         break
         
-        z,zz,zzz = G(Xs, Xt)
+        # z,zz,zzz = G(Xs, Xt)
         # get the identity embeddings of Xs
         with torch.no_grad():
             embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))

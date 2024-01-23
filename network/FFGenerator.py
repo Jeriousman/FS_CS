@@ -182,12 +182,12 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         # self.conv7 = conv4x4(1024, 1024) ## 2 - > 1
 
         if backbone == 'unet':
-            self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8
+            self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8  (2048x8x8)
             self.deconv2 = deconv4x4(2048, 512)  ## 8 ->  16
             self.deconv3 = deconv4x4(1024, 256)  ## 16 > 32
             self.deconv4 = deconv4x4(512, 128) ## 32 > 64
             self.deconv5 = deconv4x4(256, 64) ## 64 > 128
-            self.deconv6 = deconv4x4(128, 3) ## 128 > 256
+            self.deconv6 = deconv4x4(128, 3, kernel_size=1, stride=1, padding=0) ## 128 > 256  
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
             self.deconv2 = deconv4x4(1024, 512)
@@ -214,15 +214,15 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         
         # z_attr1 = self.conv7(feat6)
         
-        ## 1024x4x4 -> 1024x8x8    
-        z_attr2 = self.deconv1(z_attr1, feat4, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
-        ## 2048x8x8 -> 512x16x16
-        z_attr3 = self.deconv2(z_attr2, feat3, self.backbone) ## 8 > 16
-        ## 1024x16x16 -> 256x32x32 
-        z_attr4 = self.deconv3(z_attr3, feat2, self.backbone) ## 16 > 32
-        ## 512x32x32 -> 128x64x64
-        z_attr5 = self.deconv4(z_attr4, feat1, self.backbone) ## 32 > 64
-        ## 256x64x64 -> 64x128x128
+        ## 1024x4x4 -> 2048x8x8
+        z_attr2 = self.deconv1(z_attr1, feat5, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
+        ## 2048x8x8 -> 1024x16x16
+        z_attr3 = self.deconv2(z_attr2, feat4, self.backbone) ## 8 > 16 
+        ## 1024x16x16 -> 512x32x32 
+        z_attr4 = self.deconv3(z_attr3, feat3, self.backbone) ## 16 > 32
+        ## 512x32x32 -> 256x64x64
+        z_attr5 = self.deconv4(z_attr4, feat2, self.backbone) ## 32 > 64
+        ## 256x64x64 -> 128x128x128
         z_attr6 = self.deconv5(z_attr5, feat1, self.backbone) ## 64 > 128
         ## 128x128x128 -> 3x256x256
         z_attr7 = self.deconv6(z_attr6, feat1, self.backbone) ## 128 > 256
