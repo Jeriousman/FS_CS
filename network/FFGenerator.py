@@ -19,14 +19,30 @@ class deconv4x4(nn.Module):
         self.bn = norm(out_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
 
-    def forward(self, input, skip, backbone):
+    def forward(self, input, skip_tensor, backbone='unet'):
         x = self.deconv(input)
         x = self.bn(x)
         x = self.lrelu(x)
         if backbone == 'linknet':
-            return x+skip
+            return x+skip_tensor
         else:
-            return torch.cat((x, skip), dim=1)
+            return torch.cat((x, skip_tensor), dim=1)
+
+
+class noskip_deconv4x4(nn.Module):
+    def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
+        super(deconv4x4, self).__init__()
+        self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
+        self.bn = norm(out_c)
+        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+
+    def forward(self, input):
+        x = self.deconv(input)
+        x = self.bn(x)
+        x = self.lrelu(x)
+        return x
+        
+
 
 class MLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):
@@ -155,11 +171,11 @@ class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
         # self.conv7 = conv4x4(1024, 1024) ## 2 - > 1
 
         if backbone == 'unet':
-            self.deconv1 = deconv4x4(1024, 1024)  ## 8 ->  16
-            self.deconv2 = deconv4x4(2048, 512)  ## 16 > 32
-            self.deconv3 = deconv4x4(1024, 256) ## 32 > 64
-            self.deconv4 = deconv4x4(512, 128) ## 64 > 128
-            self.deconv5 = deconv4x4(256, 64) ## 128 > 256
+            self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8
+            self.deconv2 = deconv4x4(2048, 512)  ## 8 ->  16
+            self.deconv3 = deconv4x4(1024, 256)  ## 16 > 32
+            self.deconv4 = deconv4x4(512, 128) ## 32 > 64
+            self.deconv5 = deconv4x4(256, 64) ## 64 > 128
             self.deconv6 = deconv4x4(128, 3) ## 128 > 256
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
@@ -175,26 +191,29 @@ class CrossUMLAttrEncoder(nn.Module):  ##Multi-level Attributes Encoder
         feat1 = self.conv1(x)
         # 128x64x64
         feat2 = self.conv2(feat1)
-        # 256x128x128
+        # 256x32x32
         feat3 = self.conv3(feat2)
-        # 512x256x256
+        # 512x16x16
         feat4 = self.conv4(feat3)
-        # 256x16xx16
-        z_attr1 = self.conv5(feat4)
-        # 512x8x8
+        # 1024x8xx8
+        feat5 = self.conv5(feat4)
+        # 1024x4x4    
+        z_attr1 = self.conv6(feat5)
         
-        # feat6 = self.conv6(feat5)
-        # 1024x4x4
+        
         # z_attr1 = self.conv7(feat6)
-        # 1024x2x2
-
-        z_attr2 = self.deconv1(z_attr1, feat4, self.backbone) ## 8 > 16  ##feat4 = skip connection the same size with same level counterpart
-        z_attr3 = self.deconv2(z_attr2, feat3, self.backbone) ## 16 > 32
-        z_attr4 = self.deconv3(z_attr3, feat2, self.backbone) ## 32 > 64
-        z_attr5 = self.deconv4(z_attr4, feat1, self.backbone) ## 64 > 128
-        z_attr6 = self.deconv5(z_attr5, feat1, self.backbone) ## 128 > 256
-        # z_attr6 = F.interpolate(z_attr5, scale_factor=2, mode='bilinear', align_corners=True)  ## 128 > 256
-        # z_attr6 = self.deconv5(feat1, , self.backbone)
-        # z_attr7 = self.deconv6(z_attr6, feat1, self.backbone)
         
-        return z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6
+        ## 1024x4x4 -> 1024x8x8    
+        z_attr2 = self.deconv1(z_attr1, feat4, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
+        ## 2048x8x8 -> 512x16x16
+        z_attr3 = self.deconv2(z_attr2, feat3, self.backbone) ## 8 > 16
+        ## 1024x16x16 -> 256x32x32 
+        z_attr4 = self.deconv3(z_attr3, feat2, self.backbone) ## 16 > 32
+        ## 512x32x32 -> 128x64x64
+        z_attr5 = self.deconv4(z_attr4, feat1, self.backbone) ## 32 > 64
+        ## 256x64x64 -> 64x128x128
+        z_attr6 = self.deconv5(z_attr5, feat1, self.backbone) ## 64 > 128
+        ## 128x128x128 -> 3x256x256
+        z_attr7 = self.deconv6(z_attr6, feat1, self.backbone) ## 128 > 256
+        
+        return z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7

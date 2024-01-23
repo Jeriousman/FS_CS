@@ -490,13 +490,13 @@ class FaceEmbedCombined(TensorDataset):
 
         if random.random() > self.same_prob:
             if bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
-                image_path = random.choice(self.ffhq_len+self.celeba_len, self.total_dataset_len)
+                image_path = self.total_dataset[random.randint(self.ffhq_len+self.celeba_len-1, self.total_dataset_len-1)]
 
-            # elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
-            #     image_path = random.choice(self.celeba_len, self.total_dataset_len)
+            elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
+                image_path = self.total_dataset[random.randint(self.celeba_len-1, self.total_dataset_len-1)]
             
-            # elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
-            #     image_path = random.choice(self.ffhq_len, self.total_dataset_len)
+            elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+                image_path = self.total_dataset[random.randint(self.ffhq_len-1, self.total_dataset_len-1)]
                 
             else:
                 raise ValueError('At least either CelebA and FFHQ data must be used')

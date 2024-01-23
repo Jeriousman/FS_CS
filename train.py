@@ -24,7 +24,7 @@ import torch.optim.lr_scheduler as scheduler
 # # custom imports
 # sys.path.append('./apex/')
 # from apex import amp
-
+from network.CrossU import CrossUnetAttentionGenerator
 from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
@@ -442,8 +442,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     
-    if bool(args.vgg_data_path)==False and args.same_identity==True:
-        raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
+    # if bool(args.vgg_data_path)==False and args.same_identity==True:
+    #     raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
     
     if args.use_wandb==True:
         wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
