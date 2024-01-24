@@ -151,34 +151,39 @@ def train_one_epoch(G: 'generator model',
         # o7 =  deconv7(o6)
         # o7.shape
 
-    CUMAE_src = UNet(backbone='unet').to(device)
-    CUMAE_tgt = UNet(backbone='unet').to(device)
 
-    s = CUMAE_src(Xs)
-    t = CUMAE_tgt(Xt)
-    s[0]
-    t[0]
+
+########################################################################################################################
+
+    # CUMAE_src = UNet(backbone='unet').to(device)
+    # CUMAE_tgt = UNet(backbone='unet').to(device)
+
+    # s = CUMAE_src(Xs)
+    # t = CUMAE_tgt(Xt)
+    # s[0].shape
+    # t[0]
     
-    FFCAlayer = FlowFaceCrossAttentionLayer(n_head=2, k_dim=1024, q_dim=1024, kv_dim=1024)
+    # FFCAlayer = FlowFaceCrossAttentionLayer(n_head=2, k_dim=1024, q_dim=1024, kv_dim=1024).to(device)
+    # out = FFCAlayer(t[0] ,s[0])
+    # out.shape
     
-    out = FFCAlayer(t[0] ,s[0])
+    # LN = LayerNormalization(1024).to(device)
+    # ln_out = LN(out)
+    # ln_out.shape
     
-    FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
+    # FFN = FeedForward(in_dim=1024, out_dim=1024).to(device)
+    # ffn_out = FFN(ln_out)
+    # ffn_out.shape
+    # SA1 = SelfAttentionLayer(n_head=2, embed_dim=1024).to(device) ##transformer (?)
+    # sa1_out=SA1(ffn_out)
+    # sa1_out.shape
+    # SA2 = SelfAttentionLayer(n_head=2, embed_dim=1024).to(device) ##transformer (?)
+    # sa2_out=SA2(sa1_out)
+    # sa2_out.shape
     
-    
-    
-    a1,a2,a3=FFCA0(t[0],s[0])
-    t[0].size()
-    t[0].shape
-    qqq.size()
-    qqq.reshape(2,-1,1024).shape
-    qqq =t[0].permute((0,2,3, 1))
-    qqq.shape
-    qqq.type()
-    qqq.reshape(2, -1, 1024).shape
-    z = CrossUnetAttentionGenerator().to(device)
-     = z(Xs, Xt)
-    
+    # FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
+    # finaloutput = FFCA0(t[0],s[0])
+
     # Xs.shape
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
