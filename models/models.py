@@ -317,11 +317,11 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         # x_inputshape = x.shape
         # y_inputshape = y.shape
         
-        x_batch_size, x_width, x_height, x_dims = x.permute((0,2,3,1))
+        x_batch_size, x_width, x_height, x_dims = x.permute((0,2,3,1)).shape
         x = x.view(x_batch_size, -1, x_dims)
         
 
-        y_batch_size, y_width, y_height, y_dims = y.permute((0,2,3,1))
+        y_batch_size, y_width, y_height, y_dims = y.permute((0,2,3,1)).shape
         y = y.view(y_batch_size, -1, y_dims)
 
         x_inputshape = x.shape

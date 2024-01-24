@@ -194,7 +194,7 @@ def train_one_epoch(G: 'generator model',
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
-        FlowFaceCrossAttentionModel
+
         # z,zz,zzz = G(Xs, Xt)
         # get the identity embeddings of Xs
         with torch.no_grad():
