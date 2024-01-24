@@ -15,6 +15,10 @@ class CrossUnetAttentionGenerator(nn.Module):
         self.q_dim = q_dim
         self.k_dim = k_dim
         self.kv_dim = kv_dim
+
+        self.CUMAE_src = UNet(backbone='unet')
+        self.CUMAE_tgt = UNet(backbone='unet')
+        # CUMAE_cross = CrossUMLAttrEncoder(backbone='unet')
         
         # (self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
         self.FFCA0 = FlowFaceCrossAttentionModel(seq_len=self.seq_len, n_head=self.n_head, q_dim=self.q_dim, k_dim=self.k_dim, kv_dim=self.kv_dim)
@@ -26,11 +30,6 @@ class CrossUnetAttentionGenerator(nn.Module):
         self.FFCA6 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*4096, n_head=self.n_head, q_dim=self.q_dim//32, k_dim=self.k_dim//32, kv_dim=self.kv_dim//32)
         self.FFCA7 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*4096, n_head=self.n_head, q_dim=3, k_dim=3, kv_dim=3)  ##computationally expensive
         
-        
-        self.CUMAE_src = UNet(backbone='unet')
-        self.CUMAE_tgt = UNet(backbone='unet')
-        # CUMAE_cross = CrossUMLAttrEncoder(backbone='unet')
-
         # ##noskip_deconv4x4을 하면 crossattention을 안해도 되니 컴퓨팅을 아낄수있다
         # self.deconv1 = noskip_deconv4x4(1024, 1024)  ## 4 ->  8 (w,h)
         # self.deconv2 = deconv4x4(1024, 512)  ## 8 > 16

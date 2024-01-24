@@ -150,10 +150,34 @@ def train_one_epoch(G: 'generator model',
         # deconv7 = outconv(32, 3).to(device) ## 64 > 128
         # o7 =  deconv7(o6)
         # o7.shape
-        
-        
-        
+
+    CUMAE_src = UNet(backbone='unet').to(device)
+    CUMAE_tgt = UNet(backbone='unet').to(device)
+
+    s = CUMAE_src(Xs)
+    t = CUMAE_tgt(Xt)
+    s[0]
+    t[0]
     
+    FFCAlayer = FlowFaceCrossAttentionLayer(n_head=2, k_dim=1024, q_dim=1024, kv_dim=1024)
+    
+    out = FFCAlayer(t[0] ,s[0])
+    
+    FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
+    
+    
+    
+    a1,a2,a3=FFCA0(t[0],s[0])
+    t[0].size()
+    t[0].shape
+    qqq.size()
+    qqq.reshape(2,-1,1024).shape
+    qqq =t[0].permute((0,2,3, 1))
+    qqq.shape
+    qqq.type()
+    qqq.reshape(2, -1, 1024).shape
+    z = CrossUnetAttentionGenerator().to(device)
+     = z(Xs, Xt)
     
     # Xs.shape
     for iteration, data in enumerate(dataloader):
@@ -170,7 +194,7 @@ def train_one_epoch(G: 'generator model',
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
-        
+        FlowFaceCrossAttentionModel
         # z,zz,zzz = G(Xs, Xt)
         # get the identity embeddings of Xs
         with torch.no_grad():

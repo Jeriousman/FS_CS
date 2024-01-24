@@ -314,10 +314,18 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         # x_inputshape = target_mae_emb.shape
         # y_inputshape = source_mae_emb.shape
         
-        x_inputshape = x.shape
-        y_inputshape = y.shape
+        # x_inputshape = x.shape
+        # y_inputshape = y.shape
+        
+        x_batch_size, x_width, x_height, x_dims = x.permute((0,2,3,1))
+        x = x.view(x_batch_size, -1, x_dims)
+        
 
-        batch_size, seq_len, q_dim = x_inputshape ## q_dim = total embed dim
+        y_batch_size, y_width, y_height, y_dims = y.permute((0,2,3,1))
+        y = y.view(y_batch_size, -1, y_dims)
+
+        x_inputshape = x.shape
+        batch_size, seq_len, q_dim = x.shape ## q_dim = total embed dim
 
         # ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
         # q = qlayer(target_mae_emb)
