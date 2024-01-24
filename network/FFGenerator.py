@@ -29,6 +29,9 @@ class deconv4x4(nn.Module):
         self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
         self.bn = norm(out_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        
+        self.deconv_same = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
+        
 
     def forward(self, input, skip_tensor, backbone='unet'):
         x = self.deconv(input)
@@ -37,7 +40,9 @@ class deconv4x4(nn.Module):
         if backbone == 'linknet':
             return x+skip_tensor
         else:
-            return torch.cat((x, skip_tensor), dim=1)
+            x = torch.cat((x, skip_tensor), dim=1)
+            x = self.deconv_same(x)
+            return x
 
 
 class noskip_deconv4x4(nn.Module):
@@ -168,17 +173,17 @@ class AEI_Net(nn.Module):
 ####################################################################################
 ## CrossU
 
-
 class UNet(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):
         super(UNet, self).__init__()
         self.backbone = backbone
-        self.conv1 = conv4x4(3, 64)  ##256 -> 128
-        self.conv2 = conv4x4(64, 128)  ## 128 -> 64
-        self.conv3 = conv4x4(128, 256) ## 64 -> 32
-        self.conv4 = conv4x4(256, 512) ## 32 -> 16
-        self.conv5 = conv4x4(512, 1024) ## 16 -> 8
-        self.conv6 = conv4x4(1024, 1024) ## 8 -> 4
+        self.conv1 = conv4x4(3, 32, kernel_size=3, padding=1)  ##256 -> 256
+        self.conv2 = conv4x4(32, 64)  ##256 -> 128
+        self.conv3 = conv4x4(64, 128)  ## 128 -> 64
+        self.conv4 = conv4x4(128, 256) ## 64 -> 32
+        self.conv5 = conv4x4(256, 512) ## 32 -> 16
+        self.conv6 = conv4x4(512, 1024) ## 16 -> 8
+        self.conv7 = conv4x4(1024, 1024) ## 8 -> 4
         # self.conv7 = conv4x4(1024, 1024) ## 2 - > 1
 
         if backbone == 'unet':
@@ -187,7 +192,17 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
             self.deconv3 = deconv4x4(1024, 256)  ## 16 > 32
             self.deconv4 = deconv4x4(512, 128) ## 32 > 64
             self.deconv5 = deconv4x4(256, 64) ## 64 > 128
-            self.deconv6 = deconv4x4(128, 3, kernel_size=1, stride=1, padding=0) ## 128 > 256  
+            self.deconv6 = deconv4x4(128, 32) ## 128 > 256  
+            self.deconv6 = deconv4x4(32, 3) ## 256 > 256  
+            
+        if backbone == 'unet':
+            self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8  (2048x8x8)
+            self.deconv2 = deconv4x4(1024, 512)  ## 8 ->  16
+            self.deconv3 = deconv4x4(512, 256)  ## 16 > 32
+            self.deconv4 = deconv4x4(256, 128) ## 32 > 64
+            self.deconv5 = deconv4x4(128, 64) ## 64 > 128
+            self.deconv6 = deconv4x4(64, 32) ## 128 > 256  
+            self.deconv6 = deconv4x4(32, 3) ## 256 > 256  
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
             self.deconv2 = deconv4x4(1024, 512)

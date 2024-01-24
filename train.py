@@ -24,9 +24,9 @@ import torch.optim.lr_scheduler as scheduler
 # # custom imports
 # sys.path.append('./apex/')
 # from apex import amp
-from network.CrossU import CrossUnetAttentionGenerator
-from network.AEI_Net import *
-from network.MultiscaleDiscriminator import *
+from network.CrossU import CrossUnetAttentionGenerator, UNet
+# from network.AEI_Net import *
+# from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
 from utils.training.image_processing import make_image_list, get_faceswap
 from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
@@ -88,6 +88,8 @@ def train_one_epoch(G: 'generator model',
     
     unet = UNet(backbone='unet').to(device)
     z = unet(Xs)
+    z[6].shape
+    Xs.shape
     
 
         conv1 = conv4x4(3, 64).to(device)  ##
