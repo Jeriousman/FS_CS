@@ -202,17 +202,6 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         self.conv5 = conv4x4(256, 512) ## 256x32x32 -> 512x16x16
         self.conv6 = conv4x4(512, 1024) ## 512x16x16 -> 1024x8x8
         self.conv7 = conv4x4(1024, 1024) ## 1024x8x8 -> 1024x4x4  ##bottleneck
-        # self.conv7 = conv4x4(1024, 1024) ## 2 - > 1
-
-        # if backbone == 'unet':
-        #     self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8  (1024x8x8)
-        #     self.deconv2 = deconv4x4(2048, 512)  ## 8 ->  16
-        #     self.deconv3 = deconv4x4(1024, 256)  ## 16 > 32
-        #     self.deconv4 = deconv4x4(512, 128) ## 32 > 64
-        #     self.deconv5 = deconv4x4(256, 64) ## 64 > 128
-        #     self.deconv6 = deconv4x4(128, 32) ## 128 > 256  
-        #     self.deconv6 = deconv4x4(32, 3) ## 256 > 256  
-
           
         if backbone == 'unet':
             self.deconv1 = deconv4x4(1024, 1024)  ## 4 ->  8  (1024x8x8)
@@ -221,7 +210,7 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
             self.deconv4 = deconv4x4(256, 128) ## 32 > 64 (128x64x64)
             self.deconv5 = deconv4x4(128, 64) ## 64 > 128  (64x128x128)
             self.deconv6 = deconv4x4(64, 32) ## 128 > 256  (32x256x256)
-            self.deconv7 = outconv(32, 3) ## 256 > 256  (3x256x256)  
+            self.conv7 = outconv(32, 3) ## 256 > 256  (3x256x256)  
             
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
@@ -233,33 +222,37 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         self.apply(weight_init)
 
     def forward(self, x):
+        ##256 -> 32x256x256
+        feat1 = self.conv1(x) 
         # 64x128x128
-        feat1 = self.conv1(x)
-        # 128x64x64
         feat2 = self.conv2(feat1)
+        # 128x64x64
+        feat3 = self.conv3(feat1)
         # 256x32x32
-        feat3 = self.conv3(feat2)
+        feat4 = self.conv4(feat2)
         # 512x16x16
-        feat4 = self.conv4(feat3)
+        feat5 = self.conv5(feat3)
         # 1024x8xx8
-        feat5 = self.conv5(feat4)
-        # 1024x4x4    
-        z_attr1 = self.conv6(feat5)
+        feat6 = self.conv6(feat4)
+        
+        # 1024x4x4  the bottlebeck    
+        bottlneck_attr = self.conv7(feat5)
         
         
-        # z_attr1 = self.conv7(feat6)
+        ## 1024x4x4 -> 1024x8x8
+        z_attr1 = self.deconv1(bottlneck_attr, feat6, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
+        ## 1024x8x8 -> 512x16x16
+        z_attr2 = self.deconv2(z_attr1, feat5, self.backbone) ## 8 > 16 
+        ## 512x16x16 -> 256x32x32
+        z_attr3 = self.deconv3(z_attr2, feat4, self.backbone) ## 16 > 32
+        ## 256x32x32 -> 128x64x64
+        z_attr4 = self.deconv4(z_attr3, feat3, self.backbone) ## 32 > 64
+        ## 128x64x64 -> 64x128x128
+        z_attr5 = self.deconv5(z_attr4, feat2, self.backbone) ## 64 > 128
+        ## 64x128x128 -> 32x256x256
+        z_attr6 = self.deconv6(z_attr5, feat1, self.backbone) ## 128 > 256
+        ## 32x256x256 -> 3x256x256
+        z_attr7 = self.conv7(z_attr6) ## 128 > 256
         
-        ## 1024x4x4 -> 2048x8x8
-        z_attr2 = self.deconv1(z_attr1, feat5, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
-        ## 2048x8x8 -> 1024x16x16
-        z_attr3 = self.deconv2(z_attr2, feat4, self.backbone) ## 8 > 16 
-        ## 1024x16x16 -> 512x32x32 
-        z_attr4 = self.deconv3(z_attr3, feat3, self.backbone) ## 16 > 32
-        ## 512x32x32 -> 256x64x64
-        z_attr5 = self.deconv4(z_attr4, feat2, self.backbone) ## 32 > 64
-        ## 256x64x64 -> 128x128x128
-        z_attr6 = self.deconv5(z_attr5, feat1, self.backbone) ## 64 > 128
-        ## 128x128x128 -> 3x256x256
-        z_attr7 = self.deconv6(z_attr6, feat1, self.backbone) ## 128 > 256
         
-        return z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7
+        return bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7
