@@ -195,7 +195,7 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):
         super(UNet, self).__init__()
         self.backbone = backbone
-        self.conv1 = conv4x4(3, 32, same_size=False)  ##256 -> 32x256x256
+        self.conv1 = conv4x4(3, 32, same_size=True)  ##256 -> 32x256x256
         self.conv2 = conv4x4(32, 64)  ##32x256x256 -> 64x128x128
         self.conv3 = conv4x4(64, 128)  ## 64x128x128 -> 128x64x64
         self.conv4 = conv4x4(128, 256) ## 128x64x64 -> 256x32x32
@@ -210,7 +210,7 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
             self.deconv4 = deconv4x4(256, 128) ## 32 > 64 (128x64x64)
             self.deconv5 = deconv4x4(128, 64) ## 64 > 128  (64x128x128)
             self.deconv6 = deconv4x4(64, 32) ## 128 > 256  (32x256x256)
-            self.conv7 = outconv(32, 3) ## 256 > 256  (3x256x256)  
+            self.deconv7 = outconv(32, 3) ## 256 > 256  (3x256x256)  
             
         elif backbone == 'linknet':
             self.deconv1 = deconv4x4(1024, 1024)
@@ -227,16 +227,16 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         # 64x128x128
         feat2 = self.conv2(feat1)
         # 128x64x64
-        feat3 = self.conv3(feat1)
+        feat3 = self.conv3(feat2)
         # 256x32x32
-        feat4 = self.conv4(feat2)
+        feat4 = self.conv4(feat3)
         # 512x16x16
-        feat5 = self.conv5(feat3)
+        feat5 = self.conv5(feat4)
         # 1024x8xx8
-        feat6 = self.conv6(feat4)
+        feat6 = self.conv6(feat5)
         
         # 1024x4x4  the bottlebeck    
-        bottlneck_attr = self.conv7(feat5)
+        bottlneck_attr = self.conv7(feat6)
         
         
         ## 1024x4x4 -> 1024x8x8
@@ -252,7 +252,7 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         ## 64x128x128 -> 32x256x256
         z_attr6 = self.deconv6(z_attr5, feat1, self.backbone) ## 128 > 256
         ## 32x256x256 -> 3x256x256
-        z_attr7 = self.conv7(z_attr6) ## 128 > 256
+        z_attr7 = self.deconv7(z_attr6) ## 128 > 256
         
         
         return bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7

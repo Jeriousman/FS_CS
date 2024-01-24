@@ -88,9 +88,19 @@ def train_one_epoch(G: 'generator model',
     
     unet = UNet(backbone='unet').to(device)
     z = unet(Xs)
+    z[0].shape
+    z[1].shape
+    z[2].shape
+    z[3].shape
+    z[4].shape
+    z[5].shape
     z[6].shape
-    Xs.shape
-    Xs
+    z[7].shape
+    
+    # z[7].shape
+    # z[6].shape
+    # Xs.shape
+    # Xs
 
         # conv1 = conv4x4(3, 32,same_size=True).to(device)  ##
         # z1 = conv1(Xs)
