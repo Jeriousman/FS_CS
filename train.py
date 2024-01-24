@@ -79,23 +79,17 @@ def train_one_epoch(G: 'generator model',
     #     )
 
 
-    # zz = FlowFaceCrossAttentionLayer(args.n_head, args.k_dim, args.q_dim, args.q_dim)
-    # MAE.to(device)
-    # MAE.eval()
-    FFCA = FlowFaceCrossAttentionModel(seq_len=args.seq_len, n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim)
-    # FFCA.to(device)
-    # FFCA.train()
     
-    unet = UNet(backbone='unet').to(device)
-    z = unet(Xs)
-    z[0].shape
-    z[1].shape
-    z[2].shape
-    z[3].shape
-    z[4].shape
-    z[5].shape
-    z[6].shape
-    z[7].shape
+    # unet = UNet(backbone='unet').to(device)
+    # z = unet(Xs)
+    # z[0].shape
+    # z[1].shape
+    # z[2].shape
+    # z[3].shape
+    # z[4].shape
+    # z[5].shape
+    # z[6].shape
+    # z[7].shape
     
     # z[7].shape
     # z[6].shape
@@ -175,7 +169,7 @@ def train_one_epoch(G: 'generator model',
         Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
-        break
+        # break
         
         # z,zz,zzz = G(Xs, Xt)
         # get the identity embeddings of Xs

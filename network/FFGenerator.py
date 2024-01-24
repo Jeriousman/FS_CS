@@ -53,6 +53,32 @@ class deconv4x4(nn.Module):
             return x
 
 
+class CAdeconv4x4(nn.Module):
+    def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
+        '''
+        Cross Attention deconvolution layer
+        '''
+        super(CAdeconv4x4, self).__init__()
+        self.deconv_input = nn.ConvTranspose2d(in_channels=in_c, out_channels=in_c, kernel_size=4, stride=2, padding=1, bias=False)
+        self.bn = norm(out_c)
+        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        
+        self.deconv_same = nn.ConvTranspose2d(in_channels=in_c*2, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
+        
+
+    def forward(self, input, skip_tensor, backbone='unet'):
+        x = self.deconv(input)
+        x = self.bn(x)
+        x = self.lrelu(x)
+        if backbone == 'linknet':
+            return x+skip_tensor
+        else:
+            x = torch.cat((x, skip_tensor), dim=1)
+            x = self.deconv_same(x)
+            return x
+
+
+
 class outconv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(outconv, self).__init__()
@@ -239,7 +265,7 @@ class UNet(nn.Module):  ##Multi-level Attributes Encoder
         bottlneck_attr = self.conv7(feat6)
         
         
-        ## 1024x4x4 -> 1024x8x8
+        ## 1024x4x4 -> 1024x8x8 = z_attr1
         z_attr1 = self.deconv1(bottlneck_attr, feat6, self.backbone) ## 4 > 8  ##feat4 = skip connection the same size with same level counterpart
         ## 1024x8x8 -> 512x16x16
         z_attr2 = self.deconv2(z_attr1, feat5, self.backbone) ## 8 > 16 
