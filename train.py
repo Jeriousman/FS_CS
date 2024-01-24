@@ -90,38 +90,44 @@ def train_one_epoch(G: 'generator model',
     z = unet(Xs)
     z[6].shape
     Xs.shape
-    
+    Xs
 
-        conv1 = conv4x4(3, 64).to(device)  ##
+        conv1 = conv4x4(3, 32,same_size=True).to(device)  ##
         z1 = conv1(Xs)
         z1.shape
         
-        conv2 = conv4x4(64, 128).to(device) 
+        conv2 = conv4x4(32, 64).to(device) 
         z2 = conv2(z1)
         z2.shape
         
-        conv3 = conv4x4(128, 256).to(device)
+        conv3 = conv4x4(64, 128).to(device) 
         z3 = conv3(z2)
         z3.shape
-        conv4 = conv4x4(256, 512).to(device)
+        
+        conv4 = conv4x4(128, 256).to(device)
         z4 = conv4(z3)
         z4.shape
-        conv5 = conv4x4(512, 1024).to(device)
+        
+        conv5 = conv4x4(256, 512).to(device)
         z5 = conv5(z4)
         z5.shape
-        conv6 = conv4x4(1024, 1024).to(device)
+        conv6 = conv4x4(512, 1024).to(device)
         z6 = conv6(z5)
         z6.shape
+        conv7 = conv4x4(1024, 1024).to(device)
+        z7 = conv7(z6)
+        z7.shape
         
 
+
         deconv1 = deconv4x4(1024, 1024).to(device)
-        o1 = deconv1(z6, z5 ,backbone='unet')
+        o1 = deconv1(z7, z6 ,backbone='unet')
         o1.shape
         z6.shape
         z5.shape
         z4.shape
-        deconv2 = deconv4x4(2048, 512).to(device)  ## 8 ->  16
-        o2 = deconv2(o1, z4 ,backbone='unet')
+        deconv2 = deconv4x4(1024, 512).to(device)  ## 8 ->  16
+        o2 = deconv2(o1, z5 ,backbone='unet')
         o2.shape
         deconv3 = deconv4x4(1024, 256).to(device)  ## 16 > 32
         o3 =  deconv3(o2, z3, backbone='unet')
