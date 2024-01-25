@@ -437,7 +437,8 @@ class FlowFaceCrossAttentionModel(nn.Module):
         self.SA1 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
         self.SA2 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
         
-        
+        self.pos_emb_x = nn.Parameter(torch.randn(self.seq_len , self.q_dim))
+        self.pos_emb_y = nn.Parameter(torch.randn(self.seq_len , self.q_dim))
         
         
     def forward(self, x, y):
@@ -446,9 +447,12 @@ class FlowFaceCrossAttentionModel(nn.Module):
         y: second input (batch_size, seq_lenK (h*w), mae_dimK). y gets key. Key is Source Face
         '''      
         batch_size, w, h, dim = x.permute(0,2,3,1).shape       
-        raw_x = x.view(batch_size, -1, dim)
-        x = self.FFCA(x, y)
-        x = x + raw_x
+        x = x.view(batch_size, -1, dim)
+        x += self.pos_emb_x
+        y += self.pos_emb_y
+        
+        x_ca = self.FFCA(x, y)
+        x = x + x_ca
         x = self.LN(x)
         inter_x = self.FFN(x)
         x = x + inter_x
