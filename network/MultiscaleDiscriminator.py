@@ -1,6 +1,29 @@
 import torch.nn as nn
 import numpy as np
 
+""" kw = 4  ## kernel size
+padw = int(np.ceil((kw-1.0)/2))  ##pad size
+ndf = 64
+sequence = [[nn.Conv2d(128, 64, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]  ##ndf here means output channel
+(64+4-4)//2
+nf = ndf
+for n in range(1, 5):
+    nf_prev = nf
+    nf = min(nf * 2, 512) ##무조건 512보다는 작게하자는 것 
+    sequence += [[
+        nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=2, padding=padw),
+        nn.BatchNorm2d(nf), nn.LeakyReLU(0.2, True)
+    ]]
+    break
+##for the one before last layer
+nf_prev = nf
+nf = min(nf * 2, 512)
+sequence += [[
+    nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=1, padding=padw),
+    BatchNorm2d(nf),
+    nn.LeakyReLU(0.2, True)
+]]
+(64+4-4) +1 """
 
 class NLayerDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, getIntermFeat=False):

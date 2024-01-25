@@ -26,7 +26,7 @@ import torch.optim.lr_scheduler as scheduler
 # from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator, UNet
 # from network.AEI_Net import *
-# from network.MultiscaleDiscriminator import *
+from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
 from utils.training.image_processing import make_image_list, get_faceswap
 from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
