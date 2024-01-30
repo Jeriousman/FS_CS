@@ -63,7 +63,7 @@ class CAdeconv4x4(nn.Module):
         '''
         super(CAdeconv4x4, self).__init__()
         self.deconv_input = nn.ConvTranspose2d(in_channels=in_c, out_channels=in_c, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn = norm(out_c)
+        self.bn = norm(in_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         
         self.deconv_same = nn.ConvTranspose2d(in_channels=in_c*2, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
