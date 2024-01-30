@@ -319,18 +319,18 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         # print(x.shape)
 
         
-        x_batch_size, x_width, x_height, x_dims = x.permute(0,2,3,1).shape
+        batch_size, seq_len, dim = x.shape
         # print(x_batch_size)
         
         # # return x
-        # x = x.view(x_batch_size, -1, x_dims)
+        # batch_size, seq_len, dims  = x.view(batch_size, -1, dims).shape
         
 
         # y_batch_size, y_width, y_height, y_dims = y.permute(0,2,3,1).shape
         # y = y.view(y_batch_size, -1, y_dims)
 
-        x_inputshape = x.shape
-        batch_size, seq_len, q_dim = x.shape ## q_dim = total embed dim
+        # inputshape = (batch_size, seq_len, dims)
+        # batch_size, seq_len, dims = x.shape ## q_dim = total embed dim
 
         # ## (batch_size, seq_len, q_dim) -> (batch_size, seq_len, self.n_head, self.q_dim) -> 
         # q = qlayer(target_mae_emb)
@@ -388,7 +388,7 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         output = output.transpose(1, 2).contiguous() ##https://jimmy-ai.tistory.com/122#google_vignette
         # output.shape
         ##[B, Seq_len, q_dim (total_dim)]
-        output = output.view(x_inputshape)
+        output = output.view((batch_size, seq_len, dim))
         ##[B, Seq_len, q_dim (total_dim)]
         output = self.ffn(output)
         
@@ -454,7 +454,7 @@ class FlowFaceCrossAttentionModel(nn.Module):
         y: second input (batch_size, seq_lenK (h*w), mae_dimK). y gets key. Key is Source Face
         '''      
         batch_size, w, h, dim = x.permute(0,2,3,1).shape       
-        x = x.view(batch_size, -1, dim)
+        x = x.view(batch_size, -1, dim) ##x dim = (batch_size, seq_len, dim)
         y = y.view(batch_size, -1, dim)
         # x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
         # y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)

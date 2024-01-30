@@ -69,53 +69,54 @@ class CrossUnetAttentionGenerator(nn.Module):
         tgt_z_attr7: The final output of target face Unet
         '''
         src_bottlneck_attr, src_z_attr1, src_z_attr2, src_z_attr3, src_z_attr4, src_z_attr5, src_z_attr6, src_z_attr7 = self.CUMAE_src(source)
+        print('src_unet passed')
         tgt_bottlneck_attr, tgt_z_attr1, tgt_z_attr2, tgt_z_attr3, tgt_z_attr4, tgt_z_attr5, tgt_z_attr6, tgt_z_attr7 = self.CUMAE_tgt(target) ##z_tgt_attr1 img_size 8  z_tgt_attr6 img_size 256
-        
+        print('tgt_unet passed')
         
         ##z_cross_attr0 = 1024x4x4  this is same as bottleneck block
         z_cross_attr0 = self.FFCA0(tgt_bottlneck_attr, src_bottlneck_attr)
+        print('cross_att passed')
+
+        #1024x8x8
+        z_cross_attr1 = self.FFCA1(tgt_z_attr1, src_z_attr1)
+        ##512x16x16 
+        z_cross_attr2 = self.FFCA2(tgt_z_attr2, src_z_attr2)
+        ##256x32x32
+        z_cross_attr3 = self.FFCA3(tgt_z_attr3, src_z_attr3)
+        ##128x64x64
+        z_cross_attr4 = self.FFCA4(tgt_z_attr4, src_z_attr4)
+        #64x128x128
+        # z_cross_attr5 = self.FFCA5(tgt_z_attr5, src_z_attr5)
+        #32x256x256
+        # z_cross_attr6 = self.FFCA6(tgt_z_attr6, src_z_attr6)
+        #3x256x256
+        # z_cross_attr7 = self.FFCA7(tgt_z_attr7, src_z_attr7)
         
-        return z_cross_attr0
-        ##1024x8x8
-        # z_cross_attr1 = self.FFCA1(tgt_z_attr1, src_z_attr1)
-        # ##512x16x16 
-        # z_cross_attr2 = self.FFCA2(tgt_z_attr2, src_z_attr2)
-        # ##256x32x32
-        # z_cross_attr3 = self.FFCA3(tgt_z_attr3, src_z_attr3)
-        # ##128x64x64
-        # z_cross_attr4 = self.FFCA4(tgt_z_attr4, src_z_attr4)
-        # #64x128x128
-        # # z_cross_attr5 = self.FFCA5(tgt_z_attr5, src_z_attr5)
-        # #32x256x256
-        # # z_cross_attr6 = self.FFCA6(tgt_z_attr6, src_z_attr6)
-        # #3x256x256
-        # # z_cross_attr7 = self.FFCA7(tgt_z_attr7, src_z_attr7)
         
-        
-        # ##1024x4x4 -> 1024x8x8 (output1)
-        # output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것 
-        # ##1024x8x8 -> 512x16x16 (output2)
-        # output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
-        # ##512x16x16 -> 256x32x32 (output3)
-        # output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
-        # ##256x32x32 -> 128x64x64 (output4)
-        # output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
-        
-        # # ##128x64x64 -> 64x128x128 (output5)
-        # # output5 = self.deconv5(output4, z_cross_attr4) ## 64 > 128
-        # # ##64x128x128 -> 32x256x256 (output6)
-        # # output6 = self.deconv6(output5, z_cross_attr5) ## 128 > 256
+        ##1024x4x4 -> 1024x8x8 (output1)
+        output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것 
+        ##1024x8x8 -> 512x16x16 (output2)
+        output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
+        ##512x16x16 -> 256x32x32 (output3)
+        output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
+        ##256x32x32 -> 128x64x64 (output4)
+        output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
         
         # ##128x64x64 -> 64x128x128 (output5)
-        # output5 = self.deconv5(output4) ## 64 > 128
+        # output5 = self.deconv5(output4, z_cross_attr4) ## 64 > 128
         # ##64x128x128 -> 32x256x256 (output6)
-        # output6 = self.deconv6(output5) ## 128 > 256
-        # ##32x256x256 -> 3x256x256 (output7)
-        # output7 = self.deconv7(output6) ## 128 > 256
+        # output6 = self.deconv6(output5, z_cross_attr5) ## 128 > 256
         
-        # ##output6 = Final output of image tensor
-        # ##z_src_attr7 = Final image shape output of src unet
-        # ##z_tgt_attr7 = Final image shape output of tgt unet
+        ##128x64x64 -> 64x128x128 (output5)
+        output5 = self.deconv5(output4) ## 64 > 128
+        ##64x128x128 -> 32x256x256 (output6)
+        output6 = self.deconv6(output5) ## 128 > 256
+        ##32x256x256 -> 3x256x256 (output7)
+        output7 = self.deconv7(output6) ## 128 > 256
         
-        # return output7, src_z_attr7, tgt_z_attr7 
+        ##output6 = Final output of image tensor
+        ##z_src_attr7 = Final image shape output of src unet
+        ##z_tgt_attr7 = Final image shape output of tgt unet
+        
+        return output7, src_z_attr7, tgt_z_attr7 
         

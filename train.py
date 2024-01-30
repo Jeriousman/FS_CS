@@ -215,41 +215,68 @@ def train_one_epoch(G: 'generator model',
         srcu = UNet(backbone='unet').to(device)
         bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)
         bottlneck_attr.shape
-        z_attr1.shape
+        # z_attr1.shape
         
         tgtu = UNet(backbone='unet').to(device)
         bottlneck_attr_t, z_attr1_t, z_attr2_t, z_attr3_t, z_attr4_t, z_attr5_t, z_attr6_t, z_attr7_t = tgtu(Xt)
         bottlneck_attr_t.shape
-        z_attr1_t.shape
-        z_attr2_t.shape
-        z_attr4_t.shape
-        z_attr6_t.shape
-        z_attr7_t.shape
+        # z_attr1_t.shape
+        # z_attr2_t.shape
+        # z_attr4_t.shape
+        # z_attr6_t.shape
+        # z_attr7_t.shape
         
         
         aaaz = FlowFaceCrossAttentionLayer(n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim).to(device)
+        # e= aaaz(bottlneck_attr_t, bottlneck_attr_t)
+        # e.shape
+
         
-        e= aaaz(bottlneck_attr_t, bottlneck_attr_t)
-        e.shape
-    def __init__(self, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
+        zzz = CrossUnetAttentionGenerator().to(device)
+        za = zzz(Xs, Xt)
         
         molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
         asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        bottlneck_attr.shape
-        bottlneck_attr_t.shape
+        asdasdasd.shape
+        
+        molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
+        asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
+        asdasdasd.shape
+        
+        molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
+        asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
+        asdasdasd.shape
+        
+        molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
+        asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
+        asdasdasd.shape
+        
+        molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
+        asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
+        asdasdasd.shape
+        
+        molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
+        asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
+        asdasdasd.shape
+        
+        
+        
+        
+        # bottlneck_attr.shape
+        # bottlneck_attr_t.shape
 
-        batch_size, w, h, dim = z_attr3_t.permute(0,2,3,1).shape       
-        z_attr3_t = z_attr3_t.view(batch_size, -1, dim)
-        z_attr3_t.shape
+        # batch_size, w, h, dim = z_attr3_t.permute(0,2,3,1).shape       
+        # z_attr3_t = z_attr3_t.view(batch_size, -1, dim)
+        # z_attr3_t.shape
         
-        pos_emb_x = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
-        pos_emb_y = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
+        # pos_emb_x = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
+        # pos_emb_y = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
         
         
-        x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
-        y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
+        # x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
+        # y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
         
-        x_ca = self.FFCA(x, y)        
+        # x_ca = self.FFCA(x, y)        
 
         
         
