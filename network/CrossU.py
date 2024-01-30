@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.models import FlowFaceCrossAttentionModel
-from network.FFGenerator import UNet, deconv4x4, noskip_deconv4x4, outconv
+from network.FFGenerator import UNet, deconv4x4, noskip_deconv4x4, outconv, CAdeconv4x4
 
 class CrossUnetAttentionGenerator(nn.Module):
     # def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
@@ -40,9 +40,9 @@ class CrossUnetAttentionGenerator(nn.Module):
         # self.deconv7 = outconv(32, 3) ## 128 > 256
         
         self.deconv1 = noskip_deconv4x4(self.q_dim, self.q_dim)  ## 4 ->  8 (w,h)
-        self.deconv2 = deconv4x4(self.q_dim, self.q_dim//2)  ## 8 > 16
-        self.deconv3 = deconv4x4(self.q_dim//2, self.q_dim//4) ## 16 > 32
-        self.deconv4 = deconv4x4(self.q_dim//4, self.q_dim//8) ## 32 > 64
+        self.deconv2 = CAdeconv4x4(self.q_dim, self.q_dim//2)  ## 8 > 16
+        self.deconv3 = CAdeconv4x4(self.q_dim//2, self.q_dim//4) ## 16 > 32
+        self.deconv4 = CAdeconv4x4(self.q_dim//4, self.q_dim//8) ## 32 > 64
         self.deconv5 = noskip_deconv4x4(self.q_dim//8, self.q_dim//16) ## 64 > 128
         self.deconv6 = noskip_deconv4x4(self.q_dim//16, self.q_dim//32) ## 128 > 256
         self.deconv7 = outconv(self.q_dim//32, 3) ## 128 > 256
@@ -90,8 +90,8 @@ class CrossUnetAttentionGenerator(nn.Module):
         # print('cross_att passed')
         # return z_cross_attr0
 
-        #1024x8x8
-        z_cross_attr1 = self.FFCA1(tgt_z_attr1, src_z_attr1)
+        #z_cross_attr1 = [B, 64, 1024]
+        z_cross_attr1 = self.FFCA1(tgt_z_attr1, src_z_attr1)  ##tgt_z_attr1 = [B, 1024, 8, 8]
         ##512x16x16 
         z_cross_attr2 = self.FFCA2(tgt_z_attr2, src_z_attr2)
         ##256x32x32
@@ -109,20 +109,18 @@ class CrossUnetAttentionGenerator(nn.Module):
 
         
         ##1024x4x4 -> 1024x8x8 (output1)
-        z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)
-        output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것 
+        z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
+        output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
         ##1024x8x8 -> 512x16x16 (output2)
-        print('z_cross_attr1:', z_cross_attr1.shape)
+        # print('z_cross_attr1:', z_cross_attr1.shape)
         print('output1:', output1.shape)
-        return output1
-        
-        # z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         
         ## z_cross_attr1 = [B, seq_len, dim] = (batch_size, 64, 1024)
         ## output1 =  [B, dim, height, width] = (baych, 1024, 8, 8)
         ## here, we should make z_cross_attr1 shape same as output 1 
         z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         print('reshaped z_cross_attr1:', z_cross_attr1.shape)
+
         output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
         return output2
         ##512x16x16 -> 256x32x32 (output3)

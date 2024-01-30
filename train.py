@@ -221,7 +221,7 @@ def train_one_epoch(G: 'generator model',
         
         tgtu = UNet(backbone='unet').to(device)
         bottlneck_attr_t, z_attr1_t, z_attr2_t, z_attr3_t, z_attr4_t, z_attr5_t, z_attr6_t, z_attr7_t = tgtu(Xt)
-        bottlneck_attr_t.shape
+        # bottlneck_attr_t.shape
         # z_attr1_t.shape
         # z_attr2_t.shape
         # z_attr4_t.shape
