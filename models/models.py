@@ -320,6 +320,9 @@ class FlowFaceCrossAttentionLayer(nn.Module):
 
         
         batch_size, seq_len, dim = x.shape
+        # a = x.shape
+        # print(a)        
+        
         # print(x_batch_size)
         
         # # return x
@@ -454,10 +457,12 @@ class FlowFaceCrossAttentionModel(nn.Module):
         y: second input (batch_size, seq_lenK (h*w), mae_dimK). y gets key. Key is Source Face
         '''      
         batch_size, w, h, dim = x.permute(0,2,3,1).shape       
-        x = x.view(batch_size, -1, dim) ##x dim = (batch_size, seq_len, dim)
-        y = y.view(batch_size, -1, dim)
-        # x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
-        # y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
+        x = x.view(batch_size, -1, dim).contiguous() ##x dim = (batch_size, seq_len, dim)
+        y = y.view(batch_size, -1, dim).contiguous()
+        # print(x.shape)
+        # print(y.shape)
+        x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
+        y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
         
         x_ca = self.FFCA(x, y)
         x = x + x_ca
