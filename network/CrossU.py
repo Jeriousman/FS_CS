@@ -21,7 +21,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         # CUMAE_cross = CrossUMLAttrEncoder(backbone='unet')
         
         # (self, seq_len: int, n_head: int, k_dim: int, q_dim: int, kv_dim: int):
-        self.FFCA0 = FlowFaceCrossAttentionModel(seq_len=self.seq_len, n_head=self.n_head, q_dim=self.q_dim, k_dim=self.k_dim, kv_dim=self.kv_dim)
+        self.FFCA0 = FlowFaceCrossAttentionModel(seq_len=self.seq_len, n_head=self.n_head, q_dim=self.q_dim, k_dim=self.k_dim, kv_dim=self.kv_dim)  ##FFCA0 = bottleneck
         self.FFCA1 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*4, n_head=self.n_head, q_dim=self.q_dim, k_dim=self.k_dim, kv_dim=self.kv_dim)
         self.FFCA2 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*16, n_head=self.n_head, q_dim=self.q_dim//2, k_dim=self.k_dim//2, kv_dim=self.kv_dim//2)
         self.FFCA3 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*64, n_head=self.n_head, q_dim=self.q_dim//4, k_dim=self.k_dim//4, kv_dim=self.kv_dim//4)
