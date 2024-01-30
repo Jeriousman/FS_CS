@@ -188,14 +188,14 @@ def train_one_epoch(G: 'generator model',
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
         
-        Xs_mae, Xs, Xt, same_person = data
+        Xs_orig, Xs, Xt, same_person = data
 
 
-        Xs_mae.to(device)  ##Xs_mae = batch_size, 3, 224, 224
+        Xs_orig = Xs_orig.to(device)  ##Xs_mae = batch_size, 3, 224, 224
         Xs = Xs.to(device)
-        Xs.shape
+        # Xs.shape
         Xt = Xt.to(device)
-        Xt.shape
+        # Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
@@ -204,7 +204,7 @@ def train_one_epoch(G: 'generator model',
         # get the identity embeddings of Xs
         with torch.no_grad():
             embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
-            
+
 
 
         diff_person = torch.ones_like(same_person)
@@ -221,6 +221,9 @@ def train_one_epoch(G: 'generator model',
         opt_G.zero_grad() ##축적된 gradients를 비워준다
         
         Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        # srcu = UNet()
+        
         Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
         ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
         
@@ -236,8 +239,10 @@ def train_one_epoch(G: 'generator model',
                                                                              embed, ZY, eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
-        with amp.scale_loss(lossG, opt_G) as scaled_loss:
-            scaled_loss.backward()
+        # with amp.scale_loss(lossG, opt_G) as scaled_loss:
+        #     scaled_loss.backward()
+        lossG.backward()
+
         opt_G.step()
         if args.scheduler:
             scheduler_G.step()
@@ -245,8 +250,9 @@ def train_one_epoch(G: 'generator model',
         # discriminator training
         opt_D.zero_grad()
         lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-        with amp.scale_loss(lossD, opt_D) as scaled_loss:
-            scaled_loss.backward()
+        # with amp.scale_loss(lossD, opt_D) as scaled_loss:
+        #     scaled_loss.backward()
+        lossD.backward() 
 
         if (not args.discr_force) or (loss_adv_accumulated < 4.):
             opt_D.step()
@@ -346,7 +352,7 @@ def train(args, device):
     
     # initializing model for identity extraction
     netArc = iresnet100(fp16=False)
-    netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
+    netArc.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
     netArc=netArc.cuda()
     netArc.eval()
 
@@ -374,8 +380,8 @@ def train(args, device):
     opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
     opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
-    G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
-    D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
+    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
+    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     
     if args.scheduler:
         scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
