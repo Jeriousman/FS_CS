@@ -319,15 +319,15 @@ class FlowFaceCrossAttentionLayer(nn.Module):
         # print(x.shape)
 
         
-        x_batch_size, x_width, x_height, x_dims = x.permute((0,2,3,1)).shape
+        x_batch_size, x_width, x_height, x_dims = x.permute(0,2,3,1).shape
         # print(x_batch_size)
         
-        # return x
-        x = x.view(x_batch_size, -1, x_dims)
+        # # return x
+        # x = x.view(x_batch_size, -1, x_dims)
         
 
-        y_batch_size, y_width, y_height, y_dims = y.permute((0,2,3,1)).shape
-        y = y.view(y_batch_size, -1, y_dims)
+        # y_batch_size, y_width, y_height, y_dims = y.permute(0,2,3,1).shape
+        # y = y.view(y_batch_size, -1, y_dims)
 
         x_inputshape = x.shape
         batch_size, seq_len, q_dim = x.shape ## q_dim = total embed dim
@@ -455,8 +455,9 @@ class FlowFaceCrossAttentionModel(nn.Module):
         '''      
         batch_size, w, h, dim = x.permute(0,2,3,1).shape       
         x = x.view(batch_size, -1, dim)
-        x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
-        y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
+        y = y.view(batch_size, -1, dim)
+        # x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
+        # y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
         
         x_ca = self.FFCA(x, y)
         x = x + x_ca
