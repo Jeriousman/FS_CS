@@ -30,20 +30,19 @@ def conv4x4(in_c, out_c, norm=nn.BatchNorm2d, same_size=False):
             nn.LeakyReLU(0.1, inplace=True)
         )
 
-
 class deconv4x4(nn.Module):
     def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
         super(deconv4x4, self).__init__()
-        self.deconv = nn.ConvTranspose2d(in_channels=in_c*2, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
+        self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False) ##H,W를 두개로 크게만듬
         self.bn = norm(out_c)
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         
-        self.deconv_same = nn.ConvTranspose2d(in_channels=out_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
+        self.deconv_same = nn.ConvTranspose2d(in_channels=out_c*2, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False) ####H,W를 같게 아웃푸팅함
         
 
     def forward(self, input, skip_tensor, backbone='unet'):
         print('input size: ', input.shape)
-        x = self.deconv_same(input)
+        x = self.deconv(input)
         x = self.bn(x)
         x = self.lrelu(x)
         print('????', x.shape)
@@ -52,7 +51,7 @@ class deconv4x4(nn.Module):
         else:
             x = torch.cat((x, skip_tensor), dim=1)
             print('concat size: ', x.shape)
-            x = self.deconv(x)
+            x = self.deconv_same(x)
             print('deconv last: ', x.shape)
             return x
 

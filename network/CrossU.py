@@ -114,6 +114,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##1024x8x8 -> 512x16x16 (output2)
         print('z_cross_attr1:', z_cross_attr1.shape)
         print('output1:', output1.shape)
+        return output1
         
         # z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         
