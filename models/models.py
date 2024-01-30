@@ -441,11 +441,11 @@ class FlowFaceCrossAttentionModel(nn.Module):
         self.pos_emb_y = nn.Parameter(torch.randn(self.seq_len , self.q_dim))
         
 
-        batch_size, w, h, dim = Xs.permute(0,2,3,1).shape       
-        Xs = Xs.view(batch_size, -1, dim)
-        # Xs.shape
-        x += self.pos_emb_x
-        y += self.pos_emb_y
+        # batch_size, w, h, dim = Xs.permute(0,2,3,1).shape       
+        # Xs = Xs.view(batch_size, -1, dim)
+        # # Xs.shape
+        # x += self.pos_emb_x
+        # y += self.pos_emb_y
 
         
     def forward(self, x, y):
@@ -455,8 +455,8 @@ class FlowFaceCrossAttentionModel(nn.Module):
         '''      
         batch_size, w, h, dim = x.permute(0,2,3,1).shape       
         x = x.view(batch_size, -1, dim)
-        x += self.pos_emb_x.reshape(batch_size, self.seq_len, self.q_dim)
-        y += self.pos_emb_y.reshape(batch_size, self.seq_len, self.q_dim)
+        x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
+        y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
         
         x_ca = self.FFCA(x, y)
         x = x + x_ca

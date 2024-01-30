@@ -38,6 +38,7 @@ import torch
 # from mae import models_mae
 print("finished imports")
 
+""" Taki """
 
 # def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
 #     # build model
