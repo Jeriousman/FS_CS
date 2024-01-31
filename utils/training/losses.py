@@ -17,7 +17,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 # def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
 #                              diff_person, same_person, args):
     
-def compute_generator_losses(G, Y, Xt, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
+def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
                              diff_person, same_person, args):
     # adversarial loss
     L_adv = 0.
@@ -31,9 +31,9 @@ def compute_generator_losses(G, Y, Xt, Xt_attr, Di, eye_heatmaps, loss_adv_accum
 
     # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
-        Y_attr = G.ca_forward(Y.type(torch.half))
+        Y_attr = G.ca_forward(Xt.type(torch.half), Xs.type(torch.half))
     else:
-        Y_attr = G.ca_forward(Y)
+        Y_attr = G.ca_forward(Xt, Xs)
     
     L_attr = 0
     for i in range(len(Xt_attr)): 
