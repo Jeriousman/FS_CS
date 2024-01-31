@@ -9,9 +9,15 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
         return torch.relu(1-X) ##X = y_hat * true_y if normal hinge loss
     else:
         return torch.relu(X+1)
+
+
+
+
     
+# def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
+#                              diff_person, same_person, args):
     
-def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, loss_adv_accumulated, 
+def compute_generator_losses(G, Y, Xt, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
                              diff_person, same_person, args):
     # adversarial loss
     L_adv = 0.
@@ -19,15 +25,15 @@ def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, los
         L_adv += hinge_loss(di[0], True).mean(dim=[1, 2, 3])
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
-    # id loss
-    L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
-    ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
+    # # id loss
+    # L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+    # ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
-    # attr loss
+    # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
-        Y_attr = G.get_attr(Y.type(torch.half))
+        Y_attr = G.ca_forward(Y.type(torch.half))
     else:
-        Y_attr = G.get_attr(Y)
+        Y_attr = G.ca_forward(Y)
     
     L_attr = 0
     for i in range(len(Xt_attr)): 
@@ -48,7 +54,8 @@ def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, los
     lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
-    return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
+    # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
+    return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes
 
 
 def compute_discriminator_loss(D, Y, Xs, diff_person):

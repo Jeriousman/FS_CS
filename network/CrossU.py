@@ -112,26 +112,26 @@ class CrossUnetAttentionGenerator(nn.Module):
         z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
         output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
         ##1024x8x8 -> 512x16x16 (output2)
-        print('output1:', output1.shape)
+        # print('output1:', output1.shape)
         # return output1
         
         ## z_cross_attr1 = [B, seq_len, dim] = (batch_size, 64, 1024)
         ## output1 =  [B, dim, height, width] = (baych, 1024, 8, 8)
         ## here, we should make z_cross_attr1 shape same as output 1 
         z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
-        print('reshaped z_cross_attr1:', z_cross_attr1.shape)
+        # print('reshaped z_cross_attr1:', z_cross_attr1.shape)
         output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
-        print('output2:', output2.shape)
+        # print('output2:', output2.shape)
         
         ##512x16x16 -> 256x32x32 (output3)
         z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
         output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
-        print('output3:', output3.shape)
+        # print('output3:', output3.shape)
         
         ##256x32x32 -> 128x64x64 (output4)
         z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
         output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
-        print('output4:', output4.shape)
+        # print('output4:', output4.shape)
         
         # ##128x64x64 -> 64x128x128 (output5)
         # output5 = self.deconv5(output4, z_cross_attr4) ## 64 > 128
@@ -141,22 +141,175 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##128x64x64 -> 64x128x128 (output5)
         # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
         output5 = self.deconv5(output4) ## 64 > 128
-        print('output5:', output5.shape)
+        # print('output5:', output5.shape)
         
         ##64x128x128 -> 32x256x256 (output6)
         # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
         output6 = self.deconv6(output5) ## 128 > 256
-        print('output6:', output6.shape)
+        # print('output6:', output6.shape)
         
         
         ##32x256x256 -> 3x256x256 (output7)
         # z_cross_attr6 = z_cross_attr6.reshape(batch_size, -1, width6, width6)
         output7 = self.deconv7(output6) ## 128 > 256
-        print('output7:', output7.shape)
+        # print('output7:', output7.shape)
         
         ##output6 = Final output of image tensor
         ##z_src_attr7 = Final image shape output of src unet
         ##z_tgt_attr7 = Final image shape output of tgt unet
         
-        return output7, src_z_attr7, tgt_z_attr7 
-        
+        return torch.tanh(output7), torch.tanh(src_z_attr7), torch.tanh(tgt_z_attr7)
+
+
+    def ca_forward(self, target, source): ##cross attention forward
+            '''
+            src나 tgt나 다 똑같다.
+            src_bottlneck_attr = 1024x4x4
+            src_z_attr1 = 1024x8x8
+            src_z_attr2 = 512x16x16
+            src_z_attr3 = 256x32x32
+            src_z_attr4 = 128x64x64
+            src_z_attr5 = 64x128x128
+            src_z_attr6 = 32x256x256
+            src_z_attr7 = 3x256x256
+            
+            output:
+            'output7, src_z_attr7, tgt_z_attr7'
+            
+            output7: The final output of CrossAttention Generator
+            src_z_attr7: The final output of source face Unet
+            tgt_z_attr7: The final output of target face Unet
+            '''
+            src_bottlneck_attr, src_z_attr1, src_z_attr2, src_z_attr3, src_z_attr4, src_z_attr5, src_z_attr6, src_z_attr7 = self.CUMAE_src(source)
+            tgt_bottlneck_attr, tgt_z_attr1, tgt_z_attr2, tgt_z_attr3, tgt_z_attr4, tgt_z_attr5, tgt_z_attr6, tgt_z_attr7 = self.CUMAE_tgt(target) ##z_tgt_attr1 img_size 8  z_tgt_attr6 img_size 256
+
+            width0= tgt_bottlneck_attr.shape[2]
+            batch_size= tgt_bottlneck_attr.shape[0]
+            width1= tgt_z_attr1.shape[2]
+            width2= tgt_z_attr2.shape[2]
+            width3= tgt_z_attr3.shape[2]
+            width4= tgt_z_attr4.shape[2]
+            width5= tgt_z_attr5.shape[2]
+            width6= tgt_z_attr6.shape[2]
+            width7= tgt_z_attr7.shape[2]
+            
+            
+            
+            ##z_cross_attr0 = 1024x4x4  this is same as bottleneck block
+            z_cross_attr0 = self.FFCA0(tgt_bottlneck_attr, src_bottlneck_attr)
+
+
+            #z_cross_attr1 = [B, 64, 1024]
+            z_cross_attr1 = self.FFCA1(tgt_z_attr1, src_z_attr1)  ##tgt_z_attr1 = [B, 1024, 8, 8]
+            ##512x16x16 
+            z_cross_attr2 = self.FFCA2(tgt_z_attr2, src_z_attr2)
+            ##256x32x32
+            z_cross_attr3 = self.FFCA3(tgt_z_attr3, src_z_attr3)
+            ##128x64x64
+            z_cross_attr4 = self.FFCA4(tgt_z_attr4, src_z_attr4)
+            # print('z_cross_attr4 passed')
+            # return z_cross_attr4
+            #64x128x128
+            # z_cross_attr5 = self.FFCA5(tgt_z_attr5, src_z_attr5)
+            #32x256x256
+            # z_cross_attr6 = self.FFCA6(tgt_z_attr6, src_z_attr6)
+            #3x256x256
+            # z_cross_attr7 = self.FFCA7(tgt_z_attr7, src_z_attr7)
+
+            
+            ##1024x4x4 -> 1024x8x8 (output1)
+            z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
+            output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
+            ##1024x8x8 -> 512x16x16 (output2)
+            
+            ## z_cross_attr1 = [B, seq_len, dim] = (batch_size, 64, 1024)
+            ## output1 =  [B, dim, height, width] = (baych, 1024, 8, 8)
+            ## here, we should make z_cross_attr1 shape same as output 1 
+            z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
+            # print('reshaped z_cross_attr1:', z_cross_attr1.shape)
+            output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
+            # print('output2:', output2.shape)
+            
+            ##512x16x16 -> 256x32x32 (output3)
+            z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
+            output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
+            # print('output3:', output3.shape)
+            
+            ##256x32x32 -> 128x64x64 (output4)
+            z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
+            output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
+            # print('output4:', output4.shape)
+            
+            # ##128x64x64 -> 64x128x128 (output5)
+            # output5 = self.deconv5(output4, z_cross_attr4) ## 64 > 128
+            # ##64x128x128 -> 32x256x256 (output6)
+            # output6 = self.deconv6(output5, z_cross_attr5) ## 128 > 256
+            
+            ##128x64x64 -> 64x128x128 (output5)
+            # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
+            output5 = self.deconv5(output4) ## 64 > 128
+            # print('output5:', output5.shape)
+            
+            ##64x128x128 -> 32x256x256 (output6)
+            # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
+            output6 = self.deconv6(output5) ## 128 > 256
+            # print('output6:', output6.shape)
+            
+            
+            ##32x256x256 -> 3x256x256 (output7)
+            # z_cross_attr6 = z_cross_attr6.reshape(batch_size, -1, width6, width6)
+            output7 = self.deconv7(output6) ## 128 > 256
+            # print('output7:', output7.shape)
+            
+            ##output6 = Final output of image tensor
+            ##z_src_attr7 = Final image shape output of src unet
+            ##z_tgt_attr7 = Final image shape output of tgt unet
+            
+            return z_cross_attr0, output1, output2, output3, output4, output5, output6, output7
+            
+            
+    def src_unet_forward(self, source):
+                '''
+                src나 tgt나 다 똑같다.
+                src_bottlneck_attr = 1024x4x4
+                src_z_attr1 = 1024x8x8
+                src_z_attr2 = 512x16x16
+                src_z_attr3 = 256x32x32
+                src_z_attr4 = 128x64x64
+                src_z_attr5 = 64x128x128
+                src_z_attr6 = 32x256x256
+                src_z_attr7 = 3x256x256
+                
+                output:
+                'output7, src_z_attr7, tgt_z_attr7'
+                
+                output7: The final output of CrossAttention Generator
+                src_z_attr7: The final output of source face Unet
+                tgt_z_attr7: The final output of target face Unet
+                '''
+                src_bottlneck_attr, src_z_attr1, src_z_attr2, src_z_attr3, src_z_attr4, src_z_attr5, src_z_attr6, src_z_attr7 = self.CUMAE_src(source)
+                return src_bottlneck_attr, src_z_attr1, src_z_attr2, src_z_attr3, src_z_attr4, src_z_attr5, src_z_attr6, src_z_attr7
+
+
+
+    def tgt_unet_forward(self, target):
+                '''
+                src나 tgt나 다 똑같다.
+                src_bottlneck_attr = 1024x4x4
+                src_z_attr1 = 1024x8x8
+                src_z_attr2 = 512x16x16
+                src_z_attr3 = 256x32x32
+                src_z_attr4 = 128x64x64
+                src_z_attr5 = 64x128x128
+                src_z_attr6 = 32x256x256
+                src_z_attr7 = 3x256x256
+                
+                output:
+                'output7, src_z_attr7, tgt_z_attr7'
+                
+                output7: The final output of CrossAttention Generator
+                src_z_attr7: The final output of source face Unet
+                tgt_z_attr7: The final output of target face Unet
+                '''
+                tgt_bottlneck_attr, tgt_z_attr1, tgt_z_attr2, tgt_z_attr3, tgt_z_attr4, tgt_z_attr5, tgt_z_attr6, tgt_z_attr7 = self.CUMAE_tgt(target)
+                return tgt_bottlneck_attr, tgt_z_attr1, tgt_z_attr2, tgt_z_attr3, tgt_z_attr4, tgt_z_attr5, tgt_z_attr6, tgt_z_attr7

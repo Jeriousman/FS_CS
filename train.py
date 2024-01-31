@@ -190,10 +190,11 @@ def train_one_epoch(G: 'generator model',
         realtime_batch_size = Xs.shape[0] 
         # break
 
-        # z,zz,zzz = G(Xs, Xt)
-        # get the identity embeddings of Xs
-        with torch.no_grad():
-            embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+
+        # # z,zz,zzz = G(Xs, Xt)
+        # # get the identity embeddings of Xs
+        # with torch.no_grad():
+        #     embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
 
 
 
@@ -206,26 +207,28 @@ def train_one_epoch(G: 'generator model',
         
         ##Generator option 2 = UMAP multiscale convolutional decoder
         
-        
+
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
         
-        Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        srcu = UNet(backbone='unet').to(device)
-        bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)
-        # bottlneck_attr.shape
-        # z_attr1.shape
-        # z_attr2.shape
+        Y, recon_src, recon_tgt = G(Xt, Xs) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        Xt_attrs = G.CUMAE_tgt(Xt)
+        Xs_attrs = G.CUMAE_src(Xs)
+        # # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        # srcu = UNet(backbone='unet').to(device)
+        # bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)
+        # # bottlneck_attr.shape
+        # # z_attr1.shape
+        # # z_attr2.shape
         
-        tgtu = UNet(backbone='unet').to(device)
-        bottlneck_attr_t, z_attr1_t, z_attr2_t, z_attr3_t, z_attr4_t, z_attr5_t, z_attr6_t, z_attr7_t = tgtu(Xt)
-        # bottlneck_attr_t.shape
-        # z_attr1_t.shape
-        # z_attr2_t.shape
-        # z_attr4_t.shape
-        # z_attr6_t.shape
-        # z_attr7_t.shape
+        # tgtu = UNet(backbone='unet').to(device)
+        # bottlneck_attr_t, z_attr1_t, z_attr2_t, z_attr3_t, z_attr4_t, z_attr5_t, z_attr6_t, z_attr7_t = tgtu(Xt)
+        # # bottlneck_attr_t.shape
+        # # z_attr1_t.shape
+        # # z_attr2_t.shape
+        # # z_attr4_t.shape
+        # # z_attr6_t.shape
+        # # z_attr7_t.shape
         
         # batch_size, w, h, dim = bottlneck_attr_t.permute(0,2,3,1).shape  
         # x = bottlneck_attr_t.view(batch_size, -1, dim) 
@@ -240,13 +243,13 @@ def train_one_epoch(G: 'generator model',
         # # e.shape
 
         
-        zzz = CrossUnetAttentionGenerator().to(device)
-        dir(zzz)
-        zzz.deconv1
-        ca, sc, tg = zzz(Xt, Xs)
-        ca.shape
-        sc.shape
-        tg.shape  
+        # zzz = CrossUnetAttentionGenerator().to(device)
+        # dir(zzz)
+        # zzz.deconv1
+        # ca, sc, tg = zzz(Xt, Xs)
+        # ca.shape
+        # sc.shape
+        # tg.shape  
         
         # deconv1 = noskip_deconv4x4(1024, 1024)  ## 4 ->  8 (w,h)
         # ress = deconv1(za)
@@ -308,7 +311,7 @@ def train_one_epoch(G: 'generator model',
         
         
         Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
-        ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
+        # ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
         
     
         if args.eye_detector_loss:
@@ -318,8 +321,8 @@ def train_one_epoch(G: 'generator model',
         else:
             eye_heatmaps = None
             
-        lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes = compute_generator_losses(G, Y, Xt, Xt_attr, Di,
-                                                                             embed, ZY, eye_heatmaps, loss_adv_accumulated, 
+        lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes = compute_generator_losses(G, Y, Xt, Xt_attrs, Di,
+                                                                             eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
