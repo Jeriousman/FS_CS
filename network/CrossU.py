@@ -139,11 +139,20 @@ class CrossUnetAttentionGenerator(nn.Module):
         # output6 = self.deconv6(output5, z_cross_attr5) ## 128 > 256
         
         ##128x64x64 -> 64x128x128 (output5)
+        # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
         output5 = self.deconv5(output4) ## 64 > 128
+        print('output5:', output5.shape)
+        
         ##64x128x128 -> 32x256x256 (output6)
+        # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
         output6 = self.deconv6(output5) ## 128 > 256
+        print('output6:', output6.shape)
+        
+        
         ##32x256x256 -> 3x256x256 (output7)
+        # z_cross_attr6 = z_cross_attr6.reshape(batch_size, -1, width6, width6)
         output7 = self.deconv7(output6) ## 128 > 256
+        print('output7:', output7.shape)
         
         ##output6 = Final output of image tensor
         ##z_src_attr7 = Final image shape output of src unet
