@@ -213,7 +213,6 @@ def train_one_epoch(G: 'generator model',
         Y, Xt_attr = G(Xt, embed) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         srcu = UNet(backbone='unet').to(device)
-
         bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)
         # bottlneck_attr.shape
         # z_attr1.shape
@@ -227,6 +226,7 @@ def train_one_epoch(G: 'generator model',
         # z_attr4_t.shape
         # z_attr6_t.shape
         # z_attr7_t.shape
+        
         batch_size, w, h, dim = bottlneck_attr_t.permute(0,2,3,1).shape  
         x = bottlneck_attr_t.view(batch_size, -1, dim) 
         x.shape
@@ -241,6 +241,8 @@ def train_one_epoch(G: 'generator model',
 
         
         zzz = CrossUnetAttentionGenerator().to(device)
+        dir(zzz)
+        zzz.deconv1
         za = zzz(Xt, Xs)
         za.shape  ##torch.Size([2, 4096, 128])
         

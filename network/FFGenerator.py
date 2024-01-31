@@ -60,6 +60,7 @@ class CAdeconv4x4(nn.Module):
     def __init__(self, in_c, out_c, norm=nn.BatchNorm2d):
         '''
         Cross Attention deconvolution layer
+        dimension transition: in_channel -> in_channel -> in_channel*2 -> out_channel
         '''
         super(CAdeconv4x4, self).__init__()
         self.deconv_input = nn.ConvTranspose2d(in_channels=in_c, out_channels=in_c, kernel_size=3, stride=1, padding=1, bias=False)
@@ -70,18 +71,18 @@ class CAdeconv4x4(nn.Module):
         
 
     def forward(self, input, skip_tensor, backbone='unet'):
-        print('input: ', input.shape)
+        # print('input: ', input.shape)
         x = self.deconv_input(input)
-        print('deconv input: ', x.shape)
+        # print('deconv input: ', x.shape)
         x = self.bn(x)
         x = self.lrelu(x)
         if backbone == 'linknet':
             return x+skip_tensor
         else:
             x = torch.cat((x, skip_tensor), dim=1)
-            print('deconv output after concat: ', x.shape)
+            # print('deconv output after concat: ', x.shape)
             x = self.deconv_same(x)
-            print('deconv output dimension reduction: ', x.shape)
+            # print('deconv output dimension reduction: ', x.shape)
             return x
 
 

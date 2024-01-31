@@ -39,13 +39,13 @@ class CrossUnetAttentionGenerator(nn.Module):
         # self.deconv6 = noskip_deconv4x4(64, 32) ## 128 > 256
         # self.deconv7 = outconv(32, 3) ## 128 > 256
         
-        self.deconv1 = noskip_deconv4x4(self.q_dim, self.q_dim)  ## 4 ->  8 (w,h)
-        self.deconv2 = CAdeconv4x4(self.q_dim, self.q_dim//2)  ## 8 > 16
-        self.deconv3 = CAdeconv4x4(self.q_dim//2, self.q_dim//4) ## 16 > 32
-        self.deconv4 = CAdeconv4x4(self.q_dim//4, self.q_dim//8) ## 32 > 64
-        self.deconv5 = noskip_deconv4x4(self.q_dim//8, self.q_dim//16) ## 64 > 128
-        self.deconv6 = noskip_deconv4x4(self.q_dim//16, self.q_dim//32) ## 128 > 256
-        self.deconv7 = outconv(self.q_dim//32, 3) ## 128 > 256
+        self.deconv1 = noskip_deconv4x4(self.q_dim, self.q_dim)  ## 1024x4x4 ->  1024x8x8 (w,h)
+        self.deconv2 = CAdeconv4x4(self.q_dim, self.q_dim//2)  ## 1024x8x8 > 512x16x16
+        self.deconv3 = CAdeconv4x4(self.q_dim//2, self.q_dim//4) ## 512x16x16 > 256x32x32
+        self.deconv4 = CAdeconv4x4(self.q_dim//4, self.q_dim//8) ## 256x32x32 > 128x64x64
+        self.deconv5 = noskip_deconv4x4(self.q_dim//8, self.q_dim//16) ## 128x64x64 > 64x128x128
+        self.deconv6 = noskip_deconv4x4(self.q_dim//16, self.q_dim//32) ## 64x128x128 > 32x256x256
+        self.deconv7 = outconv(self.q_dim//32, 3) ## 32x256x256 > 3x256x256
         
 
 
@@ -112,21 +112,26 @@ class CrossUnetAttentionGenerator(nn.Module):
         z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
         output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
         ##1024x8x8 -> 512x16x16 (output2)
-        # print('z_cross_attr1:', z_cross_attr1.shape)
         print('output1:', output1.shape)
+        # return output1
         
         ## z_cross_attr1 = [B, seq_len, dim] = (batch_size, 64, 1024)
         ## output1 =  [B, dim, height, width] = (baych, 1024, 8, 8)
         ## here, we should make z_cross_attr1 shape same as output 1 
         z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         print('reshaped z_cross_attr1:', z_cross_attr1.shape)
-
         output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
-        return output2
+        print('output2:', output2.shape)
+        
         ##512x16x16 -> 256x32x32 (output3)
+        z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
         output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
+        print('output3:', output3.shape)
+        
         ##256x32x32 -> 128x64x64 (output4)
+        z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
         output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
+        print('output4:', output4.shape)
         
         # ##128x64x64 -> 64x128x128 (output5)
         # output5 = self.deconv5(output4, z_cross_attr4) ## 64 > 128
