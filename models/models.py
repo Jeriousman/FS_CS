@@ -461,8 +461,8 @@ class FlowFaceCrossAttentionModel(nn.Module):
         y = y.view(batch_size, -1, dim).contiguous()
         # print(x.shape)
         # print(y.shape)
-        x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
-        y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
+        x = x + self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
+        y = y + self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
         
         x_ca = self.FFCA(x, y)
         x = x + x_ca

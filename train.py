@@ -308,7 +308,7 @@ def train_one_epoch(G: 'generator model',
         
         # x_ca = self.FFCA(x, y)        
 
-        
+  
         
         Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
         # ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
@@ -327,6 +327,9 @@ def train_one_epoch(G: 'generator model',
         
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
+        # lossG.backward(retain_graph=True)
+        torch.autograd.set_detect_anomaly(True)
+        # lossG.backward(retain_graph=True)
         lossG.backward()
 
         opt_G.step()
