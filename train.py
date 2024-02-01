@@ -328,7 +328,7 @@ def train_one_epoch(G: 'generator model',
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
         # lossG.backward(retain_graph=True)
-        torch.autograd.set_detect_anomaly(True)
+        # torch.autograd.set_detect_anomaly(True)
         # lossG.backward(retain_graph=True)
         lossG.backward()
 
@@ -366,7 +366,7 @@ def train_one_epoch(G: 'generator model',
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
+            # print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
             if args.eye_detector_loss:
                 print(f'L_l2_eyes: {L_l2_eyes.item()}')
             print(f'loss_adv_accumulated: {loss_adv_accumulated}')
@@ -376,7 +376,8 @@ def train_one_epoch(G: 'generator model',
         if args.use_wandb:
             if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
-            wandb.log({"loss_id": L_id.item(),
+            wandb.log({
+                # "loss_id": L_id.item(),
                        "lossD": lossD.item(),
                        "lossG": lossG.item(),
                        "loss_adv": L_adv.item(),
@@ -385,32 +386,33 @@ def train_one_epoch(G: 'generator model',
         
         if iteration % 10000 == 0:
             
-            if gpu_config['global_rank'] == 0:
+            # if gpu_config['global_rank'] == 0:
                 
-                torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
-                torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
+            #     torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+            #     torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-                torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-                torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+            #     torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+            #     torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-        if (iteration % 250 == 0) and (args.use_wandb) and gpu_config['global_rank'] == 0:
-            ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
-            G.eval()
+        # if (iteration % 250 == 0) and (args.use_wandb) and gpu_config['global_rank'] == 0:
+            # if (iteration % 250 == 0) and (args.use_wandb):
+            # ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
+            # G.eval()
 
-            res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
-            res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
-            res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
+            # res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
+            # res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
+            # res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
             
-            res4 = get_faceswap('examples/images/training//source4.png', 'examples/images/training//target4.png', G, netArc, device)
-            res5 = get_faceswap('examples/images/training//source5.png', 'examples/images/training//target5.png', G, netArc, device)  
-            res6 = get_faceswap('examples/images/training//source6.png', 'examples/images/training//target6.png', G, netArc, device)
+            # res4 = get_faceswap('examples/images/training//source4.png', 'examples/images/training//target4.png', G, netArc, device)
+            # res5 = get_faceswap('examples/images/training//source5.png', 'examples/images/training//target5.png', G, netArc, device)  
+            # res6 = get_faceswap('examples/images/training//source6.png', 'examples/images/training//target6.png', G, netArc, device)
             
-            output1 = np.concatenate((res1, res2, res3), axis=0)
-            output2 = np.concatenate((res4, res5, res6), axis=0)
+            # output1 = np.concatenate((res1, res2, res3), axis=0)
+            # output2 = np.concatenate((res4, res5, res6), axis=0)
             
-            output = np.concatenate((output1, output2), axis=1)
+            # output = np.concatenate((output1, output2), axis=1)
 
-            wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+            # wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
 
             G.train()
 
@@ -515,7 +517,6 @@ def train(args, device):
                         model_ft,
                         args,
                         dataloader,
-                        device,
                         device,
                         epoch,
                         loss_adv_accumulated)
