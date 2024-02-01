@@ -20,14 +20,14 @@ def conv4x4(in_c, out_c, norm=nn.BatchNorm2d, same_size=False):
         return nn.Sequential(
             nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False), ## halving feature map size. e.g., 256 -> 128
             norm(out_c),
-            nn.LeakyReLU(0.1, inplace=True)
+            nn.LeakyReLU(0.1)
         )
             
     else:
         return nn.Sequential(
             nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False), ## halving feature map size. e.g., 256 -> 128
             norm(out_c),
-            nn.LeakyReLU(0.1, inplace=True)
+            nn.LeakyReLU(0.1)
         )
 
 class deconv4x4(nn.Module):
@@ -35,7 +35,7 @@ class deconv4x4(nn.Module):
         super(deconv4x4, self).__init__()
         self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False) ##H,W를 두개로 크게만듬
         self.bn = norm(out_c)
-        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.lrelu = nn.LeakyReLU(0.1)
         
         self.deconv_same = nn.ConvTranspose2d(in_channels=out_c*2, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False) ####H,W를 같게 아웃푸팅함
         
@@ -65,7 +65,7 @@ class CAdeconv4x4(nn.Module):
         super(CAdeconv4x4, self).__init__()
         self.deconv_input = nn.ConvTranspose2d(in_channels=in_c, out_channels=in_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn = norm(in_c)
-        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.lrelu = nn.LeakyReLU(0.1)
         
         self.deconv_same = nn.ConvTranspose2d(in_channels=in_c*2, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
         
@@ -102,7 +102,7 @@ class noskip_deconv4x4(nn.Module):
         super(noskip_deconv4x4, self).__init__()
         self.deconv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=4, stride=2, padding=1, bias=False)
         self.bn = norm(out_c)
-        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.lrelu = nn.LeakyReLU(0.1)
 
     def forward(self, input):
         x = self.deconv(input)

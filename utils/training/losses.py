@@ -32,6 +32,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
         Y_attr = G.ca_forward(Xt.type(torch.half), Xs.type(torch.half))
+        
     else:
         Y_attr = G.ca_forward(Xt, Xs)
     
@@ -51,7 +52,8 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         L_l2_eyes = 0
         
     # final loss of generator
-    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
+    # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
+    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes

@@ -33,7 +33,7 @@ class NLayerDiscriminator(nn.Module):
 
         kw = 4  ## kernel size
         padw = int(np.ceil((kw-1.0)/2))  ##pad size
-        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]  ##ndf here means output channel
+        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, False)]]  ##ndf here means output channel
 
         nf = ndf
         for n in range(1, n_layers):
@@ -41,7 +41,7 @@ class NLayerDiscriminator(nn.Module):
             nf = min(nf * 2, 512) ##무조건 512보다는 작게하자는 것 
             sequence += [[
                 nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=2, padding=padw),
-                norm_layer(nf), nn.LeakyReLU(0.2, True)
+                norm_layer(nf), nn.LeakyReLU(0.2, False)
             ]]
 
         ##for the one before last layer
@@ -50,7 +50,7 @@ class NLayerDiscriminator(nn.Module):
         sequence += [[
             nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=1, padding=padw),
             norm_layer(nf),
-            nn.LeakyReLU(0.2, True)
+            nn.LeakyReLU(0.2, False)
         ]]
 
 

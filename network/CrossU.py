@@ -73,8 +73,9 @@ class CrossUnetAttentionGenerator(nn.Module):
         # print('src_bottlneck_attr size: ', src_bottlneck_attr.shape)
         tgt_bottlneck_attr, tgt_z_attr1, tgt_z_attr2, tgt_z_attr3, tgt_z_attr4, tgt_z_attr5, tgt_z_attr6, tgt_z_attr7 = self.CUMAE_tgt(target) ##z_tgt_attr1 img_size 8  z_tgt_attr6 img_size 256
         # print('tgt_unet passed')
-        width0= tgt_bottlneck_attr.shape[2]
+        
         batch_size= tgt_bottlneck_attr.shape[0]
+        width0= tgt_bottlneck_attr.shape[2]
         width1= tgt_z_attr1.shape[2]
         width2= tgt_z_attr2.shape[2]
         width3= tgt_z_attr3.shape[2]
