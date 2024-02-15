@@ -9,9 +9,9 @@ from PIL import Image
 import os
 
 ##For Native Torch multi GPUs
-from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel
-from torch.distributed import init_process_group, destroy_process_group
+# from torch.utils.data.distributed import DistributedSampler
+# from torch.nn.parallel import DistributedDataParallel
+# from torch.distributed import init_process_group, destroy_process_group
 
 
 from torch.utils.data import DataLoader
@@ -492,11 +492,14 @@ def train(args, device):
     # if args.vgg:
     
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    # dataset = FaceEmbedCombined(celeba_data_path=args.celeba_data_path, ffhq_data_path=args.ffhq_data_path, vgg_data_path=args.ffhq_data_path, dob_data_path=args.dob_data_path, same_prob=0.8, same_identity=args.same_identity)
+    dataset = FaceEmbedCombined(ffhq_data_path=args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
+
+
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+
     ##In case of multi GPU, turn off shuffle
     # dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=DistributedSampler(dataset, shuffle=True))
 
@@ -567,9 +570,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # dataset params
     ##the 4 arguments are newly added by Hojun
-    parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
-    parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
+    # parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
@@ -582,6 +585,9 @@ if __name__ == "__main__":
     parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
+    parser.add_argument('--weight_cycle', default=5., type=float, help='Eyes Loss weight')
+    parser.add_argument('--weight_identity', default=5., type=float, help='Eyes Loss weight')
+    
     # training params you may want to change
     
     

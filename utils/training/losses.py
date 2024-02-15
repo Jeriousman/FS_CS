@@ -51,9 +51,27 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     else:
         L_l2_eyes = 0
         
+        
+    ## Cycle GAN loss 
+    
+    if args.cycleloss:
+        swapped_face, recon_src, recon_tgt = G(Xt, Xs)
+        cycleloss_src = l1_loss(swapped_face, recon_src)
+        cycleloss_tgt = l1_loss(swapped_face, recon_tgt)
+        L_cycle = cycleloss_src + cycleloss_tgt
+        ## identity loss
+        identityloss_src = l1_loss(Xs, recon_src)
+        identityloss_tgt = l1_loss(Xt, recon_tgt) 
+        L_identity = identityloss_src + identityloss_tgt
+        
+
+         
+        
+    
+        
     # final loss of generator
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
+    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_identity*L_identity
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
