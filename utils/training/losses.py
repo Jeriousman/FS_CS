@@ -78,7 +78,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity
 
 
-def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person):
+def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device):
     # fake part
     fake_D = D(Y.detach())
     loss_fake = 0
@@ -93,12 +93,15 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person):
 
     lossD = 0.5*(loss_true.mean() + loss_fake.mean())
     
+    disc_src = PatchDiscriminator(3).to(device)
+    disc_tgt = PatchDiscriminator(3).to(device)
+
     
     ## cyclegan loss for Unet reconstruction
-    disc_src_fake = PatchDiscriminator(recon_Xs)
-    disc_src_real = PatchDiscriminator(Xs)
-    disc_tgt_fake = PatchDiscriminator(recon_Xt)
-    disc_tgt_real = PatchDiscriminator(Xt)
+    disc_src_fake = disc_src(recon_Xs)
+    disc_src_real = disc_src(Xs)
+    disc_tgt_fake = disc_tgt(recon_Xt)
+    disc_tgt_real = disc_tgt(Xt)
 
     disc_src_fake_loss = l2_loss(disc_src_fake, torch.ones_like(disc_src_fake))
     disc_src_real_loss = l2_loss(disc_src_real, torch.ones_like(disc_src_real))
