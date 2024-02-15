@@ -215,10 +215,7 @@ def train_one_epoch(G: 'generator model',
         Xt_attrs = G.CUMAE_tgt(Xt)
         Xs_attrs = G.CUMAE_src(Xs)
         
-        # disc_src_fake = PatchDiscriminator(recon_src)
-        # disc_src_real = PatchDiscriminator(Xs)
-        # disc_tgt_fake = PatchDiscriminator(recon_tgt)
-        # disc_tgt_real = PatchDiscriminator(Xt)
+
         
         
         ##cycle gan discriminator
@@ -349,7 +346,9 @@ def train_one_epoch(G: 'generator model',
         
         # discriminator training
         opt_D.zero_grad()
-        lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
+        # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
+        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person)
+        
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()
         lossD.backward() 
@@ -503,9 +502,9 @@ def train(args, device):
     # if args.vgg:
     
     # dataset = FaceEmbedCombined(args.vgg_dataset_path, args.dob_dataset_path, args.celeba_dataset_path, same_prob=0.8, same_identity=args.same_identity)
-    dataset = FaceEmbedCombined(ffhq_data_path=args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
+    # dataset = FaceEmbedCombined(ffhq_data_path=args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
+    dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
 
 
@@ -596,8 +595,8 @@ if __name__ == "__main__":
     parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
-    parser.add_argument('--weight_cycle', default=5., type=float, help='Eyes Loss weight')
-    parser.add_argument('--weight_identity', default=5., type=float, help='Eyes Loss weight')
+    parser.add_argument('--weight_cycle', default=5., type=float, help='cycle Loss weight for generator')
+    parser.add_argument('--weight_identity', default=5., type=float, help='identity Loss weight for generator')
     
     # training params you may want to change
     
@@ -625,6 +624,8 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
     parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
+    parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
+    
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
     # parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')

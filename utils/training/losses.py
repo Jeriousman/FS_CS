@@ -54,7 +54,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         
     ## Cycle GAN loss 
     
-    if args.cycleloss:
+    if args.cycle_loss:
         swapped_face, recon_src, recon_tgt = G(Xt, Xs)
         cycleloss_src = l1_loss(swapped_face, recon_src)
         cycleloss_tgt = l1_loss(swapped_face, recon_tgt)
@@ -95,7 +95,6 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person):
     
     
     ## cyclegan loss for Unet reconstruction
-
     disc_src_fake = PatchDiscriminator(recon_Xs)
     disc_src_real = PatchDiscriminator(Xs)
     disc_tgt_fake = PatchDiscriminator(recon_Xt)
@@ -113,11 +112,3 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person):
     
     return lossD + lossCycle
 
-
-        
-        disc_src_fake = PatchDiscriminator(recon_src)
-        disc_src_real = PatchDiscriminator(Xs)
-        disc_tgt_fake = PatchDiscriminator(recon_tgt)
-        disc_tgt_real = PatchDiscriminator(Xt)
-        
-        
