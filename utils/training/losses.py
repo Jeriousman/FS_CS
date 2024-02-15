@@ -102,16 +102,22 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, de
     disc_src_real = disc_src(Xs)
     disc_tgt_fake = disc_tgt(recon_Xt)
     disc_tgt_real = disc_tgt(Xt)
+    
+    # disc_src_fake = disc_src(recon_src)
+    # disc_src_real = disc_src(Xs)
+    # disc_tgt_fake = disc_tgt(recon_tgt)
+    # disc_tgt_real = disc_tgt(Xt)
+    
 
-    disc_src_fake_loss = l2_loss(disc_src_fake, torch.ones_like(disc_src_fake))
+    disc_src_fake_loss = l2_loss(disc_src_fake, torch.zeros_like(disc_src_fake))
     disc_src_real_loss = l2_loss(disc_src_real, torch.ones_like(disc_src_real))
     disc_src_loss = disc_src_fake_loss + disc_src_real_loss
     
-    disc_tgt_fake_loss = l2_loss(disc_tgt_fake, torch.ones_like(disc_tgt_fake))
+    disc_tgt_fake_loss = l2_loss(disc_tgt_fake, torch.zeros_like(disc_tgt_fake))
     disc_tgt_real_loss = l2_loss(disc_tgt_real, torch.ones_like(disc_tgt_real))
     disc_tgt_loss = disc_tgt_fake_loss + disc_tgt_real_loss
     
     lossCycle = (disc_src_loss + disc_tgt_loss)/2
     
-    return lossD + lossCycle
+    return lossD + lossCycle.item()
 

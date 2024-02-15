@@ -347,7 +347,7 @@ def train_one_epoch(G: 'generator model',
         # discriminator training
         opt_D.zero_grad()
         # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person)
+        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person, device)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()
