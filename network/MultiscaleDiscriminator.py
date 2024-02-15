@@ -126,7 +126,7 @@ class MultiscaleDiscriminator(nn.Module):
 
 class PatchDiscriminator(nn.Module):
     def __init__(self, input_nc):
-        super(Discriminator, self).__init__()
+        super(PatchDiscriminator, self).__init__()
 
         # A bunch of convolutions one after another
         model = [   nn.Conv2d(input_nc, 64, 4, stride=2, padding=1),  ## H,W = 256 -> 128
