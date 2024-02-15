@@ -1,5 +1,5 @@
 import torch
-
+from network.MultiscaleDiscriminator import PatchDiscriminator
 l1_loss = torch.nn.L1Loss()
 l2_loss = torch.nn.MSELoss()
 
@@ -78,7 +78,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity
 
 
-def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, diff_person):
+def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person):
     # fake part
     fake_D = D(Y.detach())
     loss_fake = 0
@@ -94,8 +94,30 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, diff_person):
     lossD = 0.5*(loss_true.mean() + loss_fake.mean())
     
     
-    # ## cyclegan loss 
-    # l2_loss(recon_Xt, torch.ones_like(recon_Xt))
-    # l2_loss(recon_Xs, torch.ones_like(recon_Xs))
+    ## cyclegan loss for Unet reconstruction
 
-    return lossD
+    disc_src_fake = PatchDiscriminator(recon_Xs)
+    disc_src_real = PatchDiscriminator(Xs)
+    disc_tgt_fake = PatchDiscriminator(recon_Xt)
+    disc_tgt_real = PatchDiscriminator(Xt)
+
+    disc_src_fake_loss = l2_loss(disc_src_fake, torch.ones_like(disc_src_fake))
+    disc_src_real_loss = l2_loss(disc_src_real, torch.ones_like(disc_src_real))
+    disc_src_loss = disc_src_fake_loss + disc_src_real_loss
+    
+    disc_tgt_fake_loss = l2_loss(disc_tgt_fake, torch.ones_like(disc_tgt_fake))
+    disc_tgt_real_loss = l2_loss(disc_tgt_real, torch.ones_like(disc_tgt_real))
+    disc_tgt_loss = disc_tgt_fake_loss + disc_tgt_real_loss
+    
+    lossCycle = (disc_src_loss + disc_tgt_loss)/2
+    
+    return lossD + lossCycle
+
+
+        
+        disc_src_fake = PatchDiscriminator(recon_src)
+        disc_src_real = PatchDiscriminator(Xs)
+        disc_tgt_fake = PatchDiscriminator(recon_tgt)
+        disc_tgt_real = PatchDiscriminator(Xt)
+        
+        

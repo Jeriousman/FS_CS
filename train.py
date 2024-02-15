@@ -214,6 +214,17 @@ def train_one_epoch(G: 'generator model',
         Y, recon_src, recon_tgt = G(Xt, Xs) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         Xt_attrs = G.CUMAE_tgt(Xt)
         Xs_attrs = G.CUMAE_src(Xs)
+        
+        # disc_src_fake = PatchDiscriminator(recon_src)
+        # disc_src_real = PatchDiscriminator(Xs)
+        # disc_tgt_fake = PatchDiscriminator(recon_tgt)
+        # disc_tgt_real = PatchDiscriminator(Xt)
+        
+        
+        ##cycle gan discriminator
+        
+        
+        
         # # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         # srcu = UNet(backbone='unet').to(device)
         # bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
-
+import torch
 """ kw = 4  ## kernel size
 padw = int(np.ceil((kw-1.0)/2))  ##pad size
 ndf = 64
@@ -124,7 +124,7 @@ class MultiscaleDiscriminator(nn.Module):
 
 
 
-class Discriminator(nn.Module):
+class PatchDiscriminator(nn.Module):
     def __init__(self, input_nc):
         super(Discriminator, self).__init__()
 
@@ -145,11 +145,11 @@ class Discriminator(nn.Module):
                     nn.LeakyReLU(0.2, inplace=True) ]
 
         # FCN classification layer
-        model += [nn.Conv2d(512, 1, 4, padding=1)]
+        model += [nn.Conv2d(512, 1, 4, padding=1)]  ## H,W = 16 -> 8
 
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
-        x =  self.model(x)
-        # Average pooling and flatten
-        return F.avg_pool2d(x, x.size()[2:]).view(x.size()[0], -1)
+        x =  torch.sigmoid(self.model(x))
+        
+        return x
