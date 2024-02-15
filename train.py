@@ -392,7 +392,10 @@ def train_one_epoch(G: 'generator model',
                        "lossG": lossG.item(),
                        "loss_adv": L_adv.item(),
                        "loss_attr": L_attr.item(),
-                       "loss_rec": L_rec.item()})
+                       "loss_rec": L_rec.item(),
+                       "loss_cycle": L_cycle.item(),
+                       "loss_identity": L_identity.item()
+                       })
         
         if iteration % 10000 == 0:
             
