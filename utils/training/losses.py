@@ -75,10 +75,10 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes
+    return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity
 
 
-def compute_discriminator_loss(D, Y, Xs, diff_person):
+def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, diff_person):
     # fake part
     fake_D = D(Y.detach())
     loss_fake = 0
@@ -92,5 +92,10 @@ def compute_discriminator_loss(D, Y, Xs, diff_person):
         loss_true += torch.sum(hinge_loss(di[0], True).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
 
     lossD = 0.5*(loss_true.mean() + loss_fake.mean())
+    
+    
+    # ## cyclegan loss 
+    # l2_loss(recon_Xt, torch.ones_like(recon_Xt))
+    # l2_loss(recon_Xs, torch.ones_like(recon_Xs))
 
     return lossD

@@ -1,5 +1,6 @@
 import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
 
 """ kw = 4  ## kernel size
 padw = int(np.ceil((kw-1.0)/2))  ##pad size
@@ -120,3 +121,35 @@ class MultiscaleDiscriminator(nn.Module):
             if i != (num_D - 1):
                 input_downsampled = self.downsample(input_downsampled)
         return result
+
+
+
+class Discriminator(nn.Module):
+    def __init__(self, input_nc):
+        super(Discriminator, self).__init__()
+
+        # A bunch of convolutions one after another
+        model = [   nn.Conv2d(input_nc, 64, 4, stride=2, padding=1),  ## H,W = 256 -> 128
+                    nn.LeakyReLU(0.2, inplace=True) ]
+
+        model += [  nn.Conv2d(64, 128, 4, stride=2, padding=1),  ## H,W = 128 -> 64
+                    nn.InstanceNorm2d(128), 
+                    nn.LeakyReLU(0.2, inplace=True) ]
+
+        model += [  nn.Conv2d(128, 256, 4, stride=2, padding=1), ## H,W = 64 -> 32
+                    nn.InstanceNorm2d(256), 
+                    nn.LeakyReLU(0.2, inplace=True) ]
+
+        model += [  nn.Conv2d(256, 512, 4, padding=1),   ## H,W = 32 -> 16
+                    nn.InstanceNorm2d(512), 
+                    nn.LeakyReLU(0.2, inplace=True) ]
+
+        # FCN classification layer
+        model += [nn.Conv2d(512, 1, 4, padding=1)]
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x):
+        x =  self.model(x)
+        # Average pooling and flatten
+        return F.avg_pool2d(x, x.size()[2:]).view(x.size()[0], -1)

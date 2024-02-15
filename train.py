@@ -321,7 +321,7 @@ def train_one_epoch(G: 'generator model',
         else:
             eye_heatmaps = None
             
-        lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes = compute_generator_losses(G, Y, Xt, Xs, Xt_attrs, Di,
+        lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity = compute_generator_losses(G, Y, Xt, Xs, Xt_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args)
         
