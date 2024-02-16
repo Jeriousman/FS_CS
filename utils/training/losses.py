@@ -1,5 +1,7 @@
 import torch
 from network.MultiscaleDiscriminator import PatchDiscriminator
+# from info_nce import InfoNCE, info_nce
+##https://github.com/RElbers/info-nce-pytorch
 l1_loss = torch.nn.L1Loss()
 l2_loss = torch.nn.MSELoss()
 
@@ -121,3 +123,8 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, de
     
     return lossD + lossCycle.item()
 
+
+
+# def infoNce_id_loss(batch):
+#     result = -math.log(exp(sim(swapepd, source))/(exp(sim(swapped, target) + sigma(exp(swapped, negative))))
+    
