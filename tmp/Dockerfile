@@ -33,9 +33,9 @@ RUN pip3 install --no-cache-dir -Iv \
     insightface==0.2.0 requests kornia==0.5.11 dill wandb \
     # insightface requests kornia dill wandb \
     # insightface requests kornia==0.5.11 dill wandb \
-    notebook ipython ipykernel psutil==5.9.2 \ 
+    notebook ipython ipykernel psutil==5.9.2 \
     ##from here it is for MAE environment
-    timm==0.4.12 matplotlib
+    timm==0.4.12 matplotlib info-nce-pytorch
     # timm matplotlib
 
 # COPY models/mae/helpers.py /opt/conda/lib/python3.7/site-packages/timm/layers/helpers.py   

@@ -1,6 +1,7 @@
 import torch
 from network.MultiscaleDiscriminator import PatchDiscriminator
 from torch.nn import functional as F
+from info_nce import InfoNCE, info_nce
 
 # from info_nce import InfoNCE, info_nce
 ##https://github.com/RElbers/info-nce-pytorch
