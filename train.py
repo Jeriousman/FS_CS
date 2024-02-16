@@ -216,7 +216,9 @@ def train_one_epoch(G: 'generator model',
         Xs_attrs = G.CUMAE_src(Xs)
         
 
-        
+        # SrcId = IdExtractor(source)
+        # TgtId = IdExtractor(target)
+        # NegId = IdExtractor(residuals)
         
         ##cycle gan discriminator
         
