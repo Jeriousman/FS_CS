@@ -186,18 +186,30 @@ def train_one_epoch(G: 'generator model',
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
         
-        Xs_orig, Xs, Xt, same_person = data
+        Xs_id, Xt_id, Xs, Xt, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
-
-        Xs_orig = Xs_orig.to(device)  ##Xs_mae = batch_size, 3, 224, 224
+        #Xs_orig = Xs_orig.to(device)  ##Xs_mae = batch_size, 3, 224, 224
         Xs = Xs.to(device)
-        
         # Xs.shape
         Xt = Xt.to(device)
         # Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
+
+
+        # # z,zz,zzz = G(Xs, Xt)
+        # # get the identity embeddings of Xs
+        # with torch.no_grad():
+        #     embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+        
+        f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
+        f_id_path = "extractor/arcface_model/backbone.pth"
+
+        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
+
+
+        output_coeff = id_extractor(Xs_id, Xt_id)
 
 
 

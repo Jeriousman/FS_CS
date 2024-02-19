@@ -31,7 +31,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
     @torch.no_grad()
     def forward(self, i_source, i_target):
 
-        lm3d_std = load_lm3d("./models/deep3D/BFM") 
+        lm3d_std = load_lm3d("./deep3D/BFM") 
 
         # preprocess for deep3d against i_source
 
