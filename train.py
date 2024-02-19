@@ -180,6 +180,8 @@ def train_one_epoch(G: 'generator model',
     f_id_path = "models/arcface_model/backbone.pth"
     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
     
+    print(id_extractor)
+    
     # Xs.shape
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
@@ -524,8 +526,8 @@ def train(args, device):
 
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    print(next(iter(dataloader)))
-    print(next(iter(dataloader))[0])
+    # print(next(iter(dataloader)))
+    # print(next(iter(dataloader))[0])
     ##In case of multi GPU, turn off shuffle
     # dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=DistributedSampler(dataset, shuffle=True))
 
@@ -535,21 +537,22 @@ def train(args, device):
     # Будем считать аккумулированный adv loss, чтобы обучать дискриминатор только когда он ниже порога, если discr_force=True
     loss_adv_accumulated = 20.
     
-    # for epoch in range(0, max_epoch):
-    #     train_one_epoch(G,
-    #                     D,
-    #                     opt_G,
-    #                     opt_D,
-    #                     scheduler_G,
-    #                     scheduler_D,
-    #                     netArc,
-    #                     model_ft,
-    #                     args,
-    #                     dataloader,
-    #                     device,
-    #                     epoch,
-    #                     loss_adv_accumulated)
-    #                     # config)
+    for epoch in range(0, max_epoch):
+        train_one_epoch(G,
+                        D,
+                        opt_G,
+                        opt_D,
+                        scheduler_G,
+                        scheduler_D,
+                        netArc,
+                        model_ft,
+                        args,
+                        dataloader,
+                        device,
+                        epoch,
+                        loss_adv_accumulated)
+                        # config)
+        
 
 def main(args):
     

@@ -568,8 +568,8 @@ class FaceEmbedCombined(TensorDataset):
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')
         
-        print('self.total_dataset', self.total_dataset[:10])
-        print("fasdf")
+        # print('self.total_dataset', self.total_dataset[:10])
+        # print("fasdf")
 
         self.folder2imgs = {}
         
@@ -613,7 +613,7 @@ class FaceEmbedCombined(TensorDataset):
         
         self.transforms_base = transforms.Compose([
             transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
-            transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+            # transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
             transforms.Resize((256, 256)),
             transforms.ToTensor(),
             # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
@@ -635,7 +635,7 @@ class FaceEmbedCombined(TensorDataset):
                 
             elif idx >= self.ffhq_len + self.celeba_len:
                 image_path = self.total_dataset[idx]
-                transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person = self.fetch_vgg_dob(image_path)
+                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person =self.fetch_vgg_dob(image_path)
                 
         # elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
         #     if idx < self.celeba_len:
@@ -654,30 +654,37 @@ class FaceEmbedCombined(TensorDataset):
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')        
 
-        return transforms_arcface_Xs, transforms_base_Xs,  transforms_base_Xt, same_person
+        return transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs,  transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person
 
     def __len__(self):
         return self.total_dataset_len
 
     def fetch_ffhq_celeba(self, image_path):
-        print('image_path', image_path)
+        # print('image_path', image_path)
         Xs = cv2.imread(image_path)[:, :, ::-1]
         Xs = Image.fromarray(Xs)
         
         ## 4가지 input (parsing) :데이터 구조 (원본 이미지 디렉토리와 같은 계층에 'parsed_img' 폴더가 있어야함)
         # img_folder_dir = '/'.join(image_path.split('/')[:-1])
-        img_folder_num = image_path.split('/')[-2]
-        img_folder_dir = '/datasets/FFHQ_parsed_img'
-        img_file_name = image_path.split('/')[-1].split('.')[-2] + '/' + img_folder_num
+        # Xsf = cv2.imread(img_parsed_dir + img_file_name + '_f.jpg')[:, :, ::-1]
+        
+        # Xsb = cv2.imread(img_parsed_dir + img_file_name + '_b.jpg')[:, :, ::-1]
+        img_file_name = image_path.split('/')[-1].split('.')[-2]
+        img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
+        img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
+        # print(img_parsed_dir + img_file_name + '_f.jpg')
+        Xsf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
+        Xsf = Image.fromarray(Xsf)
+        Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
+        Xsb = Image.fromarray(Xsb)
         # img_type = image_path.split('/')[-1].split('.')[-1]
         # img_parsed_dir = '/parsed_img/'
         
         # print('img_folder_dir', img_folder_dir)
-        # print('img_parsed_dir', img_parsed_dir)
-        # print('img_file_name', img_file_name)
         
-        Xsf = cv2.imread(img_file_name + '_f.jpg')[:, :, ::-1]
-        Xsb = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_b.jpg')[:, :, ::-1]
+        ######gdfgsdfgdfgsdgf
+        #Xsf = cv2.imread(img_file_name + '_f.jpg')[:, :, ::-1]
+        #Xsb = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_b.jpg')[:, :, ::-1]
 
         
         # Xs = cv2.imread(image_path.split('/')[:-1] + '/FB')[:, :, ::-1]
@@ -692,19 +699,26 @@ class FaceEmbedCombined(TensorDataset):
             Xt = Image.fromarray(Xt)
 
             ## 4가지 input (parsing) :데이터 구조 (원본 이미지 디렉토리와 같은 계층에 'parsed_img' 폴더가 있어야함)
-            img_folder_dir = '/'.join(image_path.split('/')[:-1])
             img_file_name = image_path.split('/')[-1].split('.')[-2]
-            # img_type = image_path.split('/')[-1].split('.')[-1]
-            img_parsed_dir = '/parsed_img/'
-            Xtf = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_f.jpg')[:, :, ::-1]
-            Xtb = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_b.jpg')[:, :, ::-1]
+            img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
+            img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
+            Xtf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
+            Xtb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
+            Xtf = Image.fromarray(Xtf)
+            Xtb = Image.fromarray(Xtb)
+            
+                    ######gdfgsdfgdfgsdgf
+            #Xtf = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_f.jpg')[:, :, ::-1]
+            #Xtb = cv2.imread(img_folder_dir +  img_parsed_dir + img_file_name + '_b.jpg')[:, :, ::-1]
             
             same_person = 0
         else:
             Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함 
+            Xtf = Xsf.copy()
+            Xtb = Xsb.copy()
             same_person = 1
             
-        return self.transforms_id_ext(Xs),self.transforms_id_ext(Xt), self.transforms_base(Xs), self.transforms_base(Xt), self.transforms_base(Xtf), self.transforms_base(Xtb), self.transforms_base(Xsf), self.transforms_base(sb), same_person
+        return self.transforms_id_ext(Xs),self.transforms_id_ext(Xt), self.transforms_base(Xs), self.transforms_base(Xt), self.transforms_base(Xtf), self.transforms_base(Xtb), self.transforms_base(Xsf), self.transforms_base(Xsb), same_person
 
     def fetch_vgg_dob(self, image_path):
 

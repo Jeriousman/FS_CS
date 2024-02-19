@@ -12,6 +12,7 @@
 		"--name", "ghost-crossu",
 		"-v", "/IM_data/:/datasets/DOB",
 		"-v", "/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets/FFHQ",
+		"-v", "/dev_storage/tory/data/processedIMG/FFHQ:/datasets/FFHQ_parsed_img",
 		"-v", "/dev_storage/tory/data/CelebAMask-HQ:/datasets/CelebHQ",
 		"-v", "/dev_storage/tory/data/parsedVGG:/datasets/VGG",
 		"-v", "/dev_storage/tory/data/pretrained:/datasets/pretrained",
