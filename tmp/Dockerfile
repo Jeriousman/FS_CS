@@ -26,7 +26,7 @@ WORKDIR /workspace
 #     notebook ipython ipykernel psutil==5.9.2
 
 RUN pip3 install --no-cache-dir -Iv \
-    numpy==1.20.3 opencv-python==4.5.5.64 onnx==1.12.0 \
+    numpy==1.20.3 opencv-python==4.3.0.38 onnx==1.12.0 \
     # numpy opencv-python==4.5.5.64 onnx \
     onnxruntime-gpu==1.7.0 mxnet-cu111 mxnet-mkl scikit-image \
     # onnxruntime-gpu mxnet-cu116 mxnet-mkl scikit-image \

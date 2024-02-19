@@ -25,7 +25,7 @@ import torch.optim.lr_scheduler as scheduler
 # sys.path.append('./apex/')
 # from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator, UNet
-from extractor.SA_idextractor import ShapeAwareIdentityExtractor
+from models.SA_idextractor import ShapeAwareIdentityExtractor
 # from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
