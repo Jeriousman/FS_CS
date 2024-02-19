@@ -25,7 +25,7 @@ import torch.optim.lr_scheduler as scheduler
 # sys.path.append('./apex/')
 # from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator, UNet
-from models.SA_idextractor import ShapeAwareIdentityExtractor
+from extractor.SA_idextractor import ShapeAwareIdentityExtractor
 # from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
@@ -34,7 +34,7 @@ from utils.training.losses import hinge_loss, compute_discriminator_loss, comput
 from utils.training.detector import detect_landmarks, paint_eyes
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
-from models.models import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
+from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
 import torch
 # from mae import models_mae
 print("finished imports")
@@ -176,8 +176,8 @@ def train_one_epoch(G: 'generator model',
     # finaloutput = FFCA0(t[0],s[0])
     
     ##loading pretrained models for extracting IDs
-    f_3d_path = "models/deep3D/models/pretrained_model/pretrained_model.pth"
-    f_id_path = "models/arcface_model/backbone.pth"
+    f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
+    f_id_path = "extractor/arcface_model/backbone.pth"
     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
     
     print(id_extractor)

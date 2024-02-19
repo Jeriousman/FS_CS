@@ -1,10 +1,10 @@
-from models.deep3D.models import networks
+from deep3D.models import networks
 from PIL import Image
 import numpy as np
 import torch
 import os
 import os.path as osp
-from models.deep3D.util.preprocess import align_img
+from deep3D.util.preprocess import align_img
 import torchvision.transforms as transforms
 
 

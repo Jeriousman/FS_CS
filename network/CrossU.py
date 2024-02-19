@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.models import FlowFaceCrossAttentionModel
+from models.model import FlowFaceCrossAttentionModel
 from network.FFGenerator import UNet, deconv4x4, noskip_deconv4x4, outconv, CAdeconv4x4
 
 class CrossUnetAttentionGenerator(nn.Module):

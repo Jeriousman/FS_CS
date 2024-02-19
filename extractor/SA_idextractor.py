@@ -1,10 +1,13 @@
 import torch
 import torch.nn as nn
-from models.arcface_model.iresnet import iresnet100
+from extractor.arcface_model.iresnet import iresnet100
 import sys
 from utils.deep3d import *
 import torch.nn.functional as F
-sys.path.append('./models/')
+sys.path.append('./extractor/')
+#sys.path.append('./models/')
+#sys.path.append('./models/deep3D')
+#sys.path.append('./models/deep3D/models')
 
 
 class ShapeAwareIdentityExtractor(nn.Module):
@@ -13,10 +16,13 @@ class ShapeAwareIdentityExtractor(nn.Module):
         
         self.device = torch.device(0)
 
+
+
         self.f_3d = torch.load(f_3d_checkpoint_path)
         self.f_3d = self.f_3d.to(self.device)
         self.f_3d.eval()
 
+        print("hurray")
         self.f_id = iresnet100(pretrained=False, fp16=False)
         self.f_id.load_state_dict(torch.load(f_id_checkpoint_path, map_location='cpu'))
         self.f_id.eval()
