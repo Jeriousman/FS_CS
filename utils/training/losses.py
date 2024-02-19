@@ -128,7 +128,14 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, de
 
 
 
-# def infoNce_id_loss(source_id, target_id, swapped_id, negative_id):
-    
+def infoNce_id_loss(swapped_ids, source_ids, negative_ids):
+        
+    loss = InfoNCE(negative_mode='unpaired') # negative_mode='unpaired' is the default value
+#     batch_size, num_negative, embedding_size = 32, 48, 128
+#     query = torch.randn(batch_size, embedding_size)
+#     positive_key = torch.randn(batch_size, embedding_size)
+#     negative_keys = torch.randn(num_negative, embedding_size)
+    infonce_loss = loss(swapped_ids, source_ids, negative_ids)
+    return infonce_loss
 #     result = -math.log(exp(F.cosine_similarity(swapepd, source))/(exp(F.cosine_similarity(swapped, target) + sigma(exp(F.cosine_similarity(swapped, negative))))
     

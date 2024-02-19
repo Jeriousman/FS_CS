@@ -25,6 +25,7 @@ import torch.optim.lr_scheduler as scheduler
 # sys.path.append('./apex/')
 # from apex import amp
 from network.CrossU import CrossUnetAttentionGenerator, UNet
+from extractor.SA_idextractor import ShapeAwareIdentityExtractor
 # from network.AEI_Net import *
 from network.MultiscaleDiscriminator import *
 from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir, FaceEmbedFFHQ, FaceEmbedCelebA, FaceEmbedCustom#FaceEmbedAllFlat
@@ -173,7 +174,12 @@ def train_one_epoch(G: 'generator model',
     
     # FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
     # finaloutput = FFCA0(t[0],s[0])
-
+    
+    ##loading pretrained models for extracting IDs
+    f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
+    f_id_path = "extractor/arcface_model/backbone.pth"
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
+    
     # Xs.shape
     for iteration, data in enumerate(dataloader):
         start_time = time.time()
@@ -183,12 +189,14 @@ def train_one_epoch(G: 'generator model',
 
         Xs_orig = Xs_orig.to(device)  ##Xs_mae = batch_size, 3, 224, 224
         Xs = Xs.to(device)
+        
         # Xs.shape
         Xt = Xt.to(device)
         # Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
+
 
 
         # # z,zz,zzz = G(Xs, Xt)
@@ -219,6 +227,8 @@ def train_one_epoch(G: 'generator model',
         # SrcId = IdExtractor(source)
         # TgtId = IdExtractor(target)
         # NegId = IdExtractor(residuals)
+        
+        
         
         ##cycle gan discriminator
         
