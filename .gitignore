@@ -16,3 +16,5 @@ ckpt/*.pth
 dataset/*
 experiments/*
 mae
+models/arcface_model/backbone.pth
+models/deep3D/models/pretrained_model/pretrained_model.pth
