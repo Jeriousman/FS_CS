@@ -1,3 +1,4 @@
+# FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-devel
 FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
 # FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
 # FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-devel
@@ -35,8 +36,7 @@ RUN pip3 install --no-cache-dir -Iv \
     # insightface requests kornia==0.5.11 dill wandb \
     notebook ipython ipykernel psutil==5.9.2 \
     ##from here it is for MAE environment
-    timm==0.4.12 matplotlib info-nce-pytorch \
-    retinaface_pytorch face-alignment
+    timm==0.4.12 matplotlib info-nce-pytorch face-alignment retinaface-pytorch
     # timm matplotlib
 
 # COPY models/mae/helpers.py /opt/conda/lib/python3.7/site-packages/timm/layers/helpers.py   

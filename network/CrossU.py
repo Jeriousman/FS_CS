@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from models.model import FlowFaceCrossAttentionModel
 from network.FFGenerator import UNet, deconv4x4, noskip_deconv4x4, outconv, CAdeconv4x4
+from utils.adain import *
 
 class CrossUnetAttentionGenerator(nn.Module):
     # def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
@@ -49,7 +50,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         
 
 
-    def forward(self, target, source):
+    def forward(self, target, source, id_emb):
         '''
         src나 tgt나 다 똑같다.
         src_bottlneck_attr = 1024x4x4
@@ -87,7 +88,8 @@ class CrossUnetAttentionGenerator(nn.Module):
         
         
         ##z_cross_attr0 = 1024x4x4  this is same as bottleneck block
-        z_cross_attr0 = self.FFCA0(tgt_bottlneck_attr, src_bottlneck_attr)
+        z_cross_attr0 = self.FFCA0(tgt_bottlneck_attr, src_bottlneck_attr) # [B, 16, 1024]
+        print("z_cross_attr0 shape", z_cross_attr0.size())
         # print('cross_att passed')
         # return z_cross_attr0
 
@@ -111,7 +113,22 @@ class CrossUnetAttentionGenerator(nn.Module):
         
         ##1024x4x4 -> 1024x8x8 (output1)
         z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
+        
+
+
         output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
+
+        print("output1 shape before transferring", output1.size())
+        # Style transfer against output1
+        print("id_emb.size()[1]", id_emb.size()[1])
+        print("output1.size()[1]", output1.size()[1])
+        adain_1 = AdaIN_block(id_emb.size()[1], output1.size()[1])
+        output1 = adain_1(output1, id_emb)
+
+        print("output1 shape after transferring", output1.size())
+        # 
+
+
         ##1024x8x8 -> 512x16x16 (output2)
         # print('output1:', output1.shape)
         # return output1

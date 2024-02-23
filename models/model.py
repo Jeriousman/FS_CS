@@ -438,9 +438,9 @@ class FlowFaceCrossAttentionModel(nn.Module):
         self.LN = LayerNormalization(self.q_dim)
         self.FFN = FeedForward(in_dim=self.q_dim, out_dim=self.q_dim)
         self.SA1 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
-        self.SA2 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?)
+        self.SA2 = SelfAttentionLayer(n_head=self.n_head, embed_dim=self.q_dim) ##transformer (?) <- self attention 두 번?
         
-        self.pos_emb_x = nn.Parameter(torch.randn(self.seq_len , self.q_dim))
+        self.pos_emb_x = nn.Parameter(torch.randn(self.seq_len , self.q_dim)) # random for positional embedding?
         self.pos_emb_y = nn.Parameter(torch.randn(self.seq_len , self.q_dim))
         
 

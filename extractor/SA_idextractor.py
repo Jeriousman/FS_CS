@@ -25,6 +25,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
         print("hurray")
         self.f_id = iresnet100(pretrained=False, fp16=False)
         self.f_id.load_state_dict(torch.load(f_id_checkpoint_path, map_location='cpu'))
+        self.f_id = self.f_id.to(self.device) ##
         self.f_id.eval()
 
 

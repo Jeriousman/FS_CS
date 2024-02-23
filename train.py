@@ -1,5 +1,6 @@
 print("started imports")
 
+
 import sys
 import argparse
 import time
@@ -18,6 +19,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn.functional as F
 import torch
+print(torch.__version__)
 import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
@@ -38,6 +40,8 @@ from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLaye
 import torch
 # from mae import models_mae
 print("finished imports")
+
+print(torch.__version__)
 
 
 
@@ -180,7 +184,7 @@ def train_one_epoch(G: 'generator model',
     f_id_path = "extractor/arcface_model/backbone.pth"
     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
     
-    print(id_extractor)
+    #print(id_extractor)
     
     # Xs.shape
     for iteration, data in enumerate(dataloader):
@@ -209,8 +213,8 @@ def train_one_epoch(G: 'generator model',
         id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
 
 
-        output_coeff = id_extractor(Xs_id, Xt_id)
-
+        id_embedding = id_extractor(Xs_id, Xt_id)
+        id_embedding = id_embedding.to(device)
 
 
         # # z,zz,zzz = G(Xs, Xt)
@@ -233,10 +237,10 @@ def train_one_epoch(G: 'generator model',
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
         
-        Y, recon_src, recon_tgt = G(Xt, Xs) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        Xt_attrs = G.CUMAE_tgt(Xt)
-        Xs_attrs = G.CUMAE_src(Xs)
-        
+        Y, recon_src, recon_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+        Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
 
         # SrcId = IdExtractor(source)
         # TgtId = IdExtractor(target)
@@ -357,7 +361,7 @@ def train_one_epoch(G: 'generator model',
             
         lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity = compute_generator_losses(G, Y, Xt, Xs, Xt_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, args)
+                                                                             diff_person, same_person, args, id_embedding)
         
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
@@ -373,7 +377,7 @@ def train_one_epoch(G: 'generator model',
         # discriminator training
         opt_D.zero_grad()
         # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person, device)
+        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person, device, id_embedding)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()

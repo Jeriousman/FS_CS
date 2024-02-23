@@ -57,7 +57,7 @@ def get_landmarks(im_path):
     image = np.array(image)
     
 
-    model = get_model("resnet50_2020-07-20", max_size=2048)
+    model = get_model("resnet50_2020-07-20", max_size=2048) # problematic part
     model.eval()
     annotation = model.predict_jsons(image)
 
@@ -88,7 +88,7 @@ def read_data(im_path, lm3d_std, to_tensor=True):
         lm[:, -1] = H - 1 - lm[:, -1]
 
         print(f"im shape :{im.size},\nlm shape : {np.array(lm).shape},\nlm3d_std : {np.array(lm3d_std).shape}")
-        _, im, lm, _ = align_img(im, lm, lm3d_std)
+        _, im, lm, _ = align_img(im, lm, lm3d_std) # retina_face
         if to_tensor:
             im = torch.tensor(np.array(im)/255., dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
             lm = torch.tensor(lm).unsqueeze(0)

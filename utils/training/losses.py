@@ -23,7 +23,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 #                              diff_person, same_person, args):
     
 def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, args):
+                             diff_person, same_person, args, id_embed):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -60,7 +60,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     ## Cycle GAN loss 
     
     if args.cycle_loss:
-        swapped_face, recon_src, recon_tgt = G(Xt, Xs)
+        swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_embed)
         cycleloss_src = l1_loss(swapped_face, recon_src)
         cycleloss_tgt = l1_loss(swapped_face, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
@@ -83,7 +83,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity
 
 
-def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device):
+def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device, id_embed):
     # fake part
     fake_D = D(Y.detach())
     loss_fake = 0
