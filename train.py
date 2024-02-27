@@ -19,7 +19,6 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn.functional as F
 import torch
-print(torch.__version__)
 import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
@@ -38,10 +37,9 @@ from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
 import torch
-# from mae import models_mae
 print("finished imports")
 
-print(torch.__version__)
+
 
 
 
