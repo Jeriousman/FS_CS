@@ -60,123 +60,7 @@ def train_one_epoch(G: 'generator model',
                     # config:dict
                     ):
     
-    # # Only initialize W&B on the global rank 0 node
-    # if config['global_rank'] == 0:
-    #     wandb.init(
-    #         # set the wandb project where this run will be logged
-    #         project=args.wandb_project,
-    #         # allow resuming existing run with the same name (in case the rank 0 node crashed)
-    #         id=args.wandb_entity,
-    #         resume="allow",
-    #         # track hyperparameters and run metadata
-    #         config=args
-    #     )
 
-
-    
-    # unet = UNet(backbone='unet').to(device)
-    # z = unet(Xs)
-    # z[0].shape
-    # z[1].shape
-    # z[2].shape
-    # z[3].shape
-    # z[4].shape
-    # z[5].shape
-    # z[6].shape
-    # z[7].shape
-    
-    # z[7].shape
-    # z[6].shape
-    # Xs.shape
-    # Xs
-
-        # conv1 = conv4x4(3, 32,same_size=True).to(device)  ##
-        # z1 = conv1(Xs)
-        # z1.shape
-        
-        # conv2 = conv4x4(32, 64).to(device) 
-        # z2 = conv2(z1)
-        # z2.shape
-        
-        # conv3 = conv4x4(64, 128).to(device) 
-        # z3 = conv3(z2)
-        # z3.shape
-        
-        # conv4 = conv4x4(128, 256).to(device)
-        # z4 = conv4(z3)
-        # z4.shape
-        
-        # conv5 = conv4x4(256, 512).to(device)
-        # z5 = conv5(z4)
-        # z5.shape
-        # conv6 = conv4x4(512, 1024).to(device)
-        # z6 = conv6(z5)
-        # z6.shape
-        # conv7 = conv4x4(1024, 1024).to(device)
-        # z7 = conv7(z6)
-        # z7.shape
-        
-
-
-        # deconv1 = deconv4x4(1024, 1024).to(device)
-        # o1 = deconv1(z7, z6 ,backbone='unet')
-        # o1.shape
-        # z6.shape
-        # z5.shape
-        # z4.shape
-        # deconv2 = deconv4x4(1024, 512).to(device)  ## 8 ->  16
-        # o2 = deconv2(o1, z5 ,backbone='unet')
-        # o2.shape
-        # deconv3 = deconv4x4(512, 256).to(device)  ## 16 > 32
-        # o3 =  deconv3(o2, z4, backbone='unet')
-        # o3.shape
-        # deconv4 = deconv4x4(256, 128).to(device) ## 32 > 64
-        # o4 =  deconv4(o3, z3, backbone='unet')
-        # o4.shape
-        # deconv5 = deconv4x4(128, 64).to(device) ## 64 > 128
-        # o5 =  deconv5(o4, z2, backbone='unet')
-        # o5.shape
-        
-        # deconv6 = deconv4x4(64, 32).to(device) ## 64 > 128
-        # o6 =  deconv6(o5, z1, backbone='unet')
-        # o6.shape
-        
-        # deconv7 = outconv(32, 3).to(device) ## 64 > 128
-        # o7 =  deconv7(o6)
-        # o7.shape
-
-
-
-########################################################################################################################
-
-    # CUMAE_src = UNet(backbone='unet').to(device)
-    # CUMAE_tgt = UNet(backbone='unet').to(device)
-
-    # s = CUMAE_src(Xs)
-    # t = CUMAE_tgt(Xt)
-    # s[0].shape
-    # t[0]
-    
-    # FFCAlayer = FlowFaceCrossAttentionLayer(n_head=2, k_dim=1024, q_dim=1024, kv_dim=1024).to(device)
-    # out = FFCAlayer(t[0] ,s[0])
-    # out.shape
-    
-    # LN = LayerNormalization(1024).to(device)
-    # ln_out = LN(out)
-    # ln_out.shape
-    
-    # FFN = FeedForward(in_dim=1024, out_dim=1024).to(device)
-    # ffn_out = FFN(ln_out)
-    # ffn_out.shape
-    # SA1 = SelfAttentionLayer(n_head=2, embed_dim=1024).to(device) ##transformer (?)
-    # sa1_out=SA1(ffn_out)
-    # sa1_out.shape
-    # SA2 = SelfAttentionLayer(n_head=2, embed_dim=1024).to(device) ##transformer (?)
-    # sa2_out=SA2(sa1_out)
-    # sa2_out.shape
-    
-    # FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
-    # finaloutput = FFCA0(t[0],s[0])
     
     ##loading pretrained models for extracting IDs
     f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
@@ -191,7 +75,7 @@ def train_one_epoch(G: 'generator model',
         
         Xs_id, Xt_id, Xs, Xt, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
-        #Xs_orig = Xs_orig.to(device)  ##Xs_mae = batch_size, 3, 224, 224
+
         Xs = Xs.to(device)
         # Xs.shape
         Xt = Xt.to(device)
@@ -199,12 +83,6 @@ def train_one_epoch(G: 'generator model',
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
-
-
-        # # z,zz,zzz = G(Xs, Xt)
-        # # get the identity embeddings of Xs
-        # with torch.no_grad():
-        #     embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
         
         f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
         f_id_path = "extractor/arcface_model/backbone.pth"
@@ -215,162 +93,51 @@ def train_one_epoch(G: 'generator model',
         id_embedding = id_extractor(Xs_id, Xt_id)
         id_embedding = id_embedding.to(device)
 
-
-        # # z,zz,zzz = G(Xs, Xt)
-        # # get the identity embeddings of Xs
-        # with torch.no_grad():
-        #     embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
-
-
-
         diff_person = torch.ones_like(same_person)
 
         if args.diff_eq_same:
             same_person = diff_person
-        ##Generator
-        ##Generator option 1 = ViT decoder
-        
-        ##Generator option 2 = UMAP multiscale convolutional decoder
-        
+
 
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
-        
-        Y, recon_src, recon_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
 
-        # SrcId = IdExtractor(source)
-        # TgtId = IdExtractor(target)
-        # NegId = IdExtractor(residuals)
-        
-        
-        
-        ##cycle gan discriminator
-        
-        
-        
-        # # final_output, src_output, tgt_output = G(Xs, Xt) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        # srcu = UNet(backbone='unet').to(device)
-        # bottlneck_attr, z_attr1, z_attr2, z_attr3, z_attr4, z_attr5, z_attr6, z_attr7 = srcu(Xs)
-        # # bottlneck_attr.shape
-        # # z_attr1.shape
-        # # z_attr2.shape
-        
-        # tgtu = UNet(backbone='unet').to(device)
-        # bottlneck_attr_t, z_attr1_t, z_attr2_t, z_attr3_t, z_attr4_t, z_attr5_t, z_attr6_t, z_attr7_t = tgtu(Xt)
-        # # bottlneck_attr_t.shape
-        # # z_attr1_t.shape
-        # # z_attr2_t.shape
-        # # z_attr4_t.shape
-        # # z_attr6_t.shape
-        # # z_attr7_t.shape
-        
-        # batch_size, w, h, dim = bottlneck_attr_t.permute(0,2,3,1).shape  
-        # x = bottlneck_attr_t.view(batch_size, -1, dim) 
-        # x.shape
-        # z,x,c,v=bottlneck_attr_t.shape
-        # batch_size, seq_len, dim = bottlneck_attr_t.shape
-        
-        # aaaz = FlowFaceCrossAttentionLayer(n_head=args.n_head, k_dim=args.k_dim, q_dim=args.q_dim, kv_dim=args.kv_dim).to(device)
-        # res1=aaaz(x,x)
-        # res1.shape
-        # # e= aaaz(bottlneck_attr_t, bottlneck_attr_t)
-        # # e.shape
 
-        
-        # zzz = CrossUnetAttentionGenerator().to(device)
-        # dir(zzz)
-        # zzz.deconv1
-        # ca, sc, tg = zzz(Xt, Xs)
-        # ca.shape
-        # sc.shape
-        # tg.shape  
-        
-        # deconv1 = noskip_deconv4x4(1024, 1024)  ## 4 ->  8 (w,h)
-        # ress = deconv1(za)
-        
-        
-        # def __init__(self, seq_len:int=16, n_head:int=2, q_dim:int=1024, k_dim:int=1024, kv_dim:int=1024, backbone='unet'):
-        # FFCA0 = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # res0 = FFCA0(bottlneck_attr_t, bottlneck_attr)
-        # res.shape
-        # bottlneck_attr_t.shape
-        
-        # FFCA1 = FlowFaceCrossAttentionModel(seq_len=16*4, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)
-        # res1=FFCA1(z_attr1, z_attr1)
-        # res1.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        # molll = FlowFaceCrossAttentionModel(seq_len=16, n_head=2, q_dim=1024, k_dim=1024, kv_dim=1024).to(device)  ##FFCA0 = bottleneck
-        # asdasdasd = molll(bottlneck_attr_t, bottlneck_attr)
-        # asdasdasd.shape
-        
-        
-        
-        
-        # bottlneck_attr.shape
-        # bottlneck_attr_t.shape
+        swapped_face, recon_src_f, recon_tgt_f = G(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        Xt_f_attrs = G.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+        Xs_f_attrs = G.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
-        # batch_size, w, h, dim = z_attr3_t.permute(0,2,3,1).shape       
-        # z_attr3_t = z_attr3_t.view(batch_size, -1, dim)
-        # z_attr3_t.shape
-        
-        # pos_emb_x = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
-        # pos_emb_y = nn.Parameter(torch.randn(args.seq_len , args.q_dim))
-        
-        
-        # x += self.pos_emb_x#.reshape(batch_size, self.seq_len, self.q_dim)
-        # y += self.pos_emb_y#.reshape(batch_size, self.seq_len, self.q_dim)
-        
-        # x_ca = self.FFCA(x, y)        
+        # Y, recon_src, recon_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+        # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
 
   
         
-        Di = D(Y)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
-        # ZY = netArc(F.interpolate(Y, [112, 112], mode='bilinear', align_corners=False))   ##swapped face의 identity를  ArcFace를 사용해서 구하는 것
+        Di = D(swapped_face)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
         
     
         if args.eye_detector_loss:
-            Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
-            Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)
-            eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]
+            Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
+            swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
+            eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]
             
         # landmark extractor
         if args.landmark_detector_loss:
-            Xt_pred_heatmap, Xt_landmarks = detect_all_landmarks(Xt, model_ft)
-            Y_pred_heatmap, Y_landmarks = detect_all_landmarks(Y, model_ft)
-            all_heatmaps = [Xt_pred_heatmap, Y_pred_heatmap]
-            all_landmarks = [Xt_landmarks, Y_landmarks]
+            Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
+            swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
+            all_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
+            all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
             
         else:
             eye_heatmaps = None
             all_landmarks = None
-            
-        lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity = compute_generator_losses(G, Y, Xt, Xs, Xt_attrs, Di,
+        
+        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity = compute_generator_losses(G, swapped_face, Xt, Xs, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args, id_embedding)
-        
+
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
         # lossG.backward(retain_graph=True)
@@ -400,11 +167,11 @@ def train_one_epoch(G: 'generator model',
         batch_time = time.time() - start_time
 
         if iteration % args.show_step == 0:
-            images = [Xs, Xt, Y]
+            images = [Xs_f, Xt_f, swapped_face]
             if args.eye_detector_loss:
-                Xt_eyes_img = paint_eyes(Xt, Xt_eyes)
-                Yt_eyes_img = paint_eyes(Y, Y_eyes)
-                images.extend([Xt_eyes_img, Yt_eyes_img])
+                Xt_f_eyes_img = paint_eyes(Xt_f, Xt_f_eyes)
+                Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
+                images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
             image = make_image_list(images)
             if args.use_wandb:
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
@@ -414,7 +181,7 @@ def train_one_epoch(G: 'generator model',
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            print(f'L_adv: {L_adv.item()} L_id: {L_identity.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} L_cycle: {L_cycle.item()}')
+            print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} L_cycle: {L_cycle.item()} L_cycle_identity: {L_cycle_identity.item()}')
             if args.eye_detector_loss:
                 print(f'L_l2_eyes: {L_l2_eyes.item()}')
             # if args.landmark_detector_loss:
@@ -428,48 +195,48 @@ def train_one_epoch(G: 'generator model',
             if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
             wandb.log({
-                       "loss_id": L_identity.item(),
+                       "loss_id": L_id.item(),
                        "lossD": lossD.item(),
                        "lossG": lossG.item(),
                        "loss_adv": L_adv.item(),
                        "loss_attr": L_attr.item(),
                        "loss_rec": L_rec.item(),
                        "loss_cycle": L_cycle.item(),
-                       "loss_identity": L_identity.item()
+                       "loss_cycle_identity": L_cycle_identity.item()
                     #    "loss_landmarks": L_landmarks.item()
                        })
         
         if iteration % 10000 == 0:
             
-            # if gpu_config['global_rank'] == 0:
+
                 
-            #     torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
-            #     torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
+            torch.save(G.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+            torch.save(D.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-            #     torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-            #     torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+            torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+            torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-        # if (iteration % 250 == 0) and (args.use_wandb) and gpu_config['global_rank'] == 0:
-            # if (iteration % 250 == 0) and (args.use_wandb):
-            # ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
-            # G.eval()
+        if (iteration % 250 == 0) and (args.use_wandb):
+            if (iteration % 250 == 0) and (args.use_wandb):
+                ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
+                G.eval()
 
-            # res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
-            # res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
-            # res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
-            
-            # res4 = get_faceswap('examples/images/training//source4.png', 'examples/images/training//target4.png', G, netArc, device)
-            # res5 = get_faceswap('examples/images/training//source5.png', 'examples/images/training//target5.png', G, netArc, device)  
-            # res6 = get_faceswap('examples/images/training//source6.png', 'examples/images/training//target6.png', G, netArc, device)
-            
-            # output1 = np.concatenate((res1, res2, res3), axis=0)
-            # output2 = np.concatenate((res4, res5, res6), axis=0)
-            
-            # output = np.concatenate((output1, output2), axis=1)
+                res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
+                res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
+                res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
+                
+                res4 = get_faceswap('examples/images/training//source4.png', 'examples/images/training//target4.png', G, netArc, device)
+                res5 = get_faceswap('examples/images/training//source5.png', 'examples/images/training//target5.png', G, netArc, device)  
+                res6 = get_faceswap('examples/images/training//source6.png', 'examples/images/training//target6.png', G, netArc, device)
+                
+                output1 = np.concatenate((res1, res2, res3), axis=0)
+                output2 = np.concatenate((res4, res5, res6), axis=0)
+                
+                output = np.concatenate((output1, output2), axis=1)
 
-            # wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+                wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
 
-            G.train()
+                G.train()
 
 # def train(args, config):
 def train(args, device):

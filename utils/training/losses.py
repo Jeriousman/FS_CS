@@ -30,9 +30,9 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         L_adv += hinge_loss(di[0], True).mean(dim=[1, 2, 3])
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
-    # # id loss
-    # L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
-    # ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
+    # id loss
+    L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+    ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
@@ -61,13 +61,13 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     
     if args.cycle_loss:
         swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_embed)
-        cycleloss_src = l1_loss(swapped_face, recon_src)
-        cycleloss_tgt = l1_loss(swapped_face, recon_tgt)
+        cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xs, recon_src)
+        cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xt, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
-        ## identity loss
+        ## identity loss (for cycle GAN)
         identityloss_src = l1_loss(Xs, recon_src)
         identityloss_tgt = l1_loss(Xt, recon_tgt) 
-        L_identity = identityloss_src + identityloss_tgt
+        L_cycle_identity = identityloss_src + identityloss_tgt
         
 
          
@@ -76,11 +76,11 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         
     # final loss of generator
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_identity*L_identity #+ args.weight_landmarks*L_landmarks
+    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity #+ args.weight_landmarks*L_landmarks
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity#, L_landmarks
+    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity#, L_landmarks
 
 
 def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device, id_embed):
