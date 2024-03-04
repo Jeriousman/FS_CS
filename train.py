@@ -33,6 +33,7 @@ from utils.training.Dataset import FaceEmbedCombined, FaceEmbed, FaceEmbedSubdir
 from utils.training.image_processing import make_image_list, get_faceswap
 from utils.training.losses import hinge_loss, compute_discriminator_loss, compute_generator_losses
 from utils.training.detector import detect_landmarks, paint_eyes
+from utils.training.landmark_detector import detect_all_landmarks
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
@@ -354,8 +355,17 @@ def train_one_epoch(G: 'generator model',
             Xt_eyes, Xt_heatmap_left, Xt_heatmap_right = detect_landmarks(Xt, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
             Y_eyes, Y_heatmap_left, Y_heatmap_right = detect_landmarks(Y, model_ft)
             eye_heatmaps = [Xt_heatmap_left, Xt_heatmap_right, Y_heatmap_left, Y_heatmap_right]
+            
+        # landmark extractor
+        if args.landmark_detector_loss:
+            Xt_pred_heatmap, Xt_landmarks = detect_all_landmarks(Xt, model_ft)
+            Y_pred_heatmap, Y_landmarks = detect_all_landmarks(Y, model_ft)
+            all_heatmaps = [Xt_pred_heatmap, Y_pred_heatmap]
+            all_landmarks = [Xt_landmarks, Y_landmarks]
+            
         else:
             eye_heatmaps = None
+            all_landmarks = None
             
         lossG, loss_adv_accumulated, L_adv, L_attr, L_rec, L_l2_eyes, L_cycle, L_identity = compute_generator_losses(G, Y, Xt, Xs, Xt_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
@@ -404,9 +414,12 @@ def train_one_epoch(G: 'generator model',
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            # print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
+            print(f'L_adv: {L_adv.item()} L_id: {L_identity.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} L_cycle: {L_cycle.item()}')
             if args.eye_detector_loss:
                 print(f'L_l2_eyes: {L_l2_eyes.item()}')
+            # if args.landmark_detector_loss:
+            #     print(f'L_landmarks: {L_landmarks.item()}')
+                
             print(f'loss_adv_accumulated: {loss_adv_accumulated}')
             if args.scheduler:
                 print(f'scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()}')
@@ -415,7 +428,7 @@ def train_one_epoch(G: 'generator model',
             if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
             wandb.log({
-                # "loss_id": L_id.item(),
+                       "loss_id": L_identity.item(),
                        "lossD": lossD.item(),
                        "lossG": lossG.item(),
                        "loss_adv": L_adv.item(),
@@ -423,6 +436,7 @@ def train_one_epoch(G: 'generator model',
                        "loss_rec": L_rec.item(),
                        "loss_cycle": L_cycle.item(),
                        "loss_identity": L_identity.item()
+                    #    "loss_landmarks": L_landmarks.item()
                        })
         
         if iteration % 10000 == 0:
