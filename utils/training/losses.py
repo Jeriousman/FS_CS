@@ -31,7 +31,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+    L_id =(1 - torch.cosine_similarity(id_embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
@@ -61,13 +61,17 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     
     if args.cycle_loss:
         swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_embed)
-        cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xs, recon_src)
-        cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xt, recon_tgt)
+        cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
+        cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
         ## identity loss (for cycle GAN)
         identityloss_src = l1_loss(Xs, recon_src)
         identityloss_tgt = l1_loss(Xt, recon_tgt) 
         L_cycle_identity = identityloss_src + identityloss_tgt
+        
+        
+    # if args.constrative_loss:
+    #     infoNce_id_loss(Y, )
         
 
          
@@ -128,7 +132,7 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, de
 
 
 
-def infoNce_id_loss(swapped_ids, source_ids, negative_ids):
+def infoNce_id_loss(swapped_ids, source_ids, negative_ids):  ##negative_ids = anything thats not swapped and source face. So in our case, it is target face 
         
     loss = InfoNCE(negative_mode='unpaired') # negative_mode='unpaired' is the default value
 #     batch_size, num_negative, embedding_size = 32, 48, 128

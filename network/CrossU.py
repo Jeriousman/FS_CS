@@ -118,11 +118,11 @@ class CrossUnetAttentionGenerator(nn.Module):
 
         output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
 
-        print("output1 shape before transferring", output1.size())
-        # Style transfer against output1
-        print("id_emb.size()[1]", id_emb.size()[1])
-        print("output1.size()[1]", output1.size()[1])
-        adain_1 = AdaIN_block(id_emb.size()[1], output1.size()[1])
+        # print("output1 shape before transferring", output1.size())
+        # # Style transfer against output1
+        # print("id_emb.size()[1]", id_emb.size()[1])
+        # print("output1.size()[1]", output1.size()[1])
+        adain_1 = AdaIN_layer(id_emb.size()[1], output1.size()[1])
         output1 = adain_1(output1, id_emb)
 
         print("output1 shape after transferring", output1.size())
