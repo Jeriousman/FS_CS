@@ -63,8 +63,8 @@ def train_one_epoch(G: 'generator model',
 
     
     ##loading pretrained models for extracting IDs
-    f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
-    f_id_path = "extractor/arcface_model/backbone.pth"
+    f_3d_path = "/datasets/pretrained/pretrained_model.pth"
+    f_id_path = "/datasets/pretrained/backbone.pth"
     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
     
     #print(id_extractor)
@@ -76,22 +76,19 @@ def train_one_epoch(G: 'generator model',
         Xs_id, Xt_id, Xs, Xt, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
 
-        Xs = Xs.to(device)
+        Xs_f = Xs_f.to(device)
         # Xs.shape
-        Xt = Xt.to(device)
+        Xt_f = Xt_f.to(device)
         # Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xs.shape[0] 
         # break
-        
-        f_3d_path = "deep3D/models/pretrained_model/pretrained_model.pth"
-        f_id_path = "extractor/arcface_model/backbone.pth"
-
-        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
 
 
-        id_embedding = id_extractor(Xs_id, Xt_id)
-        id_embedding = id_embedding.to(device)
+        id_embedding, src_emb, tgt_emb = id_extractor(Xs_id, Xt_id)
+        id_embedding, src_emb, tgt_emb = id_embedding.to(device), src_emb.to(device), tgt_emb.to(device)
+
+
 
         diff_person = torch.ones_like(same_person)
 
@@ -108,14 +105,14 @@ def train_one_epoch(G: 'generator model',
         Xt_f_attrs = G.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
         Xs_f_attrs = G.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
-        # Y, recon_src, recon_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
         # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
 
   
         
-        Di = D(swapped_face)  ##이렇게 나온 Y = swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+        Di = D(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
         
     
         if args.eye_detector_loss:
@@ -134,7 +131,7 @@ def train_one_epoch(G: 'generator model',
             eye_heatmaps = None
             all_landmarks = None
         
-        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity = compute_generator_losses(G, swapped_face, Xt, Xs, Xt_f_attrs, Di,
+        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
                                                                              diff_person, same_person, args, id_embedding)
 
@@ -152,7 +149,7 @@ def train_one_epoch(G: 'generator model',
         # discriminator training
         opt_D.zero_grad()
         # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-        lossD = compute_discriminator_loss(D, Y, recon_src, recon_tgt, Xs, Xt, diff_person, device, id_embedding)
+        lossD = compute_discriminator_loss(D, swapped_face, recon_f_src, recon_f_tgt, Xs_f, Xt_f, diff_person, device, id_embedding)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()
