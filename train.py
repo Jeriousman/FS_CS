@@ -331,7 +331,7 @@ def train(args, device):
     
 
     dataset_size = len(dataset)
-    train_size = int(dataset_size * train_ratio)
+    train_size = int(dataset_size * args.train_ratio)
     validation_size = int(dataset_size - train_size)
     
     train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
@@ -339,6 +339,7 @@ def train(args, device):
     print(f"Training Data Size : {len(train_dataset)}")
     print(f"Validation Data Size : {len(validation_dataset)}")
     
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
 
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
@@ -418,6 +419,7 @@ if __name__ == "__main__":
     ##the 4 arguments are newly added by Hojun
     # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
+    parser.add_argument('--train_ratio', default=0.9, type=float, help='Paasdasde')
     # parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
@@ -470,7 +472,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=2, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
