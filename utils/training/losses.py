@@ -23,7 +23,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 #                              diff_person, same_person, args):
     
 def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, args, id_embed, tgt_id_embed, swapped_id_emb):
+                             diff_person, same_person, args, id_emb, tgt_id_emb, swapped_id_emb):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -31,7 +31,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(id_embed, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
+    L_id =(1 - torch.cosine_similarity(id_emb, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
@@ -60,7 +60,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     ## Cycle GAN loss 
     
     if args.cycle_loss:
-        swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_embed)
+        swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_emb)
         cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
         cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
@@ -71,7 +71,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         
         
     if args.constrative_loss:
-        L_constrasive = infoNce_id_loss(swapped_id_emb, id_embed, tgt_id_embed)
+        L_constrasive = infoNce_id_loss(swapped_id_emb, id_emb, tgt_id_emb)
         
     
          

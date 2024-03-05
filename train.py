@@ -15,7 +15,7 @@ import os
 # from torch.distributed import init_process_group, destroy_process_group
 
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 import torch.optim as optim
 import torch.nn.functional as F
 import torch
@@ -53,7 +53,8 @@ def train_one_epoch(G: 'generator model',
                     netArc: 'ArcFace model',
                     model_ft: 'Landmark Detector',
                     args: 'Args Namespace',
-                    dataloader: torch.utils.data.DataLoader,
+                    train_dataloader: torch.utils.data.DataLoader,
+                    valid_dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
                     loss_adv_accumulated:int
@@ -70,7 +71,7 @@ def train_one_epoch(G: 'generator model',
     #print(id_extractor)
     
     # Xs.shape
-    for iteration, data in enumerate(dataloader):
+    for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         
         Xs_id, Xt_id, Xs, Xt, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
@@ -85,8 +86,8 @@ def train_one_epoch(G: 'generator model',
         # break
 
         ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
-        id_embedding, src_emb, tgt_emb = id_extractor(Xs_id, Xt_id)
-        id_embedding, src_emb, tgt_emb = id_embedding.to(device), src_emb.to(device), tgt_emb.to(device)
+        id_embedding, src_id_emb, tgt_id_emb = id_extractor(Xs_id, Xt_id)
+        id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(device), src_id_emb.to(device), tgt_id_emb.to(device)
 
 
 
@@ -140,7 +141,7 @@ def train_one_epoch(G: 'generator model',
         
         lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, args, id_embedding, swapped_id_emb)
+                                                                             diff_person, same_person, args, src_id_emb, tgt_id_emb, swapped_id_emb)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
@@ -329,8 +330,18 @@ def train(args, device):
     # dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
 
+    dataset_size = len(dataset)
+    train_size = int(dataset_size * train_ratio)
+    validation_size = int(dataset_size - train_size)
+    
+    train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
 
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    print(f"Training Data Size : {len(train_dataset)}")
+    print(f"Validation Data Size : {len(validation_dataset)}")
+    
+
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
     # print(next(iter(dataloader)))
     # print(next(iter(dataloader))[0])
     ##In case of multi GPU, turn off shuffle
@@ -352,7 +363,8 @@ def train(args, device):
                         netArc,
                         model_ft,
                         args,
-                        dataloader,
+                        train_dataloader,
+                        valid_dataloader,
                         device,
                         epoch,
                         loss_adv_accumulated)
@@ -420,7 +432,8 @@ if __name__ == "__main__":
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
     parser.add_argument('--weight_cycle', default=5., type=float, help='cycle Loss weight for generator')
-    parser.add_argument('--weight_identity', default=5., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_cycle_identity', default=5., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_constrasive', default=5., type=float, help='identity Loss weight for generator')
     
     # training params you may want to change
     
@@ -449,6 +462,7 @@ if __name__ == "__main__":
     parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
+    parser.add_argument('--constrative_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
