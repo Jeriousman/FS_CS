@@ -84,7 +84,7 @@ def train_one_epoch(G: 'generator model',
         realtime_batch_size = Xs.shape[0] 
         # break
 
-
+        ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
         id_embedding, src_emb, tgt_emb = id_extractor(Xs_id, Xt_id)
         id_embedding, src_emb, tgt_emb = id_embedding.to(device), src_emb.to(device), tgt_emb.to(device)
 
@@ -104,6 +104,13 @@ def train_one_epoch(G: 'generator model',
         swapped_face, recon_f_src, recon_f_tgt = G(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         Xt_f_attrs = G.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
         Xs_f_attrs = G.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
+
+        ##swapped_emb = ArcFace value
+        swapped_emb = id_extractor.id_forward(swapped_face)
+        swapped_emb = swapped_emb.to(device)
+        print(f"swapped_emb shape : {swapped_emb.size()}")
+
 
         # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
         # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
@@ -131,9 +138,9 @@ def train_one_epoch(G: 'generator model',
             eye_heatmaps = None
             all_landmarks = None
         
-        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, args, id_embedding)
+                                                                             diff_person, same_person, args, id_embedding, swapped_id_emb)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
@@ -199,7 +206,8 @@ def train_one_epoch(G: 'generator model',
                        "loss_attr": L_attr.item(),
                        "loss_rec": L_rec.item(),
                        "loss_cycle": L_cycle.item(),
-                       "loss_cycle_identity": L_cycle_identity.item()
+                       "loss_cycle_identity": L_cycle_identity.item(),
+                       "loss_constrasive": L_constrasive.item()
                     #    "loss_landmarks": L_landmarks.item()
                        })
         
@@ -233,7 +241,7 @@ def train_one_epoch(G: 'generator model',
 
                 wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
                 
-                print(f'Evaluation!! ID: {L_id.item()}  POSE: {pose.item()}               '  )
+                # print(f'Evaluation!! ID: {L_id.item()}  POSE: {pose.item()}               '  )
                 
                 
                 

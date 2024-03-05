@@ -22,10 +22,10 @@ class ShapeAwareIdentityExtractor(nn.Module):
         self.f_3d = self.f_3d.to(self.device)
         self.f_3d.eval()
 
-        print("hurray")
+        #print("hurray")
         self.f_id = iresnet100(pretrained=False, fp16=False)
         self.f_id.load_state_dict(torch.load(f_id_checkpoint_path, map_location='cpu'))
-        #self.f_id = self.f_id.to(self.device) ##
+        ##self.f_id = self.f_id.to(self.device) ##
         self.f_id.eval()
 
 
@@ -48,13 +48,24 @@ class ShapeAwareIdentityExtractor(nn.Module):
         v_id_source = F.normalize(self.f_id(F.interpolate((i_source - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
         v_sid = torch.cat((c_fuse, v_id_source), dim=1)
 
-        ## source pure embedding
-        src_emb = torch.cat((c_s, v_id_source), dim=1)
+        ## source arc face only embedding (id loss와 infonce loss에서 사용)
+        src_emb = v_id_source
 
-        ## target pure embedding
+        ## target arc face only embedding (infonce loss에서 사용)
         v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
-        tgt_emb = torch.cat((c_t, v_id_target), dim=1)
+        tgt_emb = v_id_target
 
 
-        print(f"v_sid shape : {v_sid.size()}, src_emb shape : {src_emb.size()}, tgt_emb shape : {tgt_emb.size()}")
+
+        #print(f"v_sid shape : {v_sid.size()}, src_emb shape : {src_emb.size()}, tgt_emb shape : {tgt_emb.size()}")
         return v_sid, src_emb, tgt_emb
+    
+    
+    @torch.no_grad()
+    def id_forward(self, i_swapped): # swapped의 arc face only embedding(id loss와 Infonce loss에서 사용)을 위한 method
+
+        i_swapped = i_swapped.cpu()
+        swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+
+
+        return swapped_emb

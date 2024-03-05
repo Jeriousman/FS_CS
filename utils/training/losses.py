@@ -23,7 +23,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 #                              diff_person, same_person, args):
     
 def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, args, id_embed):
+                             diff_person, same_person, args, id_embed, tgt_id_embed, swapped_id_emb):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -31,7 +31,7 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(id_embed, ZY, dim=1)).mean()  ##embed = netArc(F.interpolate(Xs_orig, [112, 112], mode='bilinear', align_corners=False))
+    L_id =(1 - torch.cosine_similarity(id_embed, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
@@ -70,21 +70,21 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         L_cycle_identity = identityloss_src + identityloss_tgt
         
         
-    # if args.constrative_loss:
-    #     infoNce_id_loss(Y, )
+    if args.constrative_loss:
+        L_constrasive = infoNce_id_loss(swapped_id_emb, id_embed, tgt_id_embed)
         
-
+    
          
         
     
         
     # final loss of generator
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity #+ args.weight_landmarks*L_landmarks
+    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive #+ args.weight_landmarks*L_landmarks
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity#, L_landmarks
+    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive#, L_landmarks
 
 
 def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device, id_embed):
