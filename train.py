@@ -184,7 +184,7 @@ def train_one_epoch(G: 'generator model',
                 cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
         
         if iteration % 10 == 0:
-            print(f'epoch: {epoch}    {iteration} / {len(dataloader)}')
+            print(f'epoch: {epoch}    {iteration} / {len(train_dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
             print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} L_cycle: {L_cycle.item()} L_cycle_identity: {L_cycle_identity.item()}')
             if args.eye_detector_loss:
@@ -472,7 +472,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
