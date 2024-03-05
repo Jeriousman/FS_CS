@@ -232,6 +232,11 @@ def train_one_epoch(G: 'generator model',
                 output = np.concatenate((output1, output2), axis=1)
 
                 wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+                
+                print(f'Evaluation!! ID: {L_id.item()}  POSE: {pose.item()}               '  )
+                
+                
+                
 
                 G.train()
 
