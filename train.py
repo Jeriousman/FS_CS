@@ -107,9 +107,9 @@ def train_one_epoch(G: 'generator model',
 
 
         ##swapped_emb = ArcFace value
-        swapped_emb = id_extractor.id_forward(swapped_face)
-        swapped_emb = swapped_emb.to(device)
-        print(f"swapped_emb shape : {swapped_emb.size()}")
+        swapped_id_emb = id_extractor.id_forward(swapped_face)
+        swapped_id_emb = swapped_id_emb.to(device)
+        print(f"swapped_emb shape : {swapped_id_emb.size()}")
 
 
         # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
