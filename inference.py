@@ -16,6 +16,7 @@ from arcface_model.iresnet import iresnet100
 from models.pix2pix_model import Pix2PixModel
 from models.config_sr import TestOptions
 
+from network.CrossU import CrossUnetAttentionGenerator
 
 def init_models(args):
     # model for face cropping
@@ -23,7 +24,8 @@ def init_models(args):
     app.prepare(ctx_id= 0, det_thresh=0.6, det_size=(640,640))
 
     # main model for generation
-    G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512)
+    # G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512)
+    G = CrossUnetAttentionGenerator(backbone='unet')
     G.eval()
     G.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')))
     G = G.cuda()
@@ -31,12 +33,12 @@ def init_models(args):
 
     # arcface model to get face embedding
     netArc = iresnet100(fp16=False)
-    netArc.load_state_dict(torch.load('arcface_model/backbone.pth'))
+    netArc.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
     netArc=netArc.cuda()
     netArc.eval()
 
     # model to get face landmarks 
-    handler = Handler('./coordinate_reg/model/2d106det', 0, ctx_id=0, det_size=640)
+    handler = Handler('/datasets/pretrained/2d106det', 0, ctx_id=0, det_size=640)
 
     # model to make superres of face, set use_sr=True if you want to use super resolution or use_sr=False if you don't
     if args.use_sr:

@@ -136,6 +136,8 @@ def crop_frames_and_get_transforms(full_frames: List[np.ndarray],
                 
                 face_norm = normalize_and_torch_batch(np.array(faces))
                 face_norm = F.interpolate(face_norm, scale_factor=0.5, mode='bilinear', align_corners=True)
+                
+                ##이부분에 hififace 코드 업데이트 요망. arcface나 hififace를 고르는 argument가 있어야 할 것으로 보임
                 face_embeds = netArc(face_norm)
                 face_embeds = F.normalize(face_embeds)
 
