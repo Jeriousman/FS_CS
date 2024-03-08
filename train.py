@@ -436,6 +436,10 @@ if __name__ == "__main__":
     parser.add_argument('--weight_cycle', default=5., type=float, help='cycle Loss weight for generator')
     parser.add_argument('--weight_cycle_identity', default=5., type=float, help='identity Loss weight for generator')
     parser.add_argument('--weight_constrasive', default=5., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_source_unet', default=1., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_target_unet', default=1., type=float, help='identity Loss weight for generator')
+    
+
     
     # training params you may want to change
     
