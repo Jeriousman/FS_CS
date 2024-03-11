@@ -74,7 +74,7 @@ def train_one_epoch(G: 'generator model',
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         
-        Xs_id, Xt_id, Xs, Xt, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
+        id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
 
         Xs_f = Xs_f.to(device)
@@ -82,11 +82,11 @@ def train_one_epoch(G: 'generator model',
         Xt_f = Xt_f.to(device)
         # Xt.shape
         same_person = same_person.to(device)
-        realtime_batch_size = Xs.shape[0] 
+        realtime_batch_size = Xt_f.shape[0] 
         # break
 
         ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
-        id_embedding, src_id_emb, tgt_id_emb = id_extractor(Xs_id, Xt_id)
+        id_embedding, src_id_emb, tgt_id_emb = id_extractor(id_ext_src_input, id_ext_tgt_input)
         id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(device), src_id_emb.to(device), tgt_id_emb.to(device)
 
 
@@ -107,7 +107,7 @@ def train_one_epoch(G: 'generator model',
         Xs_f_attrs = G.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
 
-        ##swapped_emb = ArcFace value
+        ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
         swapped_id_emb = id_extractor.id_forward(swapped_face)
         swapped_id_emb = swapped_id_emb.to(device)
         print(f"swapped_emb shape : {swapped_id_emb.size()}")
@@ -126,22 +126,25 @@ def train_one_epoch(G: 'generator model',
         if args.eye_detector_loss:
             Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
             swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
-            eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]
-            
+            eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
+        else:
+            eye_heatmaps = None
+        
         # landmark extractor
         if args.landmark_detector_loss:
             Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
             swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
             all_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
             all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
-            
         else:
-            eye_heatmaps = None
+            all_heatmaps = None
             all_landmarks = None
+
+
         
-        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, args, src_id_emb, tgt_id_emb, swapped_id_emb)
+                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_heatmaps, args)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
@@ -157,7 +160,8 @@ def train_one_epoch(G: 'generator model',
         # discriminator training
         opt_D.zero_grad()
         # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-        lossD = compute_discriminator_loss(D, swapped_face, recon_f_src, recon_f_tgt, Xs_f, Xt_f, diff_person, device, id_embedding)
+
+        lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, device)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()
@@ -186,19 +190,37 @@ def train_one_epoch(G: 'generator model',
         if iteration % 10 == 0:
             print(f'epoch: {epoch}    {iteration} / {len(train_dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} L_cycle: {L_cycle.item()} L_cycle_identity: {L_cycle_identity.item()}')
+            print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
             if args.eye_detector_loss:
                 print(f'L_l2_eyes: {L_l2_eyes.item()}')
-            # if args.landmark_detector_loss:
-            #     print(f'L_landmarks: {L_landmarks.item()}')
+            if args.landmark_detector_loss:
+                print(f'L_landmarks: {L_landmarks.item()}')
+            if args.cycle_loss:
+                pass
+            if args.contrastive_loss:
+                pass
+            if args.shape_loss:
+                pass
                 
             print(f'loss_adv_accumulated: {loss_adv_accumulated}')
             if args.scheduler:
                 print(f'scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()}')
-        
+
         if args.use_wandb:
             if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
+            if args.landmark_detector_loss:
+                wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
+            if args.cycle_loss:
+                wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
+            if args.cycle_loss:
+                wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
+            if args.contrastive_loss:
+                wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
+            if args.shape_loss:
+                pass
+                # wandb.log({"loss_shape": L_shape.item()}, commit=False)
+                
             wandb.log({
                        "loss_id": L_id.item(),
                        "lossD": lossD.item(),
@@ -206,9 +228,11 @@ def train_one_epoch(G: 'generator model',
                        "loss_adv": L_adv.item(),
                        "loss_attr": L_attr.item(),
                        "loss_rec": L_rec.item(),
-                       "loss_cycle": L_cycle.item(),
-                       "loss_cycle_identity": L_cycle_identity.item(),
-                       "loss_constrasive": L_constrasive.item()
+                    #    "loss_cycle": L_cycle.item(),
+                    #    "loss_cycle_identity": L_cycle_identity.item(),
+                    #    "loss_contrastive": L_contrastive.item(),
+                       "loss_source_unet": L_source_unet.item(),
+                       "loss_target_unet": L_target_unet.item(),                       
                     #    "loss_landmarks": L_landmarks.item()
                        })
         
@@ -243,6 +267,8 @@ def train_one_epoch(G: 'generator model',
                 wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
                 
                 # print(f'Evaluation!! ID: {L_id.item()}  POSE: {pose.item()}               '  )
+                
+    ## 여기에 val dataloader 돌려서 metrics 계산한다 valid_dataloader
                 
                 
                 
@@ -339,7 +365,7 @@ def train(args, device):
     print(f"Training Data Size : {len(train_dataset)}")
     print(f"Validation Data Size : {len(validation_dataset)}")
     
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    # dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
 
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
@@ -435,7 +461,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
     parser.add_argument('--weight_cycle', default=5., type=float, help='cycle Loss weight for generator')
     parser.add_argument('--weight_cycle_identity', default=5., type=float, help='identity Loss weight for generator')
-    parser.add_argument('--weight_constrasive', default=5., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_contrastive', default=5., type=float, help='identity Loss weight for generator')
     parser.add_argument('--weight_source_unet', default=1., type=float, help='identity Loss weight for generator')
     parser.add_argument('--weight_target_unet', default=1., type=float, help='identity Loss weight for generator')
     
@@ -468,7 +494,7 @@ if __name__ == "__main__":
     parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
-    parser.add_argument('--constrative_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
+    parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')

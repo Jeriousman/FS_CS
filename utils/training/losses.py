@@ -18,12 +18,10 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 
 
 
-    
-# def compute_generator_losses(G, Y, Xt, Xt_attr, Di, embed, ZY, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-#                              diff_person, same_person, args):
-    
-def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, args, id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, tgt_lmks, swapped_lmks):
+
+
+def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
+                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, all_heatmaps, args):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -36,24 +34,24 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
 
     # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
-        Y_attr = G.ca_forward(Xt.type(torch.half), Xs.type(torch.half))
+        Y_attr = G.ca_forward(Xt_f.type(torch.half), Xs_f.type(torch.half))
         
     else:
-        Y_attr = G.ca_forward(Xt, Xs)
+        Y_attr = G.ca_forward(Xt_f, Xs_f)
     
     L_attr = 0
-    for i in range(len(Xt_attr)): 
-        L_attr += torch.mean(torch.pow(Xt_attr[i] - Y_attr[i], 2).reshape(args.batch_size, -1), dim=1).mean()
+    for i in range(len(Xt_f_attrs)): 
+        L_attr += torch.mean(torch.pow(Xt_f_attrs[i] - Y_attr[i], 2).reshape(args.batch_size, -1), dim=1).mean()
     L_attr /= 2.0 ##2 bcuz ?
 
     # reconstruction loss ##같은 인물이지만 같은 데이터일 필요는 없다고 생각하기 때문에 같은 사람것을 사용 
-    L_rec = torch.sum(0.5 * torch.mean(torch.pow(Y - Xt, 2).reshape(args.batch_size, -1), dim=1) * same_person) / (same_person.sum() + 1e-6)
+    L_rec = torch.sum(0.5 * torch.mean(torch.pow(swapped_face - Xt_f, 2).reshape(args.batch_size, -1), dim=1) * same_person) / (same_person.sum() + 1e-6)
     
     ## Source Unet Loss
-    L_source_unet = l2_loss(Xs, recon_source)
+    L_source_unet = l2_loss(Xs_f, recon_source)
     
     ## Target Unet Loss
-    L_target_unet = l2_loss(Xt, recon_target)
+    L_target_unet = l2_loss(Xt_f, recon_target)
     
     # l2 eyes loss
     if args.eye_detector_loss:
@@ -69,15 +67,15 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         # swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_emb)
         # cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
         # cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
-        cycleloss_src = l1_loss(Y, recon_source)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
-        cycleloss_tgt = l1_loss(Y, recon_target)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
+        cycleloss_src = l1_loss(swapped_face, recon_source)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
+        cycleloss_tgt = l1_loss(swapped_face, recon_target)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
     
         ## identity loss (for cycle GAN)
         # identityloss_src = l1_loss(Xs, recon_src)
         # identityloss_tgt = l1_loss(Xt, recon_tgt) 
-        identityloss_src = l1_loss(Xs, recon_source)
-        identityloss_tgt = l1_loss(Xt, recon_target) 
+        identityloss_src = l1_loss(Xs_f, recon_source)
+        identityloss_tgt = l1_loss(Xt_f, recon_target) 
         L_cycle_identity = identityloss_src + identityloss_tgt
     else:
         L_cycle = 0
@@ -87,16 +85,21 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     
     ##저스틴에게서 코드 업데이트 받기 (tgt src embeddings)
     
-    if args.constrative_loss:
+    if args.contrastive_loss:
         L_constrasive =  infoNce_id_loss(swapped_id_emb, src_id_emb, tgt_id_emb)
     else:
         L_constrasive = 0
     
     ## Following implementation of "HIGH-FIDELITY FACE SWAPPING WITH STYLE BLENDING"
     if args.landmark_loss:
-        L_landmarks = l2_loss(tgt_lmks, swapped_lmks)  ##lmks can be just coordinates of landmarks or heatmap of them
+        Xt_f_pred_heatmap, swapped_face_pred_heatmap = all_heatmaps
+        L_landmarks = l2_loss(Xt_f_pred_heatmap, swapped_face_pred_heatmap)  ##lmks can be just coordinates of landmarks or heatmap of them
     else:
         L_landmarks = 0
+        
+    if args.shape_loss:
+        pass
+        ## L1(Q_fuse, Q_r)
 
         
     # final loss of generator
@@ -107,16 +110,21 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
     return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive, L_source_unet, L_target_unet, L_landmarks
 
+
+
+
+
+
 ##Why id_embed?
-def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device, id_embed):
+def compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_source, recon_target, diff_person, device):
     # fake part
-    fake_D = D(Y.detach())
+    fake_D = D(swapped_face.detach())
     loss_fake = 0
     for di in fake_D:
         loss_fake += torch.sum(hinge_loss(di[0], False).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
 
     # ground truth part
-    true_D = D(Xs)
+    true_D = D(Xs_f)
     loss_true = 0
     for di in true_D:
         loss_true += torch.sum(hinge_loss(di[0], True).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
@@ -128,10 +136,10 @@ def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, de
 
     
     ## cyclegan loss for Unet reconstruction
-    disc_src_fake = disc_src(recon_Xs)
-    disc_src_real = disc_src(Xs)
-    disc_tgt_fake = disc_tgt(recon_Xt)
-    disc_tgt_real = disc_tgt(Xt)
+    disc_src_fake = disc_src(recon_source)
+    disc_src_real = disc_src(Xs_f)
+    disc_tgt_fake = disc_tgt(recon_target)
+    disc_tgt_real = disc_tgt(Xt_f)
     
     # disc_src_fake = disc_src(recon_src)
     # disc_src_real = disc_src(Xs)

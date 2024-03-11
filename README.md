@@ -12,8 +12,9 @@ ssh를 이용하여 git clone을 할 것이라면
 1-2. git clone https://github.com/dob-world/FS-Ghost.git
 
 2. cd FS-Ghost
-3. git checkout hojun-mae
-4. git submodule init
+3. git checkout hojun-crossu-justin-hojun
+(처음 git 코드를 가져오는 것이라면 submodule add 를 실행해야 한다. 그래야 .gitmodules 파일에 코드가 등록된다.)  git submodule add https://github.com/zllrunning/face-parsing.PyTorch
+4. git submodule init   (submodule add 후 init, update를 통해 해당 깃허브를 가져온다)
 5. git submodule update
 6. ./mae/models_mae.py 의 line 40, 54에서 qk_scale=None를 제거
 7. ./mae/models_mae.py의 from util.pos_embed import get_2d_sincos_pos_embed을 from mae.util.pos_embed import get_2d_sincos_pos_embed 로 변경한다
