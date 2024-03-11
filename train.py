@@ -66,7 +66,7 @@ def train_one_epoch(G: 'generator model',
     ##loading pretrained models for extracting IDs
     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
     f_id_path = "/datasets/pretrained/backbone.pth"
-    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path)
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
     
     #print(id_extractor)
     
@@ -294,7 +294,7 @@ def train(args, device):
     
     # initializing main models
     # G = AEI_Net(args.backbone, num_blocks=args.num_blocks, c_id=512).to(device)
-    G = CrossUnetAttentionGenerator(backbone='unet').to(device)
+    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(device)
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)    
     
     G.train()
@@ -381,6 +381,8 @@ def train(args, device):
     loss_adv_accumulated = 20.
     
     for epoch in range(0, max_epoch):
+        if epoch >= 1:
+            args.id_mode = 'Hififace'
         train_one_epoch(G,
                         D,
                         opt_G,
@@ -473,7 +475,9 @@ if __name__ == "__main__":
     ##parameters for model configs
     parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
-
+    parser.add_argument('--num_adain', default=1, type=int, help='Numbers of AdaIN_ResBlocks') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
+    parser.add_argument('--id_mode', default='arcface', type=str, help='Mode change is possible between 1) arcface 2) hififace') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
+    
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
     parser.add_argument('--n_head', default=2, type=int, help='number of multi attention head')
     parser.add_argument('--total_embed_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")

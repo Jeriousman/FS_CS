@@ -11,10 +11,11 @@ sys.path.append('./extractor/')
 
 
 class ShapeAwareIdentityExtractor(nn.Module):
-    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path):
+    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mode = 'hififace'):
         super(ShapeAwareIdentityExtractor, self).__init__()
         
         self.device = torch.device(0)
+        self.mode = mode # binary : hififace / arcface
 
 
 
@@ -32,7 +33,6 @@ class ShapeAwareIdentityExtractor(nn.Module):
     @torch.no_grad()
     def forward(self, i_source, i_target):
 
-
         ## v_sid
         lm3d_std = load_lm3d("./deep3D/BFM") 
         source_img, lm_src = read_data(i_source, lm3d_std)
@@ -44,28 +44,115 @@ class ShapeAwareIdentityExtractor(nn.Module):
         target_img = target_img.to(self.device)
 
         c_t = self.f_3d(target_img)
+
         c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)
+
         v_id_source = F.normalize(self.f_id(F.interpolate((i_source - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+        v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+        
         v_sid = torch.cat((c_fuse, v_id_source), dim=1)
 
-        ## source arc face only embedding (id loss와 infonce loss에서 사용)
-        src_emb = v_id_source
+        if self.mode == 'hififace': 
+            '''
+            return :
+                v_sid : source의 arcface + (source의 deep3d vector 중 identity + target의 " 중 the rest)
+                src_emb : source의 arcface + source의 deep3d
+                tgt_emb : target의 arcface + target의 deep3d
+            '''
 
-        ## target arc face only embedding (infonce loss에서 사용)
-        v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
-        tgt_emb = v_id_target
+            src_emb = torch.cat((c_s, v_id_source), dim=1)
+            tgt_emb = torch.cat((c_t, v_id_target), dim=1)
+
+            return v_sid, src_emb, tgt_emb
 
 
+        elif self.mode == 'arcface':
+            '''
+            return :
+                v_sid : source의 arcface + (source의 deep3d vector 중 identity + target의 " 중 the rest)
+                src_emb : source의 arcface
+                tgt_emb : target의 arcface
+            '''
 
-        #print(f"v_sid shape : {v_sid.size()}, src_emb shape : {src_emb.size()}, tgt_emb shape : {tgt_emb.size()}")
-        return v_sid, src_emb, tgt_emb
+            src_emb = v_id_source
+            tgt_emb = v_id_target
+
+            return v_sid, src_emb, tgt_emb
+
+        else:
+            raise Exception("Illegal argument. Use either \'hififace\' or \'arcface\'")
+        
     
     
     @torch.no_grad()
     def id_forward(self, i_swapped): # swapped의 arc face only embedding(id loss와 Infonce loss에서 사용)을 위한 method
 
-        i_swapped = i_swapped.cpu()
-        swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+        lm3d_std = load_lm3d("./deep3D/BFM") 
 
 
-        return swapped_emb
+        if self.mode == 'hififace': 
+            print("id_forward for hififace !!!!!!!!!!")
+
+            i_swapped = i_swapped.cpu()
+            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+
+
+            ### i_swapped must be an image ###
+            swapped_img, lm_swapped = read_data(i_swapped, lm3d_std)
+            swapped_img = swapped_img.to(self.device) 
+            c_swapped = self.f_3d(swapped_img)
+            v_swapped = torch.cat((c_swapped, swapped_emb), dim=1)
+            return v_swapped
+
+        elif self.mode == 'arcface': 
+
+            i_swapped = i_swapped.cpu()
+            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+            return swapped_emb
+
+        else:
+            raise Exception("Illegal argument. Use either \'hififace\' or \'arcface\'")
+
+
+    # @torch.no_grad()
+    # def forward(self, i_source, i_target):
+
+
+    #     ## v_sid
+    #     lm3d_std = load_lm3d("./deep3D/BFM") 
+    #     source_img, lm_src = read_data(i_source, lm3d_std)
+
+    #     source_img = source_img.to(self.device) 
+    #     c_s = self.f_3d(source_img)
+
+    #     target_img, lm_src = read_data(i_target, lm3d_std)
+    #     target_img = target_img.to(self.device)
+
+    #     c_t = self.f_3d(target_img)
+    #     c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)
+    #     v_id_source = F.normalize(self.f_id(F.interpolate((i_source - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+    #     v_sid = torch.cat((c_fuse, v_id_source), dim=1)
+
+    #     ## source arc face only embedding (id loss와 infonce loss에서 사용)
+    #     src_emb = v_id_source
+
+    #     ## target arc face only embedding (infonce loss에서 사용)
+    #     v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+    #     tgt_emb = v_id_target
+
+
+
+    #     #print(f"v_sid shape : {v_sid.size()}, src_emb shape : {src_emb.size()}, tgt_emb shape : {tgt_emb.size()}")
+    #     return v_sid, src_emb, tgt_emb
+
+
+    # @torch.no_grad()
+    # def id_forward(self, i_swapped): # swapped의 arc face only embedding(id loss와 Infonce loss에서 사용)을 위한 method
+
+
+
+    #     i_swapped = i_swapped.cpu()
+    #     swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+
+
+        # return swapped_emb

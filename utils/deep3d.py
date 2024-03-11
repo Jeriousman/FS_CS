@@ -56,10 +56,13 @@ def get_landmarks(im_path):
     #image.save("./a.jpg")
     image = np.array(image)
     
-
-    model = get_model("resnet50_2020-07-20", max_size=2048) # problematic part
+    print("reach1")
+    model = get_model("resnet50_2020-07-20", max_size=2048) 
     model.eval()
-    annotation = model.predict_jsons(image)
+    print("reach2")
+    annotation = model.predict_jsons(image) # problematic part
+    print("reach3")
+
 
 
     max_score_dict = max(annotation, key=lambda x: x['score'])
@@ -71,11 +74,13 @@ def read_data(im_path, lm3d_std, to_tensor=True):
 
     imgs = []
     lms = []
+    cnt = 0
     for i in range(len(im_path)): # iterates #(images) times
         img = im_path[i]
         tensor_to_pil = transforms.ToPILImage()
         im = tensor_to_pil(img).convert('RGB')
-
+        print("img before alignment..")
+        im.save(f"/workspace/images/align/before_{cnt}.jpg")
 
         #im = Image.open(im_path).convert('RGB')
         W,H = im.size
@@ -83,18 +88,27 @@ def read_data(im_path, lm3d_std, to_tensor=True):
 
         lm = get_landmarks(im_path[i]) 
         lm = np.array(lm)
-        
+        print("getting landmarks..")
+
         lm = lm.reshape([-1, 2])
         lm[:, -1] = H - 1 - lm[:, -1]
 
         print(f"im shape :{im.size},\nlm shape : {np.array(lm).shape},\nlm3d_std : {np.array(lm3d_std).shape}")
-        _, im, lm, _ = align_img(im, lm, lm3d_std) # retina_face
+        _, im, lm, _ = align_img(im, lm, lm3d_std) # original funtion
+       #im = align_img(im) 
+
+
+        #print("img after alignment..")
+        im.save(f"/workspace/images/align/after_{cnt}.jpg")
+
+
         if to_tensor:
             im = torch.tensor(np.array(im)/255., dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
             lm = torch.tensor(lm).unsqueeze(0)
 
         imgs.append(im)
         lms.append(lm)
+        cnt += 1
     
     imgs = torch.cat(imgs, dim=0)
     lms = torch.cat(lms, dim=0)

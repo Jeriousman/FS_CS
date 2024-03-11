@@ -8,7 +8,7 @@ from utils.adain import *
 
 class CrossUnetAttentionGenerator(nn.Module):
     # def __init__(self, seq_len, n_head, q_dim, k_dim, kv_dim, backbone='unet'):
-    def __init__(self, seq_len:int=16, n_head:int=2, q_dim:int=1024, k_dim:int=1024, kv_dim:int=1024, backbone='unet'):
+    def __init__(self, seq_len:int=16, n_head:int=2, q_dim:int=1024, k_dim:int=1024, kv_dim:int=1024, backbone='unet', num_adain=1):
         super(CrossUnetAttentionGenerator, self).__init__()
         self.backbone = backbone
         self.seq_len = seq_len
@@ -16,7 +16,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         self.q_dim = q_dim
         self.k_dim = k_dim
         self.kv_dim = kv_dim
-
+        self.num_adain = num_adain
         self.CUMAE_src = UNet(backbone='unet')
         self.CUMAE_tgt = UNet(backbone='unet')
         # CUMAE_cross = CrossUMLAttrEncoder(backbone='unet')
@@ -123,7 +123,8 @@ class CrossUnetAttentionGenerator(nn.Module):
         # print("id_emb.size()[1]", id_emb.size()[1])
         # print("output1.size()[1]", output1.size()[1])
         adain_1 = AdaIN_layer(id_emb.size()[1], output1.size()[1])
-        output1 = adain_1(output1, id_emb)
+        output1 = adain_1(output1, id_emb) if 1<= self.num_adain else output1 # conditional injection
+
 
         print("output1 shape after transferring", output1.size())
         # 
@@ -139,16 +140,21 @@ class CrossUnetAttentionGenerator(nn.Module):
         z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         # print('reshaped z_cross_attr1:', z_cross_attr1.shape)
         output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
+        output2 = adain_2(output2, id_emb) if 2<= self.num_adain else output2 # conditional injection
         # print('output2:', output2.shape)
         
         ##512x16x16 -> 256x32x32 (output3)
         z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
         output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
+        output3 = adain_3(output3, id_emb) if 3<= self.num_adain else output3 # conditional injection
+
         # print('output3:', output3.shape)
         
         ##256x32x32 -> 128x64x64 (output4)
         z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
         output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
+        output4 = adain_4(output4, id_emb) if 4<= self.num_adain else output4 # conditional injection
+
         # print('output4:', output4.shape)
         
         # ##128x64x64 -> 64x128x128 (output5)
@@ -159,11 +165,15 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##128x64x64 -> 64x128x128 (output5)
         # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
         output5 = self.deconv5(output4) ## 64 > 128
+        output5 = adain_5(output2, id_emb) if 5<= self.num_adain else output5 # conditional injection
+
         # print('output5:', output5.shape)
         
         ##64x128x128 -> 32x256x256 (output6)
         # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
         output6 = self.deconv6(output5) ## 128 > 256
+        output6 = adain_6(output6, id_emb) if 6<= self.num_adain else output6 # conditional injection
+
         # print('output6:', output6.shape)
         
         
