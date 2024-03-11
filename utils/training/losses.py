@@ -23,7 +23,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 #                              diff_person, same_person, args):
     
 def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, args, id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target):
+                             diff_person, same_person, args, id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, tgt_lmks, swapped_lmks):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -72,24 +72,42 @@ def compute_generator_losses(G, Y, Xt, Xs, Xt_attr, Di, eye_heatmaps, loss_adv_a
         cycleloss_src = l1_loss(Y, recon_source)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
         cycleloss_tgt = l1_loss(Y, recon_target)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
+    
         ## identity loss (for cycle GAN)
         # identityloss_src = l1_loss(Xs, recon_src)
         # identityloss_tgt = l1_loss(Xt, recon_tgt) 
         identityloss_src = l1_loss(Xs, recon_source)
         identityloss_tgt = l1_loss(Xt, recon_target) 
         L_cycle_identity = identityloss_src + identityloss_tgt
+    else:
+        L_cycle = 0
+        L_cycle_identity = 0
         
+        
+    
+    ##저스틴에게서 코드 업데이트 받기 (tgt src embeddings)
+    
+    if args.constrative_loss:
+        L_constrasive =  infoNce_id_loss(swapped_id_emb, src_id_emb, tgt_id_emb)
+    else:
+        L_constrasive = 0
+    
+    ## Following implementation of "HIGH-FIDELITY FACE SWAPPING WITH STYLE BLENDING"
+    if args.landmark_loss:
+        L_landmarks = l2_loss(tgt_lmks, swapped_lmks)  ##lmks can be just coordinates of landmarks or heatmap of them
+    else:
+        L_landmarks = 0
 
         
     # final loss of generator
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet#+ args.weight_landmarks*L_landmarks
+    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet+ args.weight_landmarks*L_landmarks
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive, L_source_unet, L_target_unet#, L_landmarks
+    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive, L_source_unet, L_target_unet, L_landmarks
 
-
+##Why id_embed?
 def compute_discriminator_loss(D, Y, recon_Xs, recon_Xt, Xs, Xt, diff_person, device, id_embed):
     # fake part
     fake_D = D(Y.detach())
