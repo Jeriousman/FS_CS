@@ -83,4 +83,3 @@ def get_faceswap(source_path: str, target_path: str,
     target = torch2image(target)
 
     return np.concatenate((cv2.resize(source, (256, 256)), target, Yt), axis=1)  
-        

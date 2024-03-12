@@ -54,7 +54,6 @@ def train_one_epoch(G: 'generator model',
                     model_ft: 'Landmark Detector',
                     args: 'Args Namespace',
                     train_dataloader: torch.utils.data.DataLoader,
-                    valid_dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
                     loss_adv_accumulated:int
@@ -425,9 +424,9 @@ def train(args, device):
             for i, valid_minibatch in enumerate(valid_dataloader):
                 val_id_ext_src_input, val_id_ext_tgt_input, val_Xt_f, val_Xt_b, val_Xs_f, val_Xs_b, val_same_person = valid_minibatch
 
-                Xs_f = Xs_f.to(device)
+                val_Xs_f = val_Xs_f.to(device)
                 # Xs.shape
-                Xt_f = Xt_f.to(device)
+                val_Xt_f = val_Xt_f.to(device)
                 # Xt.shape
                 val_same_person = val_same_person.to(device)
                 val_realtime_batch_size = val_Xt_f.shape[0] 
@@ -447,7 +446,7 @@ def train(args, device):
                 
                 ## calculate the 4 metrics
                 
-                ## pose_value = POSE(val_swapped_face)
+                ## pose_value = POSE(val_swapped_face, val_Xt)
                 ## id_value = ID(val_swapped_face)
                 ## fid_value = FID(val_swapped_face)
                 ## expression_value = EXPRESSION(val_swapped_face)
@@ -538,8 +537,8 @@ if __name__ == "__main__":
     # dataset params
     ##the 4 arguments are newly added by Hojun
     # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='Paasdasde')
-    parser.add_argument('--train_ratio', default=0.9, type=float, help='Paasdasde')
+    parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='path to ffhq dataset in string format')
+    parser.add_argument('--train_ratio', default=0.9, type=float, help='how much data to be used as training set. The rest will be used as validation set. e.g.) if 0.9, validation data will be 0.1 (10%)')
     # parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
@@ -553,11 +552,11 @@ if __name__ == "__main__":
     parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
     parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
-    parser.add_argument('--weight_cycle', default=5., type=float, help='cycle Loss weight for generator')
-    parser.add_argument('--weight_cycle_identity', default=5., type=float, help='identity Loss weight for generator')
-    parser.add_argument('--weight_contrastive', default=5., type=float, help='identity Loss weight for generator')
-    parser.add_argument('--weight_source_unet', default=1., type=float, help='identity Loss weight for generator')
-    parser.add_argument('--weight_target_unet', default=1., type=float, help='identity Loss weight for generator')
+    parser.add_argument('--weight_cycle', default=5., type=float, help='Cycle Loss weight for generator')
+    parser.add_argument('--weight_cycle_identity', default=5., type=float, help='Cycle Identity Loss weight for generator')
+    parser.add_argument('--weight_contrastive', default=5., type=float, help='Contrastive Loss weight for idendity embedding of generator')
+    parser.add_argument('--weight_source_unet', default=1., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_target_unet', default=1., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
     
 
     
@@ -565,7 +564,7 @@ if __name__ == "__main__":
     
     
     ##parameters for model configs
-    parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder')
+    parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder. The other modes are not applicable')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
     parser.add_argument('--num_adain', default=1, type=int, help='Numbers of AdaIN_ResBlocks') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
     parser.add_argument('--id_mode', default='arcface', type=str, help='Mode change is possible between 1) arcface 2) hififace') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
@@ -588,9 +587,9 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler_step', default=5000, type=int)
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
     parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
-    parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
-    parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
-    parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, cycle loss is applied to generator and discriminator')
+    parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True landmark loss is applied to generator')
+    parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
+    parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
