@@ -525,7 +525,7 @@ class FaceEmbedCombined_real(TensorDataset):
 
 
 
-class FaceEmbedCombined(TensorDataset):
+class FaceEmbedCombined_(TensorDataset):
     '''
     CelebA나 FFHQ중 하나는 무조건 사용되어야 하게 설정되어있다.
     '''
@@ -753,4 +753,156 @@ class FaceEmbedCombined(TensorDataset):
                 Xt = Xs.copy()
             same_person = 1
             
+        return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person
+    
+    
+    
+
+class FaceEmbedCombined(TensorDataset):
+    '''
+    CelebA나 FFHQ중 하나는 무조건 사용되어야 하게 설정되어있다.
+    '''
+    def __init__(self, vgg_data_path=None, celeba_data_path=None, dob_data_path=None, ffhq_data_path=None, same_prob=0.8, same_identity=False):
+        self.vgg_data_path = vgg_data_path
+        self.dob_data_path = dob_data_path
+        self.ffhq_data_path = ffhq_data_path
+        self.celeba_data_path = celeba_data_path
+        self.total_dataset = []
+        self.same_prob = same_prob
+        self.same_identity = same_identity
+        ##data_path='/datasets/FFHQ'
+        if bool(self.ffhq_data_path)==True:
+            self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*.*g', recursive=True)
+            self.ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
+            self.ffhq_len = len(self.ffhq_dataset)
+        ##'/datasets/CelebHQ/CelebA-HQ-img'
+        if bool(self.celeba_data_path)==True:
+            self.celeba_dataset = glob.glob(f'{self.celeba_data_path}/**.*g', recursive=True)
+            self.celeba_len = len(self.celeba_dataset)
+        # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
+        print('self.ffhq_len', self.ffhq_len)
+        if bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
+            self.total_dataset = self.ffhq_dataset + self.celeba_dataset
+        elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
+            self.total_dataset += self.celeba_dataset
+        elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+            self.total_dataset += self.ffhq_dataset
+        else:
+            raise ValueError('At least either CelebA and/or FFHQ data must be used')
+        # print('self.total_dataset', self.total_dataset[:10])
+        # print("fasdf")
+        self.folder2imgs = {}
+        if bool(self.vgg_data_path)==True:
+            self.vgg_dataset = glob.glob(f'{self.vgg_data_path}/*/*.*g')
+            self.vgg_folders_list = glob.glob(f'{self.vgg_data_path}/*')
+            for folder in tqdm.tqdm(self.vgg_folders_list):
+                folder_imgs = glob.glob(f'{folder}/*')
+                self.folder2imgs[folder] = folder_imgs
+            self.vgg_len = len(self.vgg_dataset)
+            self.total_dataset += self.vgg_dataset
+        if bool(self.dob_data_path)==True:
+            '''
+            디오비 데이터를 모두 로딩하기 위해 걸린시간: 1930.1818947792053초
+            '''
+            self.dob_dataset = glob.glob(f'{self.dob_data_path}/*/*/*.*g') ##모든이미지의 full image list
+            self.dob_folders_list = glob.glob(f'{self.dob_data_path}/*/*')  ##  '/datasets/DOB/imagefile/DOB04F215SEC', '/datasets/DOB/imagefile/KTT03M008FIR', ...
+            # self.dob_folder2imgs = {}
+            for folder in tqdm.tqdm(self.dob_folders_list): ##folder는 이미지를 가지고 있는 각각 폴더명
+                folder_imgs = glob.glob(f'{folder}/*')  ##폴더명 아래에 있는 모든 파일을 가지고 와서 리스팅
+                self.folder2imgs[folder] = folder_imgs ## 모든 이미지를 폴더경로 key에 저장하는 dict 생성. key의 예: folder2imgs['/datasets/DOB/imagefile2/CDW04F003FIR']
+            self.dob_len = len(self.dob_dataset)
+            self.total_dataset += self.dob_dataset
+        self.total_dataset_len = len(self.total_dataset)
+        self.transforms_id_ext = transforms.Compose([
+            transforms.Resize((256, 256)),
+            transforms.ToTensor()
+        ])
+        self.transforms_base = transforms.Compose([
+            transforms.ColorJitter(0.2, 0.2, 0.2, 0.01),
+            # transforms.RandomHorizontalFlip(p=0.4),  ##Hojun added
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+    def __getitem__(self, idx):
+        if bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+            # if idx < self.ffhq_len:
+            #     raise ValueError('it must use only FFHQ dataset')
+            image_path = self.total_dataset[idx]
+            transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
+        elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
+            if idx < self.ffhq_len + self.celeba_len:
+                image_path = self.total_dataset[idx]
+                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
+            elif idx >= self.ffhq_len + self.celeba_len:
+                image_path = self.total_dataset[idx]
+                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person =self.fetch_vgg_dob(image_path)
+
+        else:
+            raise ValueError('At least either CelebA and/or FFHQ data must be used')
+        return transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person
+
+    def __len__(self):
+        return self.total_dataset_len
+    def fetch_ffhq_celeba(self, image_path):
+        # print('image_path', image_path)
+        Xs = cv2.imread(image_path)[:, :, ::-1]
+        Xs = Image.fromarray(Xs)
+
+        img_file_name = image_path.split('/')[-1].split('.')[-2]
+        img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
+        img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
+        # print(img_parsed_dir + img_file_name + '_f.jpg')
+        Xsf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
+        Xsf = Image.fromarray(Xsf)
+        Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
+        Xsb = Image.fromarray(Xsb)
+
+        if random.random() > self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
+ 
+            image_path = self.total_dataset[random.randint(0, len(self.total_dataset)-1)]  ##Xs에 대조될 Xt를 랜덤하게 뽑는것
+            Xt = cv2.imread(image_path)[:, :, ::-1]
+            Xt = Image.fromarray(Xt)
+            ## 4가지 input (parsing) :데이터 구조 (원본 이미지 디렉토리와 같은 계층에 'parsed_img' 폴더가 있어야함)
+            img_file_name = image_path.split('/')[-1].split('.')[-2]
+            img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
+            img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
+            Xtf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
+            Xtb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
+            Xtf = Image.fromarray(Xtf)
+            Xtb = Image.fromarray(Xtb)
+
+            same_person = 0
+        else:
+            Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함
+            Xtf = Xsf.copy()
+            Xtb = Xsb.copy()
+            same_person = 1
+        return self.transforms_id_ext(Xs),self.transforms_id_ext(Xt), self.transforms_base(Xtf), self.transforms_base(Xtb), self.transforms_base(Xsf), self.transforms_base(Xsb), same_person
+    def fetch_vgg_dob(self, image_path):
+        Xs = cv2.imread(image_path)[:, :, ::-1]
+        Xs = Image.fromarray(Xs)
+        if self.same_identity:
+            folder_name = '/'.join(image_path.split('/')[:-1])
+        if random.random() > self.same_prob:
+            if bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
+                image_path = self.total_dataset[random.randint(self.ffhq_len+self.celeba_len-1, self.total_dataset_len-1)]
+            elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
+                image_path = self.total_dataset[random.randint(self.celeba_len-1, self.total_dataset_len-1)]
+            elif bool(self.celeba_data_path)==False and bool(self.ffhq_data_path)==True:
+                image_path = self.total_dataset[random.randint(self.ffhq_len-1, self.total_dataset_len-1)]
+            else:
+                raise ValueError('At least either CelebA and FFHQ data must be used')
+            Xt = cv2.imread(image_path)[:, :, ::-1]
+            Xt = Image.fromarray(Xt)
+            same_person = 0
+        else:
+            if self.same_identity:
+                image_path = random.choice(self.folder2imgs[folder_name])
+                Xt = cv2.imread(image_path)[:, :, ::-1]
+                Xt = Image.fromarray(Xt)
+            else:
+                Xt = Xs.copy()
+            same_person = 1
         return self.transforms_arcface(Xs), self.transforms_base(Xs),  self.transforms_base(Xt), same_person

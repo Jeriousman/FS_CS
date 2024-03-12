@@ -63,7 +63,7 @@ def read_torch_image(path: str) -> torch.tensor:
     return image
 
 
-def get_faceswap(source_path: str, target_path: str, 
+def get_faceswap_(source_path: str, target_path: str, 
                  G: 'generator model', netArc: 'arcface model', 
                  device: 'torch device') -> np.array:
     source = read_torch_image(source_path)
@@ -83,3 +83,37 @@ def get_faceswap(source_path: str, target_path: str,
     target = torch2image(target)
 
     return np.concatenate((cv2.resize(source, (256, 256)), target, Yt), axis=1)  
+
+
+# Xt_f, Xs_f, id_embedding
+
+def get_faceswap(source_path: str, target_path: str, 
+                 G: 'generator model', netArc: 'arcface model', 
+                 device: 'torch device') -> np.array:
+    
+    
+    source = read_torch_image(source_path)
+    source = source.to(device)
+
+    embeds = netArc(F.interpolate(source, [112, 112], mode='bilinear', align_corners=False))
+    # embeds = F.normalize(embeds, p=2, dim=1)
+    
+    # ## hojun added
+    # id_embedding = 
+
+    target = read_torch_image(target_path)
+    target = target.cuda()
+
+    with torch.no_grad():
+        swapped_face, _, _ = G(Xt_f, Xs_f, id_embedding)
+        swapped_face = torch2image(swapped_face)
+
+    source = torch2image(source)
+    target = torch2image(target)
+    
+    
+    
+
+    return np.concatenate((cv2.resize(source, (256, 256)), target, swapped_face), axis=1)  
+
+

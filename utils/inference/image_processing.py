@@ -20,7 +20,7 @@ def crop_face(image_full: np.ndarray, app: Callable, crop_size: int) -> np.ndarr
     return [align_img]
 
 
-def normalize_and_torch(image: np.ndarray) -> torch.tensor:  ##값을 노멀라이징하고 토치 텐서 형태로 만든다 
+def normalize_and_torch(image: np.ndarray) -> torch.tensor:  ##넘파이 어레이값을 노멀라이징하고 토치 텐서 형태로 만든다 
     """
     Normalize image and transform to torch
     """
@@ -55,6 +55,7 @@ def get_final_image(final_frames: List[np.ndarray],
                     handler) -> None:
     """
     Create final video from frames
+    여기에서 source와 target 을 블렌딩하는 작업을 한다.
     """
     final = full_frame.copy()
     params = [None for i in range(len(final_frames))]
