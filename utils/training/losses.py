@@ -172,3 +172,6 @@ def infoNce_id_loss(swapped_ids, source_ids, negative_ids):  ##negative_ids = an
     return infonce_loss
 #     result = -math.log(exp(F.cosine_similarity(swapepd, source))/(exp(F.cosine_similarity(swapped, target) + sigma(exp(F.cosine_similarity(swapped, negative))))
     
+    
+
+#def shape_loss():

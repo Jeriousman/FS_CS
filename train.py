@@ -297,8 +297,7 @@ def train(args, device):
     G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(device)
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)    
     
-    G.train()
-    D.train()
+
     
     # initializing model for identity extraction
     netArc = iresnet100(fp16=False)
@@ -383,6 +382,9 @@ def train(args, device):
     for epoch in range(0, max_epoch):
         if epoch >= 1:
             args.id_mode = 'Hififace'
+            
+        G.train()
+        D.train()
         train_one_epoch(G,
                         D,
                         opt_G,
@@ -393,12 +395,80 @@ def train(args, device):
                         model_ft,
                         args,
                         train_dataloader,
-                        valid_dataloader,
                         device,
                         epoch,
                         loss_adv_accumulated)
                         # config)
         
+
+        
+        running_vloss = 0.0
+        running_pose_metric = 0.0
+        running_id_metric = 0.0
+        running_fid_metric = 0.0
+        running_expression_metric = 0.0
+            # Set the model to evaluation mode, disabling dropout and using population
+            # statistics for batch normalization.
+        G.eval()
+        D.eval()
+        id_extractor.eval()
+
+        # Disable gradient computation and reduce memory consumption.
+        with torch.no_grad():
+            for i, valid_minibatch in enumerate(valid_dataloader):
+                val_id_ext_src_input, val_id_ext_tgt_input, val_Xt_f, val_Xt_b, val_Xs_f, val_Xs_b, val_same_person = valid_minibatch
+
+                Xs_f = Xs_f.to(device)
+                # Xs.shape
+                Xt_f = Xt_f.to(device)
+                # Xt.shape
+                val_same_person = val_same_person.to(device)
+                val_realtime_batch_size = val_Xt_f.shape[0] 
+                # break
+
+                ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
+                val_id_embedding, val_src_id_emb, val_tgt_id_emb = id_extractor(val_id_ext_src_input, val_id_ext_tgt_input)
+                val_id_embedding, val_src_id_emb, val_tgt_id_emb = val_id_embedding.to(device), val_src_id_emb.to(device), val_tgt_id_emb.to(device)
+
+                val_diff_person = torch.ones_like(val_same_person)
+
+                if args.diff_eq_same:
+                    val_same_person = val_diff_person
+                
+                
+                val_swapped_face, val_recon_f_src, val_recon_f_tgt = G(val_Xt_f, val_Xs_f, val_id_embedding)
+                
+                ## calculate the 4 metrics
+                
+                ## pose_value = POSE(val_swapped_face)
+                ## id_value = ID(val_swapped_face)
+                ## fid_value = FID(val_swapped_face)
+                ## expression_value = EXPRESSION(val_swapped_face)
+                
+                
+                
+                ## probably losses dont need to be calculated
+                # voutputs = model(vinputs)
+                # vloss = loss_fn(val_swapped_face)
+                
+                
+                running_vloss += vloss
+                running_pose_metric += pose_value
+                running_id_metric += id_value
+                running_fid_metric += fid_value
+                running_expression_metric += expression_value
+            
+            avg_pose_metric = running_pose_metric / (i + 1)
+            avg_id_metric = running_id_metric / (i + 1)
+            avg_fid_metric = running_fid_metric / (i + 1)
+            avg_expression_metric = running_expression_metric / (i + 1)
+            
+            ## adding functions for WandB to log the metrics
+            ## put up the generated validation images in WandB
+            ## saving functions for best G and D
+
+            # torch.save(model.state_dict(), model_path)
+            
 
 def main(args):
     
