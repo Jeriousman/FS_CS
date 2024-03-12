@@ -134,17 +134,17 @@ def train_one_epoch(G: 'generator model',
         if args.landmark_detector_loss:
             Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
             swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
-            all_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
+            all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
             all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
         else:
-            all_heatmaps = None
+            all_landmark_heatmaps = None
             all_landmarks = None
 
 
         
         lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_heatmaps, args)
+                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
@@ -402,6 +402,8 @@ def train(args, device):
         
 
         
+        
+        ##This below is validation part
         running_vloss = 0.0
         running_pose_metric = 0.0
         running_id_metric = 0.0
@@ -411,6 +413,11 @@ def train(args, device):
             # statistics for batch normalization.
         G.eval()
         D.eval()
+        
+    ##loading pretrained models for extracting IDs
+        f_3d_path = "/datasets/pretrained/pretrained_model.pth"
+        f_id_path = "/datasets/pretrained/backbone.pth"
+        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
         id_extractor.eval()
 
         # Disable gradient computation and reduce memory consumption.
