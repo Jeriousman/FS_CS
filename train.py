@@ -264,13 +264,6 @@ def train_one_epoch(G: 'generator model',
                 output = np.concatenate((output1, output2), axis=1)
 
                 wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
-                
-                # print(f'Evaluation!! ID: {L_id.item()}  POSE: {pose.item()}               '  )
-                
-    ## 여기에 val dataloader 돌려서 metrics 계산한다 valid_dataloader
-                
-                
-                
 
                 G.train()
 
@@ -537,8 +530,11 @@ if __name__ == "__main__":
     # dataset params
     ##the 4 arguments are newly added by Hojun
     # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
-    parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='path to ffhq dataset in string format')
+    # parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='path to ffhq dataset in string format')
+    parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ_parsed_img', type=str,help='path to ffhq dataset in string format')
+    
     parser.add_argument('--train_ratio', default=0.9, type=float, help='how much data to be used as training set. The rest will be used as validation set. e.g.) if 0.9, validation data will be 0.1 (10%)')
+    
     # parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--dob_data_path', default='/datasets/DOB', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     
