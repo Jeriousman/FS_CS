@@ -757,7 +757,6 @@ class FaceEmbedCombined_(TensorDataset):
     
     
     
-
 class FaceEmbedCombined(TensorDataset):
     '''
     CelebA나 FFHQ중 하나는 무조건 사용되어야 하게 설정되어있다.
@@ -772,15 +771,13 @@ class FaceEmbedCombined(TensorDataset):
         self.same_identity = same_identity
         ##data_path='/datasets/FFHQ'
         if bool(self.ffhq_data_path)==True:
-            self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*.*g', recursive=True)
+            self.ffhq_dataset = glob.glob(f'{self.ffhq_data_path}/**/*f.jpg', recursive=True)
             self.ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
             self.ffhq_len = len(self.ffhq_dataset)
         ##'/datasets/CelebHQ/CelebA-HQ-img'
         if bool(self.celeba_data_path)==True:
             self.celeba_dataset = glob.glob(f'{self.celeba_data_path}/**.*g', recursive=True)
             self.celeba_len = len(self.celeba_dataset)
-        # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
-        print('self.ffhq_len', self.ffhq_len)
         if bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
             self.total_dataset = self.ffhq_dataset + self.celeba_dataset
         elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==False:
@@ -830,14 +827,14 @@ class FaceEmbedCombined(TensorDataset):
             # if idx < self.ffhq_len:
             #     raise ValueError('it must use only FFHQ dataset')
             image_path = self.total_dataset[idx]
-            transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
+            transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
         elif bool(self.celeba_data_path)==True and bool(self.ffhq_data_path)==True:
             if idx < self.ffhq_len + self.celeba_len:
                 image_path = self.total_dataset[idx]
-                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
+                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
             elif idx >= self.ffhq_len + self.celeba_len:
                 image_path = self.total_dataset[idx]
-                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xs, transforms_base_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person =self.fetch_vgg_dob(image_path)
+                transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person =self.fetch_vgg_dob(image_path)
 
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')
@@ -846,14 +843,12 @@ class FaceEmbedCombined(TensorDataset):
     def __len__(self):
         return self.total_dataset_len
     def fetch_ffhq_celeba(self, image_path):
-        # print('image_path', image_path)
         Xs = cv2.imread(image_path)[:, :, ::-1]
         Xs = Image.fromarray(Xs)
-
-        img_file_name = image_path.split('/')[-1].split('.')[-2]
+        print("image_path", image_path)
+        img_file_name = image_path.split('/')[-1].split('_')[0]
         img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
         img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
-        # print(img_parsed_dir + img_file_name + '_f.jpg')
         Xsf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
         Xsf = Image.fromarray(Xsf)
         Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
@@ -865,7 +860,7 @@ class FaceEmbedCombined(TensorDataset):
             Xt = cv2.imread(image_path)[:, :, ::-1]
             Xt = Image.fromarray(Xt)
             ## 4가지 input (parsing) :데이터 구조 (원본 이미지 디렉토리와 같은 계층에 'parsed_img' 폴더가 있어야함)
-            img_file_name = image_path.split('/')[-1].split('.')[-2]
+            img_file_name = image_path.split('/')[-1].split('_')[0]
             img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
             img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
             Xtf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
