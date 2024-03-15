@@ -64,6 +64,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
 
 
 
+
         if self.mode == 'hififace': 
             '''
             return :

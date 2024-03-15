@@ -101,6 +101,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         z_cross_attr3 = self.FFCA3(tgt_z_attr3, src_z_attr3)
         ##128x64x64
         z_cross_attr4 = self.FFCA4(tgt_z_attr4, src_z_attr4)
+        
         # print('z_cross_attr4 passed')
         # return z_cross_attr4
         #64x128x128

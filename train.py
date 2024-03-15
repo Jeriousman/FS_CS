@@ -107,7 +107,7 @@ def train_one_epoch(G: 'generator model',
         swapped_id_emb = id_extractor.id_forward(swapped_face)
         swapped_id_emb = swapped_id_emb.to(device)
 
-        q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+        #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
 
 
 
@@ -586,7 +586,7 @@ if __name__ == "__main__":
     parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True landmark loss is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
-    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
@@ -594,7 +594,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=1, type=int)
+    parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
@@ -605,7 +605,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    
+
+
     # if bool(args.vgg_data_path)==False and args.same_identity==True:
     #     raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
     

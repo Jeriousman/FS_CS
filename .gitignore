@@ -20,3 +20,5 @@ extractor/arcface_model/backbone.pth
 deep3D/models/pretrained_model/pretrained_model.pth
 face-parsing*
 .mat
+current_model*
+saved_models*
