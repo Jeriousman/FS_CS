@@ -89,7 +89,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         
         ##z_cross_attr0 = 1024x4x4  this is same as bottleneck block
         z_cross_attr0 = self.FFCA0(tgt_bottlneck_attr, src_bottlneck_attr) # [B, 16, 1024]
-        print("z_cross_attr0 shape", z_cross_attr0.size())
+        # print("z_cross_attr0 shape", z_cross_attr0.size())
         # print('cross_att passed')
         # return z_cross_attr0
 
@@ -126,8 +126,6 @@ class CrossUnetAttentionGenerator(nn.Module):
         output1 = adain_1(output1, id_emb) if 1<= self.num_adain else output1 # conditional injection
 
 
-        print("output1 shape after transferring", output1.size())
-        # 
 
 
         ##1024x8x8 -> 512x16x16 (output2)

@@ -19,7 +19,7 @@ def detect_all_landmarks(inputs, model_ft):
     mean = torch.tensor([0.5, 0.5, 0.5]).unsqueeze(1).unsqueeze(2).to(inputs.device)
     std = torch.tensor([0.5, 0.5, 0.5]).unsqueeze(1).unsqueeze(2).to(inputs.device)
     inputs = (std * inputs) + mean
-    print("input size : ", inputs.shape)
+
     outputs, boundary_channels = model_ft(inputs)    
     pred_heatmap = outputs[-1][:, :-1, :, :].cpu() 
     pred_landmarks, _ = get_preds_fromhm(pred_heatmap)

@@ -43,14 +43,11 @@ class ApplyStyle(nn.Module):
         x : content vector
         latent : style vector
         '''
-        print("reach here?")
+
         style = self.linear(latent)  # style => [batch_size, n_channels*2]
-        print("reach here??")
         shape = [-1, 2, x.size(1), 1, 1]
-        print("reach here???")
         style = style.view(shape)    # [batch_size, 2, n_channels, ...]
         #x = x * (style[:, 0] + 1.) + style[:, 1]
-        print("reach here????")
         
         x = x * (style[:, 0] * 1 + 1.) + style[:, 1] * 1 # Denorm
         return x
@@ -65,10 +62,6 @@ class AdaIN_layer(nn.Module):
     def forward(self, latent, id): # for id injection
 
         latent_norm = self.instance_norm(latent) # latent for content
-        print("latnet_norm size", latent_norm.size())
-        print("latnet_norm type", type(latent_norm))
-        print("id size", id.size())
-        print("id type", type(id))
         latent_styled = self.styler(latent_norm, id) # styled by id
 
         return latent_styled
@@ -103,13 +96,11 @@ class AdaIN_ResBlock(nn.Module):
         output1 = self.conv1(adain1)
         output1 = F.interpolate(output1, size=(self.width, self.height), mode='bilinear', align_corners=False) # 사이즈가 작아서 padding보단 그래도 interpolation이 나을듯?
 
-        print("output1 shape ", output1.size())
 
         adain2 = self.relu(self.adain2(output1, style))
         output2 = self.conv2(adain2)
         output2 = F.interpolate(output2, size=(self.width, self.height), mode='bilinear', align_corners=False)
 
-        print("output2 shape ", output2.size())
 
 
         skip = self.conv3(content)

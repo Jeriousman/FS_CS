@@ -18,4 +18,5 @@ experiments/*
 mae
 extractor/arcface_model/backbone.pth
 deep3D/models/pretrained_model/pretrained_model.pth
-deep3D/BFM/BFM_front_idx.mat
+face-parsing*
+.mat

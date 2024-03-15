@@ -552,7 +552,7 @@ class FaceEmbedCombined_(TensorDataset):
             self.celeba_len = len(self.celeba_dataset)
         # ffhq_folders = glob.glob(f'{self.ffhq_data_path}/*', recursive=True)
         
-        print('self.ffhq_len', self.ffhq_len)
+
 
         
         
@@ -568,8 +568,6 @@ class FaceEmbedCombined_(TensorDataset):
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')
         
-        # print('self.total_dataset', self.total_dataset[:10])
-        # print("fasdf")
 
         self.folder2imgs = {}
         
@@ -672,7 +670,7 @@ class FaceEmbedCombined_(TensorDataset):
         img_file_name = image_path.split('/')[-1].split('.')[-2]
         img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
         img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir
-        # print(img_parsed_dir + img_file_name + '_f.jpg')
+
         Xsf = cv2.imread(img_parsed_dir + '_f.jpg')[:, :, ::-1]
         Xsf = Image.fromarray(Xsf)
         Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
@@ -680,7 +678,6 @@ class FaceEmbedCombined_(TensorDataset):
         # img_type = image_path.split('/')[-1].split('.')[-1]
         # img_parsed_dir = '/parsed_img/'
         
-        # print('img_folder_dir', img_folder_dir)
         
         ######gdfgsdfgdfgsdgf
         #Xsf = cv2.imread(img_file_name + '_f.jpg')[:, :, ::-1]
@@ -786,8 +783,7 @@ class FaceEmbedCombined(TensorDataset):
             self.total_dataset += self.ffhq_dataset
         else:
             raise ValueError('At least either CelebA and/or FFHQ data must be used')
-        # print('self.total_dataset', self.total_dataset[:10])
-        # print("fasdf")
+
         self.folder2imgs = {}
         if bool(self.vgg_data_path)==True:
             self.vgg_dataset = glob.glob(f'{self.vgg_data_path}/*/*.*g')
@@ -845,7 +841,7 @@ class FaceEmbedCombined(TensorDataset):
     def fetch_ffhq_celeba(self, image_path):
         Xs = cv2.imread(image_path)[:, :, ::-1]
         Xs = Image.fromarray(Xs)
-        print("image_path", image_path)
+
         img_file_name = image_path.split('/')[-1].split('_')[0]
         img_file_dir = image_path.split('/')[-2] + '/' + img_file_name
         img_parsed_dir = '/datasets/FFHQ_parsed_img/' + img_file_dir

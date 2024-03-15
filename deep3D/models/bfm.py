@@ -5,7 +5,7 @@ import numpy as np
 import  torch
 import torch.nn.functional as F
 from scipy.io import loadmat
-from util.load_mats import transferBFM09
+from utils.load_mats import transferBFM09
 import os
 
 def perspective_projection(focal, center):
@@ -25,7 +25,7 @@ class SH:
 
 class ParametricFaceModel:
     def __init__(self, 
-                bfm_folder='./BFM', 
+                bfm_folder='./deep3D/BFM', # important 
                 recenter=True,
                 camera_distance=10.,
                 init_lit=np.array([
@@ -35,7 +35,7 @@ class ParametricFaceModel:
                 center=112.,
                 is_train=True,
                 default_name='BFM_model_front.mat'):
-
+        
         if not os.path.isfile(os.path.join(bfm_folder, default_name)):
             transferBFM09(bfm_folder)
         model = loadmat(os.path.join(bfm_folder, default_name))
@@ -63,18 +63,18 @@ class ParametricFaceModel:
             self.front_face_buf = model['tri_mask2'].astype(np.int64) - 1
             # vertex indices for pre-defined skin region to compute reflectance loss
             self.skin_mask = np.squeeze(model['skinmask'])
-
+        
         if recenter:
             mean_shape = self.mean_shape.reshape([-1, 3])
             mean_shape = mean_shape - np.mean(mean_shape, axis=0, keepdims=True)
             self.mean_shape = mean_shape.reshape([-1, 1])
 
         self.persc_proj = perspective_projection(focal, center)
-        self.device = 'cpu'
+        self.device = 'cpu' # 원래는 cpu Tensor로 계산하는게 목적이었던 듯. 그러나 내가 input으로 넣는게 gpu에 잇는게 좀 있으니 그냥 다 바꿈
         self.camera_distance = camera_distance
         self.SH = SH()
         self.init_lit = init_lit.reshape([1, 1, -1]).astype(np.float32)
-
+        
 
     def to(self, device):
         self.device = device
@@ -82,31 +82,39 @@ class ParametricFaceModel:
             if type(value).__module__ == np.__name__:
                 setattr(self, key, torch.tensor(value).to(device))
 
-
+    
     def compute_shape(self, id_coeff, exp_coeff):
         """
         Return:
             face_shape       -- torch.tensor, size (B, N, 3)
+
         Parameters:
             id_coeff         -- torch.tensor, size (B, 80), identity coeffs
             exp_coeff        -- torch.tensor, size (B, 64), expression coeffs
         """
         batch_size = id_coeff.shape[0]
-        id_part = torch.einsum('ij,aj->ai', self.id_base, id_coeff)
-        exp_part = torch.einsum('ij,aj->ai', self.exp_base, exp_coeff)
-        face_shape = id_part + exp_part + self.mean_shape.reshape([1, -1])
-        return face_shape.reshape([batch_size, -1, 3])
-
+        #print(f"idbase and id coeff type : {type(self.id_base)} {type(id_coeff)}")
+        id_part = torch.einsum('ij,aj->ai', torch.Tensor(self.id_base).to(torch.device(0)), id_coeff) # revised
+        #print(f"expbase and expcoeff type : {type(self.exp_base)}{type(exp_coeff)}")
+        exp_part = torch.einsum('ij,aj->ai', torch.Tensor(self.exp_base).to(torch.device(0)), exp_coeff) # revised
+        
+        #print(f"three types : {type(id_part)} {type(exp_part)}{type(self.mean_shape)}")
+        face_shape = id_part + exp_part
+        face_shape = np.array(face_shape.cpu()) + self.mean_shape.reshape([1, -1])
+        #print("prob?")
+        return torch.Tensor(face_shape.reshape([batch_size, -1, 3])).to(torch.device(0))
+    
 
     def compute_texture(self, tex_coeff, normalize=True):
         """
         Return:
             face_texture     -- torch.tensor, size (B, N, 3), in RGB order, range (0, 1.)
+
         Parameters:
             tex_coeff        -- torch.tensor, size (B, 80)
         """
         batch_size = tex_coeff.shape[0]
-        face_texture = torch.einsum('ij,aj->ai', self.tex_base, tex_coeff) + self.mean_tex
+        face_texture = torch.einsum('ij,aj->ai', torch.Tensor(self.tex_base).to(torch.device(0)), tex_coeff) + torch.Tensor(self.mean_tex).to(torch.device(0))
         if normalize:
             face_texture = face_texture / 255.
         return face_texture.reshape([batch_size, -1, 3])
@@ -116,6 +124,7 @@ class ParametricFaceModel:
         """
         Return:
             vertex_norm      -- torch.tensor, size (B, N, 3)
+
         Parameters:
             face_shape       -- torch.tensor, size (B, N, 3)
         """
@@ -127,7 +136,8 @@ class ParametricFaceModel:
         e2 = v2 - v3
         face_norm = torch.cross(e1, e2, dim=-1)
         face_norm = F.normalize(face_norm, dim=-1, p=2)
-        face_norm = torch.cat([face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(self.device)], dim=1)
+        #face_norm = torch.cat([face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(self.device)], dim=1)
+        face_norm = torch.cat([face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(torch.device(0))], dim=1)        
 
         vertex_norm = torch.sum(face_norm[:, self.point_buf], dim=2)
         vertex_norm = F.normalize(vertex_norm, dim=-1, p=2)
@@ -138,11 +148,17 @@ class ParametricFaceModel:
         """
         Return:
             face_color       -- torch.tensor, size (B, N, 3), range (0, 1.)
+
         Parameters:
             face_texture     -- torch.tensor, size (B, N, 3), from texture model, range (0, 1.)
             face_norm        -- torch.tensor, size (B, N, 3), rotated face normal
             gamma            -- torch.tensor, size (B, 27), SH coeffs
         """
+        face_texture = face_texture.cpu()
+        face_norm = face_norm.cpu()
+        gamma = gamma.cpu()
+
+
         batch_size = gamma.shape[0]
         v_num = face_texture.shape[1]
         a, c = self.SH.a, self.SH.c
@@ -163,14 +179,18 @@ class ParametricFaceModel:
         r = Y @ gamma[..., :1]
         g = Y @ gamma[..., 1:2]
         b = Y @ gamma[..., 2:]
-        face_color = torch.cat([r, g, b], dim=-1) * face_texture
+        #print(r.device)
+        #print(g.device)
+        #print(b.device)
+        face_color = torch.cat([r, g, b], dim=-1) * face_texture #torch.Tensor(face_texture).to(torch.device(0))
         return face_color
 
-
+    
     def compute_rotation(self, angles):
         """
         Return:
             rot              -- torch.tensor, size (B, 3, 3) pts @ trans_mat
+
         Parameters:
             angles           -- torch.tensor, size (B, 3), radian
         """
@@ -179,13 +199,13 @@ class ParametricFaceModel:
         ones = torch.ones([batch_size, 1]).to(self.device)
         zeros = torch.zeros([batch_size, 1]).to(self.device)
         x, y, z = angles[:, :1], angles[:, 1:2], angles[:, 2:],
-
+        
         rot_x = torch.cat([
             ones, zeros, zeros,
             zeros, torch.cos(x), -torch.sin(x), 
             zeros, torch.sin(x), torch.cos(x)
         ], dim=1).reshape([batch_size, 3, 3])
-
+        
         rot_y = torch.cat([
             torch.cos(y), zeros, torch.sin(y),
             zeros, ones, zeros,
@@ -210,13 +230,14 @@ class ParametricFaceModel:
         """
         Return:
             face_proj        -- torch.tensor, size (B, N, 2), y direction is opposite to v direction
+
         Parameters:
             face_shape       -- torch.tensor, size (B, N, 3)
         """
         # to image_plane
-        face_proj = face_shape @ self.persc_proj
+        face_proj = face_shape @ torch.Tensor(self.persc_proj).to(torch.device(0))
         face_proj = face_proj[..., :2] / face_proj[..., 2:]
-
+        #print("face_proj : ", face_proj.size())
         return face_proj
 
 
@@ -224,18 +245,21 @@ class ParametricFaceModel:
         """
         Return:
             face_shape       -- torch.tensor, size (B, N, 3) pts @ rot + trans
+
         Parameters:
             face_shape       -- torch.tensor, size (B, N, 3)
             rot              -- torch.tensor, size (B, 3, 3)
             trans            -- torch.tensor, size (B, 3)
         """
-        return face_shape @ rot + trans.unsqueeze(1)
+
+        return face_shape @ rot.to(torch.device(0)) + trans.unsqueeze(1)
 
 
     def get_landmarks(self, face_proj):
         """
         Return:
             face_lms         -- torch.tensor, size (B, 68, 2)
+
         Parameters:
             face_proj       -- torch.tensor, size (B, N, 2)
         """  
@@ -245,6 +269,7 @@ class ParametricFaceModel:
         """
         Return:
             coeffs_dict     -- a dict of torch.tensors
+
         Parameters:
             coeffs          -- torch.tensor, size (B, 256)
         """
@@ -271,22 +296,24 @@ class ParametricFaceModel:
         Parameters:
             coeffs          -- torch.tensor, size (B, 257)
         """
+        #print("ccc1")
+        #print("coeff type ", type(coeffs))
         coef_dict = self.split_coeff(coeffs)
+        #print(f"coeff id and exp type : {type(coef_dict['id'])} {type(coef_dict['exp'])}")
         face_shape = self.compute_shape(coef_dict['id'], coef_dict['exp'])
-        rotation = self.compute_rotation(coef_dict['angle'])
+        #print(f"angle type : {type(coef_dict['angle'])}")
+        rotation = self.compute_rotation(coef_dict['angle'].cpu())
 
-
+        #print("ccc2")
         face_shape_transformed = self.transform(face_shape, rotation, coef_dict['trans'])
         face_vertex = self.to_camera(face_shape_transformed)
-
+        #print("ccc3")
         face_proj = self.to_image(face_vertex)
         landmark = self.get_landmarks(face_proj)
-
+        #print("ccc4")
         face_texture = self.compute_texture(coef_dict['tex'])
         face_norm = self.compute_norm(face_shape)
-        face_norm_roted = face_norm @ rotation
+        face_norm_roted = face_norm @ rotation.to(torch.device(0))
         face_color = self.compute_color(face_texture, face_norm_roted, coef_dict['gamma'])
-
+        #print("ccc5")
         return face_vertex, face_texture, face_color, landmark
-
-

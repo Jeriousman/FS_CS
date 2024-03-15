@@ -2,6 +2,7 @@ import torch
 from network.MultiscaleDiscriminator import PatchDiscriminator
 from torch.nn import functional as F
 from info_nce import InfoNCE, info_nce
+from deep3D.models.bfm import ParametricFaceModel
 
 # from info_nce import InfoNCE, info_nce
 ##https://github.com/RElbers/info-nce-pytorch
@@ -29,7 +30,7 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(id_emb, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
+    L_id =(1 - torch.cosine_similarity(src_id_emb, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
@@ -86,12 +87,12 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     ##저스틴에게서 코드 업데이트 받기 (tgt src embeddings)
     
     if args.contrastive_loss:
-        L_constrasive =  infoNce_id_loss(swapped_id_emb, src_id_emb, tgt_id_emb)
+        L_contrastive =  infoNce_id_loss(swapped_id_emb, src_id_emb, tgt_id_emb)
     else:
-        L_constrasive = 0
+        L_contrastive = 0
     
     ## Following implementation of "HIGH-FIDELITY FACE SWAPPING WITH STYLE BLENDING"
-    if args.landmark_loss:
+    if args.landmark_detector_loss:
         Xt_f_pred_heatmap, swapped_face_pred_heatmap = all_heatmaps
         L_landmarks = l2_loss(Xt_f_pred_heatmap, swapped_face_pred_heatmap)  ##lmks can be just coordinates of landmarks or heatmap of them
     else:
@@ -104,11 +105,18 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         
     # final loss of generator
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet+ args.weight_landmarks*L_landmarks
+    
+    # test code
+    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle
     loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
+
+    # hojun code
+    # lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet+ args.weight_landmarks*L_landmarks
+    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_contrastive*L_contrastive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet + args.weight_landmarks*L_landmarks
+    # loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_constrasive, L_source_unet, L_target_unet, L_landmarks
+    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks
 
 
 

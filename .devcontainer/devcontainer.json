@@ -24,6 +24,8 @@
 		"/dev_storage/tory/data/parsedVGG:/datasets/VGG",
 		"-v",
 		"/dev_storage/tory/data/pretrained:/datasets/pretrained",
+		"-v",
+		"/dev_storage/deep3d:/workspace/deep3D/BFM",
 		// 사용자가 멈추지 않았는데 꺼진 경우 다시 켜주는 옵션
 		"--restart=unless-stopped"
 	],

@@ -1,6 +1,3 @@
-print("started imports")
-
-
 import sys
 import argparse
 import time
@@ -38,7 +35,7 @@ from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
 import torch
-print("finished imports")
+
 
 
 
@@ -109,7 +106,9 @@ def train_one_epoch(G: 'generator model',
         ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
         swapped_id_emb = id_extractor.id_forward(swapped_face)
         swapped_id_emb = swapped_id_emb.to(device)
-        print(f"swapped_emb shape : {swapped_id_emb.size()}")
+
+        q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+
 
 
         # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
@@ -521,7 +520,7 @@ def main(args):
     if not torch.cuda.is_available():
         print('cuda is not available. using cpu. check if it\'s ok')
     
-    print("Starting traing")
+    print("Starting trainig")
     train(args, device=device)
 
 
@@ -553,6 +552,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_contrastive', default=5., type=float, help='Contrastive Loss weight for idendity embedding of generator')
     parser.add_argument('--weight_source_unet', default=1., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
     parser.add_argument('--weight_target_unet', default=1., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_landmarks', default=1., type=float, help='Landmark Loss weight for generator')
     
 
     
@@ -586,6 +586,7 @@ if __name__ == "__main__":
     parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True landmark loss is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
@@ -593,7 +594,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=4, type=int)
+    parser.add_argument('--batch_size', default=1, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)

@@ -8,7 +8,7 @@ from array import array
 import os.path as osp
 
 # load expression basis
-def LoadExpBasis(bfm_folder='BFM'):
+def LoadExpBasis(bfm_folder='deep3D/BFM'): ## 
     n_vertex = 53215
     Expbin = open(osp.join(bfm_folder, 'Exp_Pca.bin'), 'rb')
     exp_dim = array('i')
@@ -29,7 +29,7 @@ def LoadExpBasis(bfm_folder='BFM'):
 
 
 # transfer original BFM09 to our face model
-def transferBFM09(bfm_folder='BFM'):
+def transferBFM09(bfm_folder='deep3D/BFM'):
     print('Transfer BFM09 to BFM_model_front......')
     original_BFM = loadmat(osp.join(bfm_folder, '01_MorphableModel.mat'))
     shapePC = original_BFM['shapePC']  # shape basis

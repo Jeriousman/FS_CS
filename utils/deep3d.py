@@ -56,12 +56,12 @@ def get_landmarks(im_path):
     #image.save("./a.jpg")
     image = np.array(image)
     
-    print("reach1")
+    #print("reach1")
     model = get_model("resnet50_2020-07-20", max_size=2048) 
     model.eval()
-    print("reach2")
+    #print("reach2")
     annotation = model.predict_jsons(image) # problematic part
-    print("reach3")
+    #print("reach3")
 
 
 
@@ -79,25 +79,27 @@ def read_data(im_path, lm3d_std, to_tensor=True):
         img = im_path[i]
         tensor_to_pil = transforms.ToPILImage()
         im = tensor_to_pil(img).convert('RGB')
-        print("img before alignment..")
+        #print("img before alignment..")
         im.save(f"/workspace/images/align/before_{cnt}.jpg")
 
         #im = Image.open(im_path).convert('RGB')
         W,H = im.size
         
 
-        lm = get_landmarks(im_path[i]) 
+        #lm 관련된거 다 지우기 (align은 안하지만 resize and crop만)
+        lm = get_landmarks(im_path[i]) # problematic part
         lm = np.array(lm)
-        print("getting landmarks..")
-
+        #print("getting landmarks..")
+        
         lm = lm.reshape([-1, 2])
         lm[:, -1] = H - 1 - lm[:, -1]
 
         print(f"im shape :{im.size},\nlm shape : {np.array(lm).shape},\nlm3d_std : {np.array(lm3d_std).shape}")
+        
         _, im, lm, _ = align_img(im, lm, lm3d_std) # original funtion
        #im = align_img(im) 
-
-
+        
+        
         #print("img after alignment..")
         im.save(f"/workspace/images/align/after_{cnt}.jpg")
 
@@ -108,6 +110,7 @@ def read_data(im_path, lm3d_std, to_tensor=True):
 
         imgs.append(im)
         lms.append(lm)
+
         cnt += 1
     
     imgs = torch.cat(imgs, dim=0)
