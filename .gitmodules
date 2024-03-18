@@ -4,6 +4,3 @@
 [submodule "face-parsing.PyTorch"]
 	path = face-parsing.PyTorch
 	url = https://github.com/zllrunning/face-parsing.PyTorch
-[submodule "mae"]
-	path = mae
-	url = https://github.com/facebookresearch/mae.git
