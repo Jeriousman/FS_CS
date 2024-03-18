@@ -139,12 +139,14 @@ class CrossUnetAttentionGenerator(nn.Module):
         z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
         # print('reshaped z_cross_attr1:', z_cross_attr1.shape)
         output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
+        adain_2 = AdaIN_layer(id_emb.size()[1], output2.size()[1])
         output2 = adain_2(output2, id_emb) if 2<= self.num_adain else output2 # conditional injection
         # print('output2:', output2.shape)
         
         ##512x16x16 -> 256x32x32 (output3)
         z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
         output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
+        adain_3 = AdaIN_layer(id_emb.size()[1], output3.size()[1])
         output3 = adain_3(output3, id_emb) if 3<= self.num_adain else output3 # conditional injection
 
         # print('output3:', output3.shape)
@@ -152,6 +154,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##256x32x32 -> 128x64x64 (output4)
         z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
         output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
+        adain_4 = AdaIN_layer(id_emb.size()[1], output4.size()[1])
         output4 = adain_4(output4, id_emb) if 4<= self.num_adain else output4 # conditional injection
 
         # print('output4:', output4.shape)
@@ -164,6 +167,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##128x64x64 -> 64x128x128 (output5)
         # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
         output5 = self.deconv5(output4) ## 64 > 128
+        adain_5 = AdaIN_layer(id_emb.size()[1], output5.size()[1])
         output5 = adain_5(output2, id_emb) if 5<= self.num_adain else output5 # conditional injection
 
         # print('output5:', output5.shape)
@@ -171,6 +175,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         ##64x128x128 -> 32x256x256 (output6)
         # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
         output6 = self.deconv6(output5) ## 128 > 256
+        adain_6 = AdaIN_layer(id_emb.size()[1], output6.size()[1])
         output6 = adain_6(output6, id_emb) if 6<= self.num_adain else output6 # conditional injection
 
         # print('output6:', output6.shape)

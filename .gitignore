@@ -22,3 +22,5 @@ face-parsing*
 .mat
 current_model*
 saved_models*
+wandb*
+wandb/
