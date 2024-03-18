@@ -1,0 +1,114 @@
+
+Starting trainig
+Not found pretrained weights. Continue without any pretrained weights.
+Training Data Size : 50400
+Validation Data Size : 5600
+Xsf :  /datasets/FFHQ_parsed_img/03000/03267
+wanted :  0.8477794561496477
+same_prob :  0.8
+it;s random
+Xtf:  /datasets/FFHQ_parsed_img/35000/35169
+Xsf :  /datasets/FFHQ_parsed_img/42000/42403
+wanted :  0.5804322047084001
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/42000/42403
+Xsf :  /datasets/FFHQ_parsed_img/24000/24564
+wanted :  0.9376579955800683
+same_prob :  0.8
+it;s random
+Xtf:  /datasets/FFHQ_parsed_img/53000/53206
+Xsf :  /datasets/FFHQ_parsed_img/01000/01162
+wanted :  0.9005976349951809
+same_prob :  0.8
+it;s random
+Xtf:  /datasets/FFHQ_parsed_img/34000/34938
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:3063: UserWarning: Default upsampling behavior when mode=bilinear is changed to align_corners=False since 0.4.0. Please specify align_corners=True if the old behavior is desired. See the documentation of nn.Upsample for details.
+  "See the documentation of nn.Upsample for details.".format(mode))
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:2952: UserWarning: nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.
+  warnings.warn("nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.")
+epoch: 0    0 / 12600
+lossD: 3.517925262451172    lossG: 87.95271301269531 batch_time: 2.8454906940460205s
+L_adv: 2.7819905281066895 L_id: 0.9330573081970215 L_attr: 3.796426773071289 L_rec: 0.3544774055480957
+L_l2_eyes: 0.007557679899036884
+L_landmarks: 0.0035203895531594753
+loss_adv_accumulated: 19.655639810562135
+itertion :
+Xsf :  /datasets/FFHQ_parsed_img/45000/45846
+wanted :  0.12005912974600319
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/45000/45846
+Xsf :  /datasets/FFHQ_parsed_img/13000/13954
+wanted :  0.7677869105774253
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/13000/13954
+Xsf :  /datasets/FFHQ_parsed_img/12000/12717
+wanted :  0.9582017790668632
+same_prob :  0.8
+it;s random
+Xtf:  /datasets/FFHQ_parsed_img/52000/52213
+Xsf :  /datasets/FFHQ_parsed_img/08000/08284
+wanted :  0.626636030604281
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/08000/08284
+itertion :
+Xsf :  /datasets/FFHQ_parsed_img/55000/55957
+wanted :  0.7688495230851644
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/55000/55957
+Xsf :  /datasets/FFHQ_parsed_img/38000/38338
+wanted :  0.856433633831625
+same_prob :  0.8
+it;s random
+Xtf:  /datasets/FFHQ_parsed_img/29000/29349
+Xsf :  /datasets/FFHQ_parsed_img/19000/19270
+wanted :  0.5142126013481569
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/19000/19270
+Xsf :  /datasets/FFHQ_parsed_img/39000/39994
+wanted :  0.4697081765988049
+same_prob :  0.8
+not random
+Xtf:  /datasets/FFHQ_parsed_img/39000/39994
+itertion :
+Traceback (most recent call last):
+  File "train.py", line 651, in <module>
+    main(args)
+  File "train.py", line 527, in main
+    train(args, device=device)
+  File "train.py", line 394, in train
+    loss_adv_accumulated)
+  File "train.py", line 256, in train_one_epoch
+    res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
+  File "/workspace/utils/training/image_processing.py", line 103, in get_faceswap
+    id_embedding, src_emb, tgt_emb = id_extractor(source, target)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/autograd/grad_mode.py", line 26, in decorate_context
+    return func(*args, **kwargs)
+  File "/workspace/extractor/SA_idextractor.py", line 61, in forward
+    v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/extractor/arcface_model/iresnet.py", line 147, in forward
+    x = self.layer3(x)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/container.py", line 117, in forward
+    input = module(input)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/extractor/arcface_model/iresnet.py", line 49, in forward
+    out = self.conv1(out)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/conv.py", line 423, in forward
+    return self._conv_forward(input, self.weight)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/conv.py", line 420, in _conv_forward
+    self.padding, self.dilation, self.groups)
+KeyboardInterrupt

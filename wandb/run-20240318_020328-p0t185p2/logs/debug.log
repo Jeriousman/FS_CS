@@ -1,0 +1,69 @@
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Current SDK version is 0.16.3
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Configure stats pid to 1450
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Loading settings from /root/.config/wandb/settings
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Loading settings from /workspace/wandb/settings
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'train.py', 'program_abspath': '/workspace/train.py', 'program': 'train.py'}
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_init.py:_log_setup():526] Logging user logs to /workspace/wandb/run-20240318_020328-p0t185p2/logs/debug.log
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_init.py:_log_setup():527] Logging internal logs to /workspace/wandb/run-20240318_020328-p0t185p2/logs/debug-internal.log
+2024-03-18 02:03:28,438 INFO    MainThread:1450 [wandb_init.py:init():566] calling init triggers
+2024-03-18 02:03:28,439 INFO    MainThread:1450 [wandb_init.py:init():574] wandb.init called with sweep_config: {}
+config: {}
+2024-03-18 02:03:28,439 INFO    MainThread:1450 [wandb_init.py:init():616] starting backend
+2024-03-18 02:03:28,439 INFO    MainThread:1450 [wandb_init.py:init():620] setting up manager
+2024-03-18 02:03:28,445 INFO    MainThread:1450 [backend.py:_multiprocessing_setup():107] multiprocessing start_methods=fork,spawn,forkserver, using: fork
+2024-03-18 02:03:28,447 INFO    MainThread:1450 [wandb_init.py:init():628] backend started and connected
+2024-03-18 02:03:28,456 INFO    MainThread:1450 [wandb_init.py:init():720] updated telemetry
+2024-03-18 02:03:28,492 INFO    MainThread:1450 [wandb_init.py:init():753] communicating run to backend with 90.0 second timeout
+2024-03-18 02:03:29,064 INFO    MainThread:1450 [wandb_run.py:_on_init():2262] communicating current version
+2024-03-18 02:03:29,139 INFO    MainThread:1450 [wandb_run.py:_on_init():2271] got version response upgrade_message: "wandb version 0.16.4 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-03-18 02:03:29,139 INFO    MainThread:1450 [wandb_init.py:init():804] starting run threads in backend
+2024-03-18 02:03:29,904 INFO    MainThread:1450 [wandb_run.py:_console_start():2241] atexit reg
+2024-03-18 02:03:29,904 INFO    MainThread:1450 [wandb_run.py:_redirect():2096] redirect: wrap_raw
+2024-03-18 02:03:29,905 INFO    MainThread:1450 [wandb_run.py:_redirect():2161] Wrapping output streams.
+2024-03-18 02:03:29,905 INFO    MainThread:1450 [wandb_run.py:_redirect():2186] Redirects installed.
+2024-03-18 02:03:29,906 INFO    MainThread:1450 [wandb_init.py:init():847] run started, returning control to user process
+2024-03-18 02:03:29,907 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set ffhq_data_path = /datasets/FFHQ_parsed_img - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,907 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb ffhq_data_path /datasets/FFHQ_parsed_img None
+2024-03-18 02:03:29,907 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set weight_adv = 1 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,907 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb weight_adv 1 None
+2024-03-18 02:03:29,908 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set weight_attr = 10 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,908 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb weight_attr 10 None
+2024-03-18 02:03:29,908 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set weight_id = 20 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,908 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb weight_id 20 None
+2024-03-18 02:03:29,909 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set weight_rec = 10 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,909 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb weight_rec 10 None
+2024-03-18 02:03:29,909 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set weight_eyes = 0.0 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,909 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb weight_eyes 0.0 None
+2024-03-18 02:03:29,910 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set same_person = 0.2 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,910 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb same_person 0.2 None
+2024-03-18 02:03:29,911 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set same_identity = True - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,911 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb same_identity True None
+2024-03-18 02:03:29,911 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set diff_eq_same = False - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,911 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb diff_eq_same False None
+2024-03-18 02:03:29,911 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set discr_force = False - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb discr_force False None
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set scheduler = False - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb scheduler False None
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set scheduler_step = 5000 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb scheduler_step 5000 None
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set scheduler_gamma = 0.2 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,912 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb scheduler_gamma 0.2 None
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set eye_detector_loss = True - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb eye_detector_loss True None
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set pretrained = True - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb pretrained True None
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set run_name = tory - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb run_name tory None
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set G_path = ./saved_models_tory/G_latest.pth - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,913 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb G_path ./saved_models_tory/G_latest.pth None
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set D_path = ./saved_models_tory/D_latest.pth - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb D_path ./saved_models_tory/D_latest.pth None
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set batch_size = 4 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb batch_size 4 None
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set lr_G = 0.0004 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb lr_G 0.0004 None
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_config.py:__setitem__():151] config set lr_D = 0.0004 - <bound method Run._config_callback of <wandb.sdk.wandb_run.Run object at 0x7f5816bdf4d0>>
+2024-03-18 02:03:29,914 INFO    MainThread:1450 [wandb_run.py:_config_callback():1343] config_cb lr_D 0.0004 None

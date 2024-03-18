@@ -689,7 +689,7 @@ class FaceEmbedCombined_(TensorDataset):
 
  
 
-        if random.random() > self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
+        if random.random() < self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
             # image_path = random.choice(self.total_dataset[random.randint(0, len(self.total_dataset)-1)])  ##Xs에 대조될 Xt를 랜덤하게 뽑는것
             image_path = self.total_dataset[random.randint(0, len(self.total_dataset)-1)]  ##Xs에 대조될 Xt를 랜덤하게 뽑는것
             Xt = cv2.imread(image_path)[:, :, ::-1]
@@ -849,9 +849,9 @@ class FaceEmbedCombined(TensorDataset):
         Xsf = Image.fromarray(Xsf)
         Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
         Xsb = Image.fromarray(Xsb)
-
-        if random.random() > self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
- 
+        random_prob = random.random()
+        if random_prob < self.same_prob:  ##모든 데이터를 다 reconstruction loss를 계산하지 않고 어느정도의 확률로만 계산하기 위한 것
+            
             image_path = self.total_dataset[random.randint(0, len(self.total_dataset)-1)]  ##Xs에 대조될 Xt를 랜덤하게 뽑는것
             Xt = cv2.imread(image_path)[:, :, ::-1]
             Xt = Image.fromarray(Xt)
@@ -863,7 +863,6 @@ class FaceEmbedCombined(TensorDataset):
             Xtb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
             Xtf = Image.fromarray(Xtf)
             Xtb = Image.fromarray(Xtb)
-
             same_person = 0
         else:
             Xt = Xs.copy()  ##확률적으로 가끔은 같은 Xs와 같은 이미지로 Xt를 사용해서 reconstruction loss 를 계산하기 위함

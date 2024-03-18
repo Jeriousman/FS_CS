@@ -1,0 +1,76 @@
+
+Starting trainig
+Not found pretrained weights. Continue without any pretrained weights.
+Training Data Size : 50400
+Validation Data Size : 5600
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:3063: UserWarning: Default upsampling behavior when mode=bilinear is changed to align_corners=False since 0.4.0. Please specify align_corners=True if the old behavior is desired. See the documentation of nn.Upsample for details.
+  "See the documentation of nn.Upsample for details.".format(mode))
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:2952: UserWarning: nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.
+  warnings.warn("nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.")
+epoch: 0    0 / 12600
+lossD: 3.548171043395996    lossG: 87.80144500732422 batch_time: 9.167617797851562s
+L_adv: 2.9386308193206787 L_id: 0.9901792407035828 L_attr: 3.6501686573028564 L_rec: 0.5196377038955688
+L_l2_eyes: 0.00909573957324028
+L_landmarks: 0.004068710841238499
+loss_adv_accumulated: 19.658772616386415
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+epoch: 0    10 / 12600
+lossD: 2.4625089168548584    lossG: 72.06327819824219 batch_time: 10.394026279449463s
+L_adv: 8.519210815429688 L_id: 0.9250134229660034 L_attr: 2.580430030822754 L_rec: 0.2684933841228485
+L_l2_eyes: 0.012499967589974403
+L_landmarks: 0.004946867935359478
+loss_adv_accumulated: 17.37699395192446
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+itertion :
+Traceback (most recent call last):
+  File "train.py", line 651, in <module>
+    main(args)
+  File "train.py", line 527, in main
+    train(args, device=device)
+  File "train.py", line 394, in train
+    loss_adv_accumulated)
+  File "train.py", line 259, in train_one_epoch
+    res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
+  File "/workspace/utils/training/image_processing.py", line 103, in get_faceswap
+    id_embedding, src_emb, tgt_emb = id_extractor(source, target)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/autograd/grad_mode.py", line 26, in decorate_context
+    return func(*args, **kwargs)
+  File "/workspace/extractor/SA_idextractor.py", line 50, in forward
+    c_s = self.f_3d(source_img.to(self.device))
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/models/networks/__init__.py", line 167, in forward
+    x = self.backbone(x)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/models/networks/__init__.py", line 444, in forward
+    return self._forward_impl(x)
+  File "/workspace/models/networks/__init__.py", line 434, in _forward_impl
+    x = self.layer3(x)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/container.py", line 117, in forward
+    input = module(input)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/models/networks/__init__.py", line 321, in forward
+    out = self.conv3(out)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 718, in _call_impl
+    self._forward_pre_hooks.values()):
+KeyboardInterrupt

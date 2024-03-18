@@ -88,32 +88,26 @@ def get_faceswap_(source_path: str, target_path: str,
 # Xt_f, Xs_f, id_embedding
 
 def get_faceswap(source_path: str, target_path: str, 
-                 G: 'generator model', netArc: 'arcface model', 
+                 G: 'generator model', id_extractor: 'arcface model', 
                  device: 'torch device') -> np.array:
-    
-    
     source = read_torch_image(source_path)
-    source = source.to(device)
+    # source = source.to(device)
 
-    embeds = netArc(F.interpolate(source, [112, 112], mode='bilinear', align_corners=False))
-    # embeds = F.normalize(embeds, p=2, dim=1)
     
-    # ## hojun added
-    # id_embedding = 
+
+    # embeds = F.normalize(embeds, p=2, dim=1)
 
     target = read_torch_image(target_path)
-    target = target.cuda()
+    # target = target.to(device)
+
+    id_embedding, src_emb, tgt_emb = id_extractor(source, target)
+    id_embedding, src_emb, tgt_emb = id_embedding.to(device), src_emb.to(device), tgt_emb.to(device)
 
     with torch.no_grad():
-        swapped_face, _, _ = G(Xt_f, Xs_f, id_embedding)
-        swapped_face = torch2image(swapped_face)
+        Yt, recon_src, recon_tgt = G(target.to(device), source.to(device), id_embedding)
+        Yt = torch2image(Yt)
 
     source = torch2image(source)
     target = torch2image(target)
-    
-    
-    
 
-    return np.concatenate((cv2.resize(source, (256, 256)), target, swapped_face), axis=1)  
-
-
+    return np.concatenate((cv2.resize(source, (256, 256)), target, Yt), axis=1)  

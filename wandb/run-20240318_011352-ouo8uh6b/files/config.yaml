@@ -1,0 +1,95 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    python_version: 3.7.10
+    cli_version: 0.16.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1710724432.971942
+    t:
+      1:
+      - 1
+      - 41
+      - 55
+      - 79
+      - 80
+      2:
+      - 1
+      - 41
+      - 55
+      - 79
+      - 80
+      3:
+      - 19
+      - 23
+      4: 3.7.10
+      5: 0.16.3
+      8:
+      - 6
+      13: linux-x86_64
+ffhq_data_path:
+  desc: null
+  value: /datasets/FFHQ_parsed_img
+weight_adv:
+  desc: null
+  value: 1
+weight_attr:
+  desc: null
+  value: 10
+weight_id:
+  desc: null
+  value: 20
+weight_rec:
+  desc: null
+  value: 10
+weight_eyes:
+  desc: null
+  value: 0.0
+same_person:
+  desc: null
+  value: 0.2
+same_identity:
+  desc: null
+  value: true
+diff_eq_same:
+  desc: null
+  value: false
+discr_force:
+  desc: null
+  value: false
+scheduler:
+  desc: null
+  value: false
+scheduler_step:
+  desc: null
+  value: 5000
+scheduler_gamma:
+  desc: null
+  value: 0.2
+eye_detector_loss:
+  desc: null
+  value: true
+pretrained:
+  desc: null
+  value: true
+run_name:
+  desc: null
+  value: tory
+G_path:
+  desc: null
+  value: ./saved_models/G.pth
+D_path:
+  desc: null
+  value: ./saved_models/D.pth
+batch_size:
+  desc: null
+  value: 4
+lr_G:
+  desc: null
+  value: 0.0004
+lr_D:
+  desc: null
+  value: 0.0004

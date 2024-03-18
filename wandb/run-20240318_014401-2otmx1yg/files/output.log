@@ -1,0 +1,60 @@
+
+Starting trainig
+Not found pretrained weights. Continue without any pretrained weights.
+Training Data Size : 50400
+Validation Data Size : 5600
+realtime_batchsize :  4
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:3063: UserWarning: Default upsampling behavior when mode=bilinear is changed to align_corners=False since 0.4.0. Please specify align_corners=True if the old behavior is desired. See the documentation of nn.Upsample for details.
+  "See the documentation of nn.Upsample for details.".format(mode))
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:2952: UserWarning: nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.
+  warnings.warn("nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.")
+epoch: 0    0 / 12600
+lossD: 3.523989200592041    lossG: 88.26822662353516 batch_time: 2.384260654449463s
+L_adv: 2.825248956680298 L_id: 0.9820007085800171 L_attr: 3.8255066871643066 L_rec: 0.0
+L_l2_eyes: 0.008053654804825783
+L_landmarks: 0.0037232618778944016
+loss_adv_accumulated: 19.656504979133608
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+realtime_batchsize :  4
+Traceback (most recent call last):
+  File "train.py", line 652, in <module>
+    main(args)
+  File "train.py", line 528, in main
+    train(args, device=device)
+  File "train.py", line 395, in train
+    loss_adv_accumulated)
+  File "train.py", line 86, in train_one_epoch
+    id_embedding, src_id_emb, tgt_id_emb = id_extractor(id_ext_src_input, id_ext_tgt_input)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/autograd/grad_mode.py", line 26, in decorate_context
+    return func(*args, **kwargs)
+  File "/workspace/extractor/SA_idextractor.py", line 61, in forward
+    v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/extractor/arcface_model/iresnet.py", line 146, in forward
+    x = self.layer2(x)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/container.py", line 117, in forward
+    input = module(input)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/workspace/extractor/arcface_model/iresnet.py", line 49, in forward
+    out = self.conv1(out)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/conv.py", line 423, in forward
+    return self._conv_forward(input, self.weight)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/conv.py", line 420, in _conv_forward
+    self.padding, self.dilation, self.groups)
+KeyboardInterrupt

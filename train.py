@@ -79,6 +79,7 @@ def train_one_epoch(G: 'generator model',
         # Xt.shape
         same_person = same_person.to(device)
         realtime_batch_size = Xt_f.shape[0] 
+        # print("realtime_batchsize : ", data)
         # break
 
         ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
@@ -217,6 +218,11 @@ def train_one_epoch(G: 'generator model',
                 wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
             if args.shape_loss:
                 pass
+
+            # 설정 필요하면 args에 true false 추가
+            wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
+            wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
+            
                 # wandb.log({"loss_shape": L_shape.item()}, commit=False)
                 
             wandb.log({
@@ -244,27 +250,25 @@ def train_one_epoch(G: 'generator model',
             torch.save(G.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
             torch.save(D.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-        if (iteration % 250 == 0) and (args.use_wandb):
-            if (iteration % 250 == 0) and (args.use_wandb):
-                ### Посмотрим как выглядит свап на трех конкретных фотках, чтобы проследить динамику
-                G.eval()
+        if (iteration % 100 == 0) and (args.use_wandb):
 
-                res1 = get_faceswap('examples/images/training//source1.png', 'examples/images/training//target1.png', G, netArc, device)
-                res2 = get_faceswap('examples/images/training//source2.png', 'examples/images/training//target2.png', G, netArc, device)  
-                res3 = get_faceswap('examples/images/training//source3.png', 'examples/images/training//target3.png', G, netArc, device)
-                
-                res4 = get_faceswap('examples/images/training//source4.png', 'examples/images/training//target4.png', G, netArc, device)
-                res5 = get_faceswap('examples/images/training//source5.png', 'examples/images/training//target5.png', G, netArc, device)  
-                res6 = get_faceswap('examples/images/training//source6.png', 'examples/images/training//target6.png', G, netArc, device)
-                
-                output1 = np.concatenate((res1, res2, res3), axis=0)
-                output2 = np.concatenate((res4, res5, res6), axis=0)
-                
-                output = np.concatenate((output1, output2), axis=1)
+            G.eval()
 
-                wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+            res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
+            res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
+            res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
+            res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
+            res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
+            res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
+            
+            output1 = np.concatenate((res1, res2, res3), axis=0)
+            output2 = np.concatenate((res4, res5, res6), axis=0)
+            
+            output = np.concatenate((output1, output2), axis=1)
 
-                G.train()
+            wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+
+            G.train()
 
 # def train(args, config):
 def train(args, device):
@@ -371,8 +375,8 @@ def train(args, device):
     loss_adv_accumulated = 20.
     
     for epoch in range(0, max_epoch):
-        if epoch >= 1:
-            args.id_mode = 'Hififace'
+        # if epoch >= 1:
+        #     args.id_mode = 'Hififace'
             
         G.train()
         D.train()
@@ -539,7 +543,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
-    
+
     
     # weights for loss
     parser.add_argument('--weight_adv', default=1, type=float, help='Adversarial Loss weight')
@@ -598,7 +602,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
-    parser.add_argument('--show_step', default=500, type=int)
+    parser.add_argument('--show_step', default=100, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
     # parser.add_argument('--optim_level', default='O2', type=str)
     parser.add_argument('--optim_level', default='None', type=str)
@@ -613,10 +617,10 @@ if __name__ == "__main__":
     if args.use_wandb==True:
         wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
         config = wandb.config
-        config.vgg_data_path = args.vgg_data_path
+        # config.vgg_data_path = args.vgg_data_path
         config.ffhq_data_path = args.ffhq_data_path
-        config.celeba_data_path = args.celeba_data_path
-        config.dob_data_path = args.dob_data_path
+        # config.celeba_data_path = args.celeba_data_path
+        # config.dob_data_path = args.dob_data_path
         config.weight_adv = args.weight_adv
         config.weight_attr = args.weight_attr
         config.weight_id = args.weight_id

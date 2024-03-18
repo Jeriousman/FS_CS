@@ -1,0 +1,405 @@
+
+Starting trainig
+Not found pretrained weights. Continue without any pretrained weights.
+Training Data Size : 50400
+Validation Data Size : 5600
+origin xsf :  /datasets/FFHQ_parsed_img/36000/36587
+randomly :  /datasets/FFHQ_parsed_img/38000/38185
+Xtf:  /datasets/FFHQ_parsed_img/38000/38185
+origin xsf :  /datasets/FFHQ_parsed_img/19000/19988
+randomly :  /datasets/FFHQ_parsed_img/51000/51721
+Xtf:  /datasets/FFHQ_parsed_img/51000/51721
+origin xsf :  /datasets/FFHQ_parsed_img/04000/04329
+randomly :  /datasets/FFHQ_parsed_img/41000/41081
+Xtf:  /datasets/FFHQ_parsed_img/41000/41081
+origin xsf :  /datasets/FFHQ_parsed_img/45000/45295
+randomly :  /datasets/FFHQ_parsed_img/53000/53609
+Xtf:  /datasets/FFHQ_parsed_img/53000/53609
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:3063: UserWarning: Default upsampling behavior when mode=bilinear is changed to align_corners=False since 0.4.0. Please specify align_corners=True if the old behavior is desired. See the documentation of nn.Upsample for details.
+  "See the documentation of nn.Upsample for details.".format(mode))
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:2952: UserWarning: nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.
+  warnings.warn("nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.")
+epoch: 0    0 / 12600
+lossD: 3.5358662605285645    lossG: 91.75946044921875 batch_time: 2.3366310596466064s
+L_adv: 2.987758159637451 L_id: 1.014339566230774 L_attr: 4.152983665466309 L_rec: 0.0
+L_l2_eyes: 0.008262841030955315
+L_landmarks: 0.004105469677597284
+loss_adv_accumulated: 19.65975516319275
+origin xsf :  /datasets/FFHQ_parsed_img/01000/01618
+randomly :  /datasets/FFHQ_parsed_img/23000/23337
+Xtf:  /datasets/FFHQ_parsed_img/23000/23337
+origin xsf :  /datasets/FFHQ_parsed_img/49000/49346
+randomly :  /datasets/FFHQ_parsed_img/40000/40637
+Xtf:  /datasets/FFHQ_parsed_img/40000/40637
+origin xsf :  /datasets/FFHQ_parsed_img/34000/34609
+randomly :  /datasets/FFHQ_parsed_img/29000/29986
+Xtf:  /datasets/FFHQ_parsed_img/29000/29986
+origin xsf :  /datasets/FFHQ_parsed_img/38000/38586
+not random
+Xtf:  /datasets/FFHQ_parsed_img/38000/38586
+origin xsf :  /datasets/FFHQ_parsed_img/55000/55052
+randomly :  /datasets/FFHQ_parsed_img/01000/01937
+Xtf:  /datasets/FFHQ_parsed_img/01000/01937
+origin xsf :  /datasets/FFHQ_parsed_img/23000/23408
+randomly :  /datasets/FFHQ_parsed_img/41000/41136
+Xtf:  /datasets/FFHQ_parsed_img/41000/41136
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31878
+not random
+Xtf:  /datasets/FFHQ_parsed_img/31000/31878
+origin xsf :  /datasets/FFHQ_parsed_img/09000/09000
+randomly :  /datasets/FFHQ_parsed_img/35000/35487
+Xtf:  /datasets/FFHQ_parsed_img/35000/35487
+origin xsf :  /datasets/FFHQ_parsed_img/33000/33997
+randomly :  /datasets/FFHQ_parsed_img/25000/25260
+Xtf:  /datasets/FFHQ_parsed_img/25000/25260
+origin xsf :  /datasets/FFHQ_parsed_img/40000/40087
+randomly :  /datasets/FFHQ_parsed_img/53000/53465
+Xtf:  /datasets/FFHQ_parsed_img/53000/53465
+origin xsf :  /datasets/FFHQ_parsed_img/36000/36536
+randomly :  /datasets/FFHQ_parsed_img/00000/00204
+Xtf:  /datasets/FFHQ_parsed_img/00000/00204
+origin xsf :  /datasets/FFHQ_parsed_img/40000/40135
+randomly :  /datasets/FFHQ_parsed_img/03000/03776
+Xtf:  /datasets/FFHQ_parsed_img/03000/03776
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08918
+randomly :  /datasets/FFHQ_parsed_img/03000/03756
+Xtf:  /datasets/FFHQ_parsed_img/03000/03756
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31461
+randomly :  /datasets/FFHQ_parsed_img/38000/38862
+Xtf:  /datasets/FFHQ_parsed_img/38000/38862
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31713
+randomly :  /datasets/FFHQ_parsed_img/46000/46677
+Xtf:  /datasets/FFHQ_parsed_img/46000/46677
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31517
+randomly :  /datasets/FFHQ_parsed_img/38000/38995
+Xtf:  /datasets/FFHQ_parsed_img/38000/38995
+origin xsf :  /datasets/FFHQ_parsed_img/48000/48345
+not random
+Xtf:  /datasets/FFHQ_parsed_img/48000/48345
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08189
+randomly :  /datasets/FFHQ_parsed_img/28000/28358
+Xtf:  /datasets/FFHQ_parsed_img/28000/28358
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08166
+randomly :  /datasets/FFHQ_parsed_img/41000/41444
+Xtf:  /datasets/FFHQ_parsed_img/41000/41444
+origin xsf :  /datasets/FFHQ_parsed_img/47000/47185
+not random
+Xtf:  /datasets/FFHQ_parsed_img/47000/47185
+origin xsf :  /datasets/FFHQ_parsed_img/28000/28055
+randomly :  /datasets/FFHQ_parsed_img/19000/19876
+Xtf:  /datasets/FFHQ_parsed_img/19000/19876
+origin xsf :  /datasets/FFHQ_parsed_img/18000/18125
+not random
+Xtf:  /datasets/FFHQ_parsed_img/18000/18125
+origin xsf :  /datasets/FFHQ_parsed_img/46000/46645
+randomly :  /datasets/FFHQ_parsed_img/11000/11446
+Xtf:  /datasets/FFHQ_parsed_img/11000/11446
+origin xsf :  /datasets/FFHQ_parsed_img/52000/52139
+randomly :  /datasets/FFHQ_parsed_img/14000/14893
+Xtf:  /datasets/FFHQ_parsed_img/14000/14893
+origin xsf :  /datasets/FFHQ_parsed_img/37000/37173
+randomly :  /datasets/FFHQ_parsed_img/31000/31515
+Xtf:  /datasets/FFHQ_parsed_img/31000/31515
+origin xsf :  /datasets/FFHQ_parsed_img/07000/07268
+randomly :  /datasets/FFHQ_parsed_img/22000/22224
+Xtf:  /datasets/FFHQ_parsed_img/22000/22224
+origin xsf :  /datasets/FFHQ_parsed_img/13000/13075
+not random
+Xtf:  /datasets/FFHQ_parsed_img/13000/13075
+origin xsf :  /datasets/FFHQ_parsed_img/20000/20263
+randomly :  /datasets/FFHQ_parsed_img/54000/54796
+Xtf:  /datasets/FFHQ_parsed_img/54000/54796
+origin xsf :  /datasets/FFHQ_parsed_img/16000/16221
+randomly :  /datasets/FFHQ_parsed_img/30000/30818
+Xtf:  /datasets/FFHQ_parsed_img/30000/30818
+origin xsf :  /datasets/FFHQ_parsed_img/50000/50364
+randomly :  /datasets/FFHQ_parsed_img/49000/49692
+Xtf:  /datasets/FFHQ_parsed_img/49000/49692
+origin xsf :  /datasets/FFHQ_parsed_img/45000/45187
+randomly :  /datasets/FFHQ_parsed_img/42000/42964
+Xtf:  /datasets/FFHQ_parsed_img/42000/42964
+origin xsf :  /datasets/FFHQ_parsed_img/05000/05789
+randomly :  /datasets/FFHQ_parsed_img/09000/09210
+Xtf:  /datasets/FFHQ_parsed_img/09000/09210
+origin xsf :  /datasets/FFHQ_parsed_img/24000/24534
+randomly :  /datasets/FFHQ_parsed_img/50000/50696
+Xtf:  /datasets/FFHQ_parsed_img/50000/50696
+origin xsf :  /datasets/FFHQ_parsed_img/44000/44987
+randomly :  /datasets/FFHQ_parsed_img/55000/55129
+Xtf:  /datasets/FFHQ_parsed_img/55000/55129
+origin xsf :  /datasets/FFHQ_parsed_img/05000/05779
+not random
+Xtf:  /datasets/FFHQ_parsed_img/05000/05779
+origin xsf :  /datasets/FFHQ_parsed_img/29000/29785
+randomly :  /datasets/FFHQ_parsed_img/47000/47325
+Xtf:  /datasets/FFHQ_parsed_img/47000/47325
+origin xsf :  /datasets/FFHQ_parsed_img/09000/09569
+randomly :  /datasets/FFHQ_parsed_img/47000/47804
+Xtf:  /datasets/FFHQ_parsed_img/47000/47804
+origin xsf :  /datasets/FFHQ_parsed_img/12000/12525
+randomly :  /datasets/FFHQ_parsed_img/23000/23409
+Xtf:  /datasets/FFHQ_parsed_img/23000/23409
+origin xsf :  /datasets/FFHQ_parsed_img/03000/03177
+randomly :  /datasets/FFHQ_parsed_img/33000/33478
+Xtf:  /datasets/FFHQ_parsed_img/33000/33478
+origin xsf :  /datasets/FFHQ_parsed_img/03000/03988
+randomly :  /datasets/FFHQ_parsed_img/22000/22562
+Xtf:  /datasets/FFHQ_parsed_img/22000/22562
+epoch: 0    10 / 12600
+lossD: 2.2986762523651123    lossG: 79.3763198852539 batch_time: 2.247938871383667s
+L_adv: 7.075204372406006 L_id: 0.9421013593673706 L_attr: 3.7358803749084473 L_rec: 0.0
+L_l2_eyes: 0.01036677323281765
+L_landmarks: 0.0046564433723688126
+loss_adv_accumulated: 17.110653967875397
+origin xsf :  /datasets/FFHQ_parsed_img/11000/11083
+randomly :  /datasets/FFHQ_parsed_img/23000/23203
+Xtf:  /datasets/FFHQ_parsed_img/23000/23203
+origin xsf :  /datasets/FFHQ_parsed_img/47000/47566
+randomly :  /datasets/FFHQ_parsed_img/36000/36721
+Xtf:  /datasets/FFHQ_parsed_img/36000/36721
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08513
+randomly :  /datasets/FFHQ_parsed_img/30000/30090
+Xtf:  /datasets/FFHQ_parsed_img/30000/30090
+origin xsf :  /datasets/FFHQ_parsed_img/00000/00567
+randomly :  /datasets/FFHQ_parsed_img/28000/28322
+Xtf:  /datasets/FFHQ_parsed_img/28000/28322
+origin xsf :  /datasets/FFHQ_parsed_img/09000/09023
+randomly :  /datasets/FFHQ_parsed_img/35000/35726
+Xtf:  /datasets/FFHQ_parsed_img/35000/35726
+origin xsf :  /datasets/FFHQ_parsed_img/22000/22747
+randomly :  /datasets/FFHQ_parsed_img/43000/43598
+Xtf:  /datasets/FFHQ_parsed_img/43000/43598
+origin xsf :  /datasets/FFHQ_parsed_img/11000/11343
+randomly :  /datasets/FFHQ_parsed_img/51000/51548
+Xtf:  /datasets/FFHQ_parsed_img/51000/51548
+origin xsf :  /datasets/FFHQ_parsed_img/21000/21703
+not random
+Xtf:  /datasets/FFHQ_parsed_img/21000/21703
+origin xsf :  /datasets/FFHQ_parsed_img/06000/06005
+not random
+Xtf:  /datasets/FFHQ_parsed_img/06000/06005
+origin xsf :  /datasets/FFHQ_parsed_img/46000/46719
+not random
+Xtf:  /datasets/FFHQ_parsed_img/46000/46719
+origin xsf :  /datasets/FFHQ_parsed_img/35000/35943
+randomly :  /datasets/FFHQ_parsed_img/24000/24387
+Xtf:  /datasets/FFHQ_parsed_img/24000/24387
+origin xsf :  /datasets/FFHQ_parsed_img/32000/32879
+not random
+Xtf:  /datasets/FFHQ_parsed_img/32000/32879
+origin xsf :  /datasets/FFHQ_parsed_img/02000/02738
+randomly :  /datasets/FFHQ_parsed_img/13000/13942
+Xtf:  /datasets/FFHQ_parsed_img/13000/13942
+origin xsf :  /datasets/FFHQ_parsed_img/51000/51925
+randomly :  /datasets/FFHQ_parsed_img/33000/33336
+Xtf:  /datasets/FFHQ_parsed_img/33000/33336
+origin xsf :  /datasets/FFHQ_parsed_img/15000/15450
+randomly :  /datasets/FFHQ_parsed_img/09000/09428
+Xtf:  /datasets/FFHQ_parsed_img/09000/09428
+origin xsf :  /datasets/FFHQ_parsed_img/12000/12266
+randomly :  /datasets/FFHQ_parsed_img/32000/32561
+Xtf:  /datasets/FFHQ_parsed_img/32000/32561
+origin xsf :  /datasets/FFHQ_parsed_img/45000/45727
+randomly :  /datasets/FFHQ_parsed_img/07000/07707
+Xtf:  /datasets/FFHQ_parsed_img/07000/07707
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08869
+not random
+Xtf:  /datasets/FFHQ_parsed_img/08000/08869
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31192
+randomly :  /datasets/FFHQ_parsed_img/16000/16511
+Xtf:  /datasets/FFHQ_parsed_img/16000/16511
+origin xsf :  /datasets/FFHQ_parsed_img/38000/38837
+randomly :  /datasets/FFHQ_parsed_img/33000/33906
+Xtf:  /datasets/FFHQ_parsed_img/33000/33906
+origin xsf :  /datasets/FFHQ_parsed_img/35000/35576
+randomly :  /datasets/FFHQ_parsed_img/49000/49344
+Xtf:  /datasets/FFHQ_parsed_img/49000/49344
+origin xsf :  /datasets/FFHQ_parsed_img/04000/04119
+randomly :  /datasets/FFHQ_parsed_img/50000/50995
+Xtf:  /datasets/FFHQ_parsed_img/50000/50995
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31156
+not random
+Xtf:  /datasets/FFHQ_parsed_img/31000/31156
+origin xsf :  /datasets/FFHQ_parsed_img/19000/19540
+randomly :  /datasets/FFHQ_parsed_img/38000/38561
+Xtf:  /datasets/FFHQ_parsed_img/38000/38561
+origin xsf :  /datasets/FFHQ_parsed_img/52000/52394
+randomly :  /datasets/FFHQ_parsed_img/02000/02611
+Xtf:  /datasets/FFHQ_parsed_img/02000/02611
+origin xsf :  /datasets/FFHQ_parsed_img/52000/52797
+randomly :  /datasets/FFHQ_parsed_img/38000/38217
+Xtf:  /datasets/FFHQ_parsed_img/38000/38217
+origin xsf :  /datasets/FFHQ_parsed_img/51000/51085
+not random
+Xtf:  /datasets/FFHQ_parsed_img/51000/51085
+origin xsf :  /datasets/FFHQ_parsed_img/47000/47112
+randomly :  /datasets/FFHQ_parsed_img/21000/21634
+Xtf:  /datasets/FFHQ_parsed_img/21000/21634
+origin xsf :  /datasets/FFHQ_parsed_img/20000/20833
+not random
+Xtf:  /datasets/FFHQ_parsed_img/20000/20833
+origin xsf :  /datasets/FFHQ_parsed_img/15000/15992
+randomly :  /datasets/FFHQ_parsed_img/30000/30062
+Xtf:  /datasets/FFHQ_parsed_img/30000/30062
+origin xsf :  /datasets/FFHQ_parsed_img/55000/55892
+randomly :  /datasets/FFHQ_parsed_img/47000/47029
+Xtf:  /datasets/FFHQ_parsed_img/47000/47029
+origin xsf :  /datasets/FFHQ_parsed_img/50000/50452
+randomly :  /datasets/FFHQ_parsed_img/22000/22190
+Xtf:  /datasets/FFHQ_parsed_img/22000/22190
+origin xsf :  /datasets/FFHQ_parsed_img/37000/37190
+randomly :  /datasets/FFHQ_parsed_img/27000/27260
+Xtf:  /datasets/FFHQ_parsed_img/27000/27260
+origin xsf :  /datasets/FFHQ_parsed_img/16000/16574
+not random
+Xtf:  /datasets/FFHQ_parsed_img/16000/16574
+origin xsf :  /datasets/FFHQ_parsed_img/50000/50610
+randomly :  /datasets/FFHQ_parsed_img/34000/34300
+Xtf:  /datasets/FFHQ_parsed_img/34000/34300
+origin xsf :  /datasets/FFHQ_parsed_img/43000/43462
+randomly :  /datasets/FFHQ_parsed_img/53000/53554
+Xtf:  /datasets/FFHQ_parsed_img/53000/53554
+origin xsf :  /datasets/FFHQ_parsed_img/09000/09636
+not random
+Xtf:  /datasets/FFHQ_parsed_img/09000/09636
+origin xsf :  /datasets/FFHQ_parsed_img/29000/29108
+randomly :  /datasets/FFHQ_parsed_img/25000/25767
+Xtf:  /datasets/FFHQ_parsed_img/25000/25767
+origin xsf :  /datasets/FFHQ_parsed_img/52000/52828
+randomly :  /datasets/FFHQ_parsed_img/42000/42429
+Xtf:  /datasets/FFHQ_parsed_img/42000/42429
+origin xsf :  /datasets/FFHQ_parsed_img/55000/55718
+randomly :  /datasets/FFHQ_parsed_img/54000/54555
+Xtf:  /datasets/FFHQ_parsed_img/54000/54555
+epoch: 0    20 / 12600
+lossD: 3.0757651329040527    lossG: 59.40435028076172 batch_time: 2.2014286518096924s
+L_adv: 2.690953493118286 L_id: 1.041090965270996 L_attr: 1.804062008857727 L_rec: 0.12006794661283493
+L_l2_eyes: 0.01078280434012413
+L_landmarks: 0.00432048412039876
+loss_adv_accumulated: 14.763017058929428
+origin xsf :  /datasets/FFHQ_parsed_img/17000/17837
+randomly :  /datasets/FFHQ_parsed_img/36000/36569
+Xtf:  /datasets/FFHQ_parsed_img/36000/36569
+origin xsf :  /datasets/FFHQ_parsed_img/20000/20780
+randomly :  /datasets/FFHQ_parsed_img/15000/15494
+Xtf:  /datasets/FFHQ_parsed_img/15000/15494
+origin xsf :  /datasets/FFHQ_parsed_img/54000/54502
+randomly :  /datasets/FFHQ_parsed_img/50000/50901
+Xtf:  /datasets/FFHQ_parsed_img/50000/50901
+origin xsf :  /datasets/FFHQ_parsed_img/55000/55327
+randomly :  /datasets/FFHQ_parsed_img/03000/03321
+Xtf:  /datasets/FFHQ_parsed_img/03000/03321
+origin xsf :  /datasets/FFHQ_parsed_img/10000/10122
+randomly :  /datasets/FFHQ_parsed_img/47000/47089
+Xtf:  /datasets/FFHQ_parsed_img/47000/47089
+origin xsf :  /datasets/FFHQ_parsed_img/20000/20162
+not random
+Xtf:  /datasets/FFHQ_parsed_img/20000/20162
+origin xsf :  /datasets/FFHQ_parsed_img/07000/07788
+randomly :  /datasets/FFHQ_parsed_img/13000/13377
+Xtf:  /datasets/FFHQ_parsed_img/13000/13377
+origin xsf :  /datasets/FFHQ_parsed_img/27000/27687
+randomly :  /datasets/FFHQ_parsed_img/29000/29214
+Xtf:  /datasets/FFHQ_parsed_img/29000/29214
+origin xsf :  /datasets/FFHQ_parsed_img/37000/37389
+randomly :  /datasets/FFHQ_parsed_img/03000/03241
+Xtf:  /datasets/FFHQ_parsed_img/03000/03241
+origin xsf :  /datasets/FFHQ_parsed_img/07000/07998
+randomly :  /datasets/FFHQ_parsed_img/40000/40211
+Xtf:  /datasets/FFHQ_parsed_img/40000/40211
+origin xsf :  /datasets/FFHQ_parsed_img/53000/53413
+randomly :  /datasets/FFHQ_parsed_img/18000/18799
+Xtf:  /datasets/FFHQ_parsed_img/18000/18799
+origin xsf :  /datasets/FFHQ_parsed_img/25000/25163
+randomly :  /datasets/FFHQ_parsed_img/51000/51793
+Xtf:  /datasets/FFHQ_parsed_img/51000/51793
+origin xsf :  /datasets/FFHQ_parsed_img/17000/17801
+randomly :  /datasets/FFHQ_parsed_img/02000/02492
+Xtf:  /datasets/FFHQ_parsed_img/02000/02492
+origin xsf :  /datasets/FFHQ_parsed_img/34000/34671
+not random
+Xtf:  /datasets/FFHQ_parsed_img/34000/34671
+origin xsf :  /datasets/FFHQ_parsed_img/41000/41828
+not random
+Xtf:  /datasets/FFHQ_parsed_img/41000/41828
+origin xsf :  /datasets/FFHQ_parsed_img/34000/34562
+randomly :  /datasets/FFHQ_parsed_img/43000/43160
+Xtf:  /datasets/FFHQ_parsed_img/43000/43160
+origin xsf :  /datasets/FFHQ_parsed_img/22000/22442
+randomly :  /datasets/FFHQ_parsed_img/24000/24329
+Xtf:  /datasets/FFHQ_parsed_img/24000/24329
+origin xsf :  /datasets/FFHQ_parsed_img/00000/00414
+randomly :  /datasets/FFHQ_parsed_img/22000/22645
+Xtf:  /datasets/FFHQ_parsed_img/22000/22645
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31119
+not random
+Xtf:  /datasets/FFHQ_parsed_img/31000/31119
+origin xsf :  /datasets/FFHQ_parsed_img/17000/17258
+randomly :  /datasets/FFHQ_parsed_img/06000/06222
+Xtf:  /datasets/FFHQ_parsed_img/06000/06222
+origin xsf :  /datasets/FFHQ_parsed_img/41000/41325
+not random
+Xtf:  /datasets/FFHQ_parsed_img/41000/41325
+origin xsf :  /datasets/FFHQ_parsed_img/19000/19802
+randomly :  /datasets/FFHQ_parsed_img/18000/18161
+Xtf:  /datasets/FFHQ_parsed_img/18000/18161
+origin xsf :  /datasets/FFHQ_parsed_img/37000/37878
+randomly :  /datasets/FFHQ_parsed_img/10000/10882
+Xtf:  /datasets/FFHQ_parsed_img/10000/10882
+origin xsf :  /datasets/FFHQ_parsed_img/27000/27038
+randomly :  /datasets/FFHQ_parsed_img/43000/43852
+Xtf:  /datasets/FFHQ_parsed_img/43000/43852
+origin xsf :  /datasets/FFHQ_parsed_img/40000/40647
+randomly :  /datasets/FFHQ_parsed_img/45000/45330
+Xtf:  /datasets/FFHQ_parsed_img/45000/45330
+origin xsf :  /datasets/FFHQ_parsed_img/31000/31215
+randomly :  /datasets/FFHQ_parsed_img/05000/05410
+Xtf:  /datasets/FFHQ_parsed_img/05000/05410
+origin xsf :  /datasets/FFHQ_parsed_img/02000/02233
+randomly :  /datasets/FFHQ_parsed_img/01000/01843
+Xtf:  /datasets/FFHQ_parsed_img/01000/01843
+origin xsf :  /datasets/FFHQ_parsed_img/08000/08702
+randomly :  /datasets/FFHQ_parsed_img/07000/07575
+Xtf:  /datasets/FFHQ_parsed_img/07000/07575
+origin xsf :  /datasets/FFHQ_parsed_img/38000/38093
+randomly :  /datasets/FFHQ_parsed_img/05000/05835
+Xtf:  /datasets/FFHQ_parsed_img/05000/05835
+origin xsf :  /datasets/FFHQ_parsed_img/37000/37942
+randomly :  /datasets/FFHQ_parsed_img/22000/22559
+Xtf:  /datasets/FFHQ_parsed_img/22000/22559
+origin xsf :  /datasets/FFHQ_parsed_img/42000/42460
+randomly :  /datasets/FFHQ_parsed_img/46000/46185
+Xtf:  /datasets/FFHQ_parsed_img/46000/46185
+origin xsf :  /datasets/FFHQ_parsed_img/22000/22108
+randomly :  /datasets/FFHQ_parsed_img/41000/41379
+Xtf:  /datasets/FFHQ_parsed_img/41000/41379
+origin xsf :  /datasets/FFHQ_parsed_img/29000/29062
+randomly :  /datasets/FFHQ_parsed_img/16000/16023
+Xtf:  /datasets/FFHQ_parsed_img/16000/16023
+origin xsf :  /datasets/FFHQ_parsed_img/45000/45318
+randomly :  /datasets/FFHQ_parsed_img/20000/20920
+Xtf:  /datasets/FFHQ_parsed_img/20000/20920
+Traceback (most recent call last):
+  File "train.py", line 651, in <module>
+    main(args)
+  File "train.py", line 527, in main
+    train(args, device=device)
+  File "train.py", line 394, in train
+    loss_adv_accumulated)
+  File "train.py", line 70, in train_one_epoch
+    for iteration, data in enumerate(train_dataloader):
+  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 435, in __next__
+    data = self._next_data()
+  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 475, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/dataset.py", line 272, in __getitem__
+    return self.dataset[self.indices[idx]]
+  File "/workspace/utils/training/Dataset.py", line 826, in __getitem__
+    transforms_id_ext_Xs, transforms_id_ext_Xt, transforms_base_Xtf, transforms_base_Xtb, transforms_base_Xsf, transforms_base_Xsb, same_person = self.fetch_ffhq_celeba(image_path)
+  File "/workspace/utils/training/Dataset.py", line 850, in fetch_ffhq_celeba
+    Xsb = cv2.imread(img_parsed_dir + '_b.jpg')[:, :, ::-1]
+KeyboardInterrupt

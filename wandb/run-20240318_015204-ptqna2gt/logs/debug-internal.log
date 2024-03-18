@@ -1,0 +1,21 @@
+2024-03-18 01:52:04,214 INFO    StreamThr :286438 [internal.py:wandb_internal():89] W&B internal server running at pid: 286438, started at: 2024-03-18 01:52:04.212905
+2024-03-18 01:52:04,217 DEBUG   HandlerThread:286438 [handler.py:handle_request():146] handle_request: status
+2024-03-18 01:52:04,224 INFO    WriterThread:286438 [datastore.py:open_for_write():87] open: /workspace/wandb/run-20240318_015204-ptqna2gt/run-ptqna2gt.wandb
+2024-03-18 01:52:04,225 DEBUG   SenderThread:286438 [sender.py:send():382] send: header
+2024-03-18 01:52:04,263 DEBUG   SenderThread:286438 [sender.py:send():382] send: run
+2024-03-18 01:52:04,658 DEBUG   HandlerThread:286438 [handler.py:handle_request():146] handle_request: shutdown
+2024-03-18 01:52:04,658 INFO    HandlerThread:286438 [handler.py:finish():869] shutting down handler
+2024-03-18 01:52:04,779 INFO    SenderThread:286438 [dir_watcher.py:__init__():211] watching files in: /workspace/wandb/run-20240318_015204-ptqna2gt/files
+2024-03-18 01:52:04,779 INFO    SenderThread:286438 [sender.py:_start_run_threads():1139] run started: ptqna2gt with start time 1710726724.211314
+2024-03-18 01:52:04,779 INFO    SenderThread:286438 [sender.py:finish():1572] shutting down sender
+2024-03-18 01:52:04,779 INFO    SenderThread:286438 [dir_watcher.py:finish():358] shutting down directory watcher
+2024-03-18 01:52:05,218 WARNING StreamThr :286438 [internal.py:is_dead():415] Internal process exiting, parent pid 286326 disappeared
+2024-03-18 01:52:05,218 ERROR   StreamThr :286438 [internal.py:wandb_internal():152] Internal process shutdown.
+2024-03-18 01:52:05,263 INFO    WriterThread:286438 [datastore.py:close():296] close: /workspace/wandb/run-20240318_015204-ptqna2gt/run-ptqna2gt.wandb
+2024-03-18 01:52:05,780 INFO    SenderThread:286438 [dir_watcher.py:finish():388] scan: /workspace/wandb/run-20240318_015204-ptqna2gt/files
+2024-03-18 01:52:05,781 INFO    SenderThread:286438 [dir_watcher.py:finish():402] scan save: /workspace/wandb/run-20240318_015204-ptqna2gt/files/config.yaml config.yaml
+2024-03-18 01:52:05,781 INFO    SenderThread:286438 [file_pusher.py:finish():172] shutting down file pusher
+2024-03-18 01:52:05,781 INFO    SenderThread:286438 [file_pusher.py:join():178] waiting for file pusher
+2024-03-18 01:52:06,511 INFO    wandb-upload_0:286438 [upload_job.py:push():131] Uploaded file /workspace/wandb/run-20240318_015204-ptqna2gt/files/config.yaml
+2024-03-18 01:52:06,783 INFO    SenderThread:286438 [file_stream.py:finish():595] file stream finish called
+2024-03-18 01:52:06,999 INFO    SenderThread:286438 [file_stream.py:finish():599] file stream finish is done

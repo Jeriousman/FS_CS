@@ -1,0 +1,61 @@
+
+Starting trainig
+Not found pretrained weights. Continue without any pretrained weights.
+Training Data Size : 50400
+Validation Data Size : 5600
+7
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:3063: UserWarning: Default upsampling behavior when mode=bilinear is changed to align_corners=False since 0.4.0. Please specify align_corners=True if the old behavior is desired. See the documentation of nn.Upsample for details.
+  "See the documentation of nn.Upsample for details.".format(mode))
+/opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:2952: UserWarning: nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.
+  warnings.warn("nn.functional.upsample is deprecated. Use nn.functional.interpolate instead.")
+epoch: 0    0 / 12600
+lossD: 3.545598268508911    lossG: 81.28050994873047 batch_time: 2.404698371887207s
+L_adv: 3.234114170074463 L_id: 0.9372132420539856 L_attr: 3.555068254470825 L_rec: 0.0
+L_l2_eyes: 0.008387306705117226
+L_landmarks: 0.0037510187830775976
+loss_adv_accumulated: 19.66468228340149
+7
+7
+7
+7
+7
+7
+7
+7
+7
+7
+epoch: 0    10 / 12600
+lossD: 2.674539566040039    lossG: 74.31813049316406 batch_time: 2.2248053550720215s
+L_adv: 5.167031764984131 L_id: 0.9730806350708008 L_attr: 2.649829149246216 L_rec: 0.2764779329299927
+L_l2_eyes: 0.009259725920855999
+L_landmarks: 0.004366242792457342
+loss_adv_accumulated: 16.92473747246176
+7
+7
+7
+7
+7
+7
+7
+7
+7
+7
+epoch: 0    20 / 12600
+lossD: 3.1692605018615723    lossG: 61.011619567871094 batch_time: 2.257505178451538s
+L_adv: 4.56909704208374 L_id: 0.9462683200836182 L_attr: 2.409903049468994 L_rec: 0.0
+L_l2_eyes: 0.011295878328382969
+L_landmarks: 0.004533430561423302
+loss_adv_accumulated: 14.611005999380987
+7
+Traceback (most recent call last):
+  File "train.py", line 653, in <module>
+  File "train.py", line 529, in main
+  File "train.py", line 396, in train
+    # config)
+  File "train.py", line 135, in train_one_epoch
+    swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
+  File "/workspace/utils/training/landmark_detector.py", line 25, in detect_all_landmarks
+    pred_landmarks, _ = get_preds_fromhm(pred_heatmap)
+  File "/workspace/AdaptiveWingLoss/utils/utils.py", line 271, in get_preds_fromhm
+    pX, pY = int(preds[i, j, 0]) - 1, int(preds[i, j, 1]) - 1
+KeyboardInterrupt

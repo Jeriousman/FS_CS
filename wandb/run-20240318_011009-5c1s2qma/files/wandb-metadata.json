@@ -1,0 +1,257 @@
+{
+    "os": "Linux-5.4.0-169-generic-x86_64-with-debian-buster-sid",
+    "python": "3.7.10",
+    "heartbeatAt": "2024-03-18T01:10:10.674887",
+    "startedAt": "2024-03-18T01:10:09.785167",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--run_name",
+        "tory",
+        "--use_wandb",
+        "True",
+        "--wandb_project",
+        "faceswaptrain",
+        "--wandb_entity",
+        "ogayong"
+    ],
+    "state": "running",
+    "program": "train.py",
+    "codePathLocal": "train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/dob-world/ghost-ml-fs.git",
+        "commit": "16dedda8c423367c5ddf1ebdbd6672276e38bb01"
+    },
+    "email": "victory8237@naver.com",
+    "root": "/workspace",
+    "host": "0f185ab39b6c",
+    "username": "root",
+    "executable": "/opt/conda/bin/python",
+    "cpu_count": 20,
+    "cpu_count_logical": 40,
+    "cpu_freq": {
+        "current": 1247.126,
+        "min": 1000.0,
+        "max": 3200.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1000.0,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.097,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.28,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.325,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 999.7,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1100.579,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1449.308,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2906.405,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.074,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.361,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2893.61,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.103,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1274.147,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1100.415,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1079.948,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.084,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.079,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1001.096,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.091,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1837.721,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.028,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.531,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.807,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.484,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.169,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1100.216,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1438.767,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2695.093,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 999.997,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.2,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2897.954,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.019,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1292.598,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1252.663,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1061.497,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.203,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.404,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.199,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1000.006,
+            "min": 1000.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1838.132,
+            "min": 1000.0,
+            "max": 3200.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 1832.2072448730469,
+            "used": 1512.1495246887207
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        }
+    ],
+    "memory": {
+        "total": 125.36849594116211
+    }
+}
