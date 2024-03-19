@@ -389,7 +389,7 @@ def train(config):
             
         G.train()
         D.train()
-        # torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
         train_one_epoch(G,
                         D,
                         opt_G,
@@ -465,7 +465,7 @@ def train(config):
                 # vloss = loss_fn(val_swapped_face)
                 if config['global_rank'] == 0:
                 
-                    running_vloss += vloss
+                    # running_vloss += vloss
                     running_pose_metric += pose_value
                     running_id_metric += id_value
                     running_fid_metric += fid_value
@@ -588,13 +588,13 @@ if __name__ == "__main__":
     parser.add_argument('--weight_attr', default=10, type=float, help='Attributes weight')
     parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
-    parser.add_argument('--weight_eyes', default=0., type=float, help='Eyes Loss weight')
-    parser.add_argument('--weight_cycle', default=5., type=float, help='Cycle Loss weight for generator')
-    parser.add_argument('--weight_cycle_identity', default=5., type=float, help='Cycle Identity Loss weight for generator')
-    parser.add_argument('--weight_contrastive', default=5., type=float, help='Contrastive Loss weight for idendity embedding of generator')
-    parser.add_argument('--weight_source_unet', default=1., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
-    parser.add_argument('--weight_target_unet', default=1., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
-    parser.add_argument('--weight_landmarks', default=1., type=float, help='Landmark Loss weight for generator')
+    parser.add_argument('--weight_eyes', default=2., type=float, help='Eyes Loss weight')
+    parser.add_argument('--weight_cycle', default=1., type=float, help='Cycle Loss weight for generator')
+    parser.add_argument('--weight_cycle_identity', default=1., type=float, help='Cycle Identity Loss weight for generator')
+    parser.add_argument('--weight_contrastive', default=1., type=float, help='Contrastive Loss weight for idendity embedding of generator')
+    parser.add_argument('--weight_source_unet', default=2., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_target_unet', default=2., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_landmarks', default=3., type=float, help='Landmark Loss weight for generator')
     
 
     
@@ -604,7 +604,7 @@ if __name__ == "__main__":
     ##parameters for model configs
     parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder. The other modes are not applicable')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
-    parser.add_argument('--num_adain', default=1, type=int, help='Numbers of AdaIN_ResBlocks') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
+    parser.add_argument('--num_adain', default=6, type=int, help='Numbers of AdaIN_ResBlocks') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
     parser.add_argument('--id_mode', default='arcface', type=str, help='Mode change is possible between 1) arcface 2) hififace') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
     
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
@@ -653,7 +653,11 @@ if __name__ == "__main__":
     #     raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
     
     if args.use_wandb==True:
-        wandb.init(project=args.wandb_project, entity=args.wandb_entity, settings=wandb.Settings(start_method='fork'))
+        wandb.init(project=args.wandb_project, 
+                   entity=args.wandb_entity, 
+                   settings=wandb.Settings(start_method='fork'),
+                   id=args.wandb_id,
+                   resume='allow')
         config = wandb.config
         # config.vgg_data_path = config['vgg_data_path
         config.ffhq_data_path = args.ffhq_data_path
@@ -687,4 +691,8 @@ if __name__ == "__main__":
         os.mkdir(f'./saved_models_{args.run_name}')
         os.mkdir(f'./current_models_{args.run_name}')
     
-    main(config)
+    
+    if args.use_wandb==True:
+        main(config)
+    else:
+        main(args)
