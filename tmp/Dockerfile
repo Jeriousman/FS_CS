@@ -2,7 +2,8 @@
 # FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
 # FROM pytorch/pytorch:1.9.0-cuda11.1-cudnn8-devel
 # FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
-FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-devel
+# FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-devel
+FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
@@ -39,7 +40,7 @@ RUN pip3 install --no-cache-dir -Iv \
     ##from here it is for MAE environment
     timm==0.4.12 matplotlib info-nce-pytorch \
     # retinaface_pytorch face-alignment
-    retinaface_pytorch face-alignment
+    face-alignment
 
 # RUN pip uninstall -y torch torchvision
 

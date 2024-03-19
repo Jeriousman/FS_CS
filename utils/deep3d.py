@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 from scipy.io import loadmat, savemat
 
 import cv2
-from retinaface.pre_trained_models import get_model
+# from retinaface.pre_trained_models import get_model
 
 
 

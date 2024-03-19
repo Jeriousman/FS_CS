@@ -292,17 +292,17 @@ def train(config):
     
     # initializing main models
     # G = AEI_Net(config['backbone, num_blocks=config['num_blocks, c_id=512).to(device)
-    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(args.device)
+    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain)
     G = DistributedDataParallel(G, device_ids=[config['local_rank']])
-    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(args.device)    
+    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d)
     D = DistributedDataParallel(D, device_ids=[config['local_rank']])
     
 
     
     # initializing model for identity extraction
     netArc = iresnet100(fp16=False)
-    netArc.module.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
-    netArc=netArc.cuda()
+    netArc.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
+    # netArc=netArc.cuda()
     netArc = DistributedDataParallel(netArc, device_ids=[config['local_rank']])
     netArc.eval()
 
@@ -314,15 +314,15 @@ def train(config):
         checkpoint = torch.load('/datasets/pretrained/WFLW_4HG.pth')
         
         if 'state_dict' not in checkpoint:
-            model_ft.module.load_state_dict(checkpoint)
+            model_ft.load_state_dict(checkpoint)
         else:
             pretrained_weights = checkpoint['state_dict']
-            model_weights = model_ft.module.state_dict()
+            model_weights = model_ft.state_dict()
             pretrained_weights = {k: v for k, v in pretrained_weights.items() \
                                   if k in model_weights}
             model_weights.update(pretrained_weights)
-            model_ft.module.load_state_dict(model_weights)
-        model_ft = model_ft.to(args.device)
+            model_ft.load_state_dict(model_weights)
+        # model_ft = model_ft.to(args.device)
         model_ft = DistributedDataParallel(model_ft, device_ids=[config['local_rank']])
         model_ft.eval()
     else:
@@ -343,6 +343,8 @@ def train(config):
         
     if args.pretrained:
         try:
+            # G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device(config['local_rank'])), strict=False)
+            # D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device(config['local_rank'])), strict=False)
             G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')), strict=False)
             D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device('cpu')), strict=False)
             print("Loaded pretrained weights for G and D")
