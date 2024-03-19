@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "train.py", line 616, in <module>
-    config.vgg_data_path = args.vgg_data_path
-AttributeError: 'Namespace' object has no attribute 'vgg_data_path'

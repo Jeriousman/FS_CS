@@ -1,2 +1,0 @@
-python train.py --run_name tory --use_wandb True --wandb_project faceswaptrain --wandb_entity ogayong --G_path './saved_models_tory/G_latest.pth' --D_path './saved_models_tory/D_latest.pth'
-96dcd4cc013ff6d6dfb78a48f040237be8082ea8

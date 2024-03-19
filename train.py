@@ -64,7 +64,7 @@ def train_one_epoch(G: 'generator model',
     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
     f_id_path = "/datasets/pretrained/backbone.pth"
     
-    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, config['id_mode'])
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
     id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     #print(id_extractor)
     
@@ -75,24 +75,24 @@ def train_one_epoch(G: 'generator model',
         id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
 
-        Xs_f = Xs_f.to(config['device'])
+        Xs_f = Xs_f.to(args.device)
         # Xs.shape
-        Xt_f = Xt_f.to(config['device'])
+        Xt_f = Xt_f.to(args.device)
         # Xt.shape
-        same_person = same_person.to(config['device'])
+        same_person = same_person.to(args.device)
         realtime_batch_size = Xt_f.shape[0] 
         # print("realtime_batchsize : ", data)
         # break
 
         ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
         id_embedding, src_id_emb, tgt_id_emb = id_extractor(id_ext_src_input, id_ext_tgt_input)
-        id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(config['device']), src_id_emb.to(config['device']), tgt_id_emb.to(config['device'])
+        id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(args.device), src_id_emb.to(args.device), tgt_id_emb.to(args.device)
 
 
 
         diff_person = torch.ones_like(same_person)
 
-        if config['diff_eq_same']:
+        if args.diff_eq_same:
             same_person = diff_person
 
 
@@ -108,7 +108,7 @@ def train_one_epoch(G: 'generator model',
 
         ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
         swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-        swapped_id_emb = swapped_id_emb.to(config['device'])
+        swapped_id_emb = swapped_id_emb.to(args.device)
 
         #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
 
@@ -124,7 +124,7 @@ def train_one_epoch(G: 'generator model',
         Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
         
     
-        if config['eye_detector_loss']:
+        if args.eye_detector_loss:
             Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
             swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
             eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
@@ -132,7 +132,7 @@ def train_one_epoch(G: 'generator model',
             eye_heatmaps = None
         
         # landmark extractor
-        if config['landmark_detector_loss']:
+        if args.landmark_detector_loss:
             Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
             swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
             all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
@@ -155,35 +155,35 @@ def train_one_epoch(G: 'generator model',
         lossG.backward()
 
         opt_G.step()
-        if config['scheduler']:
+        if args.scheduler:
             scheduler_G.step()
         
         # discriminator training
         opt_D.zero_grad()
         # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
 
-        lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, config['device'])
+        lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
         #     scaled_loss.backward()
         lossD.backward() 
 
-        if (not config['discr_force']) or (loss_adv_accumulated < 4.):
+        if (not args.discr_force) or (loss_adv_accumulated < 4.):
             opt_D.step()
-        if config['scheduler']:
+        if args.scheduler:
             scheduler_D.step()
         
         
         batch_time = time.time() - start_time
 
-        if iteration % config['show_step'] == 0:
+        if iteration % args.show_step == 0:
             images = [Xs_f, Xt_f, swapped_face]
-            if config['eye_detector_loss']:
+            if args.eye_detector_loss:
                 Xt_f_eyes_img = paint_eyes(Xt_f, Xt_f_eyes)
                 Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
                 images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
             image = make_image_list(images)
-            if config['use_wandb']:
+            if args.use_wandb:
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
             else:
                 cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
@@ -192,33 +192,33 @@ def train_one_epoch(G: 'generator model',
             print(f'epoch: {epoch}    {iteration} / {len(train_dataloader)}')
             print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
             print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
-            if config['eye_detector_loss']:
+            if args.eye_detector_loss:
                 print(f'L_l2_eyes: {L_l2_eyes.item()}')
-            if config['landmark_detector_loss']:
+            if args.landmark_detector_loss:
                 print(f'L_landmarks: {L_landmarks.item()}')
-            if config['cycle_loss']:
+            if args.cycle_loss:
                 pass
-            if config['contrastive_loss']:
+            if args.contrastive_loss:
                 pass
-            if config['shape_loss']:
+            if args.shape_loss:
                 pass
                 
             print(f'loss_adv_accumulated: {loss_adv_accumulated}')
-            if config['scheduler']:
+            if args.scheduler:
                 print(f'scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()}')
 
-        if config['use_wandb']:
-            if config['eye_detector_loss']:
+        if args.use_wandb:
+            if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
-            if config['landmark_detector_loss']:
+            if args.landmark_detector_loss:
                 wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
-            if config['cycle_loss']:
+            if args.cycle_loss:
                 wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
-            if config['cycle_loss']:
+            if args.cycle_loss:
                 wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
-            if config['contrastive_loss']:
+            if args.contrastive_loss:
                 wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
-            if config['shape_loss']:
+            if args.shape_loss:
                 pass
 
             # 설정 필요하면 args에 true false 추가
@@ -246,13 +246,13 @@ def train_one_epoch(G: 'generator model',
             
             if config['global_rank'] == 0:
                     
-                torch.save(G.module.state_dict(), f'./saved_models_{config['run_name']}/G_latest.pth')
-                torch.save(D.module.state_dict(), f'./saved_models_{config['run_name']}/D_latest.pth')
+                torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+                torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-                torch.save(G.module.state_dict(), f'./current_models_{config['run_name']}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-                torch.save(D.module.state_dict(), f'./current_models_{config['run_name']}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-        if (iteration % 100 == 0) and (config['use_wandb']) and config['global_rank'] == 0:
+        if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
 
             G.eval()
 
@@ -277,13 +277,13 @@ def train(config):
     
     ##Multi GPU setting
     assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
-    device = config['device']
-    print(f"GPU {config['local_rank']} is using device: {device}")
+    device = args.device
+    print(f"GPU {config['local_rank']} is using device: {args.device}")
     print(f"GPU {config['local_rank']} is loading dataset")
 
     # training params
-    batch_size = config['batch_size']
-    max_epoch = config['max_epoch']    
+    batch_size = args.batch_size
+    max_epoch = args.max_epoch    
     
     
     # # training params
@@ -292,9 +292,9 @@ def train(config):
     
     # initializing main models
     # G = AEI_Net(config['backbone, num_blocks=config['num_blocks, c_id=512).to(device)
-    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = config['num_adain']).to(device)
+    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(args.device)
     G = DistributedDataParallel(G, device_ids=[config['local_rank']])
-    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(device)    
+    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(args.device)    
     D = DistributedDataParallel(D, device_ids=[config['local_rank']])
     
 
@@ -308,7 +308,7 @@ def train(config):
 
     
     
-    if config['eye_detector_loss']:
+    if args.eye_detector_loss:
         model_ft = models.FAN(4, "False", "False", 98)
         # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
         checkpoint = torch.load('/datasets/pretrained/WFLW_4HG.pth')
@@ -322,43 +322,43 @@ def train(config):
                                   if k in model_weights}
             model_weights.update(pretrained_weights)
             model_ft.module.load_state_dict(model_weights)
-        model_ft = model_ft.to(config['device'])
+        model_ft = model_ft.to(args.device)
         model_ft = DistributedDataParallel(model_ft, device_ids=[config['local_rank']])
         model_ft.eval()
     else:
         model_ft=None
     
-    opt_G = optim.Adam(G.parameters(), lr=config['lr_G'], betas=(0, 0.999), weight_decay=1e-4)
-    opt_D = optim.Adam(D.parameters(), lr=config['lr_D'], betas=(0, 0.999), weight_decay=1e-4)
+    opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
+    opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
     # G, opt_G = amp.initialize(G, opt_G, opt_level=config['optim_level)
     # D, opt_D = amp.initialize(D, opt_D, opt_level=config['optim_level)
     
-    if config['scheduler']:
-        scheduler_G = scheduler.StepLR(opt_G, step_size=config['scheduler_step'], gamma=config['scheduler_gamma'])
-        scheduler_D = scheduler.StepLR(opt_D, step_size=config['scheduler_step'], gamma=config['scheduler_gamma'])
+    if args.scheduler:
+        scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
+        scheduler_D = scheduler.StepLR(opt_D, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     else:
         scheduler_G = None
         scheduler_D = None
         
-    if config['pretrained']:
+    if args.pretrained:
         try:
-            G.module.load_state_dict(torch.load(config['G_path'], map_location=torch.device('cpu')), strict=False)
-            D.module.load_state_dict(torch.load(config['D_path'], map_location=torch.device('cpu')), strict=False)
+            G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')), strict=False)
+            D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device('cpu')), strict=False)
             print("Loaded pretrained weights for G and D")
         except FileNotFoundError as e:
             print("Not found pretrained weights. Continue without any pretrained weights.")
     
     # if config['vgg:
     
-    dataset = FaceEmbedCombined(ffhq_data_path = config['ffhq_data_path'], same_prob=0.8, same_identity=config['same_identity'])
+    dataset = FaceEmbedCombined(ffhq_data_path = args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
     # dataset = FaceEmbedCombined(ffhq_data_path=config['ffhq_data_path, same_prob=0.8, same_identity=config['same_identity)
     # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
     # dataset = FaceEmbedCustom('/workspace/examples/images/training')
     
 
     dataset_size = len(dataset)
-    train_size = int(dataset_size * config['train_ratio'])
+    train_size = int(dataset_size * args.train_ratio)
     validation_size = int(dataset_size - train_size)
     
     train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
@@ -369,9 +369,9 @@ def train(config):
     # dataloader = DataLoader(dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
 
     # train_dataloader = DataLoader(train_dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
-    train_dataloader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=False, drop_last=True, sampler=DistributedSampler(train_dataset, shuffle=True))
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(train_dataset, shuffle=True))
     # valid_dataloader = DataLoader(validation_dataset, batch_size=config['batch_size, shuffle=False, drop_last=True)
-    valid_dataloader = DataLoader(validation_dataset, batch_size=config['batch_size'], shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
+    valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
     # print(next(iter(dataloader)))
     # print(next(iter(dataloader))[0])
     ##In case of multi GPU, turn off shuffle
@@ -422,7 +422,7 @@ def train(config):
     ##loading pretrained models for extracting IDs
         f_3d_path = "/datasets/pretrained/pretrained_model.pth"
         f_id_path = "/datasets/pretrained/backbone.pth"
-        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, config['id_mode'])
+        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
         id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
         id_extractor.eval()
 
@@ -431,21 +431,21 @@ def train(config):
             for i, valid_minibatch in enumerate(valid_dataloader):
                 val_id_ext_src_input, val_id_ext_tgt_input, val_Xt_f, val_Xt_b, val_Xs_f, val_Xs_b, val_same_person = valid_minibatch
 
-                val_Xs_f = val_Xs_f.to(config['device'])
+                val_Xs_f = val_Xs_f.to(args.device)
                 # Xs.shape
-                val_Xt_f = val_Xt_f.to(config['device'])
+                val_Xt_f = val_Xt_f.to(args.device)
                 # Xt.shape
-                val_same_person = val_same_person.to(config['device'])
+                val_same_person = val_same_person.to(args.device)
                 val_realtime_batch_size = val_Xt_f.shape[0] 
                 # break
 
                 ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
                 val_id_embedding, val_src_id_emb, val_tgt_id_emb = id_extractor(val_id_ext_src_input, val_id_ext_tgt_input)
-                val_id_embedding, val_src_id_emb, val_tgt_id_emb = val_id_embedding.to(config['device']), val_src_id_emb.to(config['device']), val_tgt_id_emb.to(config['device'])
+                val_id_embedding, val_src_id_emb, val_tgt_id_emb = val_id_embedding.to(args.device), val_src_id_emb.to(args.device), val_tgt_id_emb.to(args.device)
 
                 val_diff_person = torch.ones_like(val_same_person)
 
-                if config['diff_eq_same']:
+                if args.diff_eq_same:
                     val_same_person = val_diff_person
                 
                 
@@ -473,7 +473,7 @@ def train(config):
                         
                     
                     wandb.log({"running_pose_metric": running_pose_metric, "running_id_metric": running_id_metric, "running_fid_metric": running_fid_metric}, commit=False)
-                    if config['landmark_detector_loss']:
+                    if args.landmark_detector_loss:
                         wandb.log({"running_expression_metric": running_expression_metric}, commit=False)
                         
                     ## logging and checking validation images generated swapped faces    
@@ -490,7 +490,7 @@ def train(config):
                 
                 
                 wandb.log({"avg_pose_metric": avg_pose_metric, "avg_id_metric": avg_id_metric, "avg_fid_metric": avg_fid_metric}, commit=False)
-                if config['landmark_detector_loss']:
+                if args.landmark_detector_loss:
                     wandb.log({"avg_expression_metric": avg_expression_metric}, commit=False)
                 
                 ## adding functions for WandB to log the metrics
@@ -503,7 +503,7 @@ def train(config):
 def main(args):
 
     config = dict()
-    config.update(vars(args))
+    # config.update(vars(args))
     config['local_rank'] = int(os.environ['LOCAL_RANK'])
     config['global_rank'] = int(os.environ['RANK'])
 
@@ -632,6 +632,7 @@ if __name__ == "__main__":
     
     # info about this run
     parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
+    parser.add_argument('--wandb_id', default='123456', type=bool, help='unique IDs for wandb run')
     parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
@@ -644,6 +645,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_epoch', default=1, type=int)
     # parser.add_argument('--optim_level', default='O2', type=str)
     parser.add_argument('--optim_level', default='None', type=str)
+    parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()
     
@@ -691,8 +693,4 @@ if __name__ == "__main__":
         os.mkdir(f'./saved_models_{args.run_name}')
         os.mkdir(f'./current_models_{args.run_name}')
     
-    
-    if args.use_wandb==True:
-        main(config)
-    else:
-        main(args)
+    main(args)
