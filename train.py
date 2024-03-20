@@ -20,9 +20,10 @@ import torch
 import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
-# # custom imports
-# sys.path.append('./apex/')
-# from apex import amp
+## custom imports
+sys.path.append('./apex/')
+from apex import amp
+
 from network.CrossU import CrossUnetAttentionGenerator, UNet
 from extractor.SA_idextractor import ShapeAwareIdentityExtractor
 # from network.AEI_Net import *
@@ -84,15 +85,8 @@ def train_one_epoch(G: 'generator model',
         # Xt.shape
         same_person = same_person.to(args.device)
         realtime_batch_size = Xt_f.shape[0] 
-        # print("realtime_batchsize : ", data)
-        # break
-        # print(type(Xt_f))
-        ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
-        id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input)
-        # print(type(id_embedding))
-        # id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(args.device), src_id_emb.to(args.device), tgt_id_emb.to(args.device)
 
-
+        id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
         diff_person = torch.ones_like(same_person)
 
@@ -107,10 +101,8 @@ def train_one_epoch(G: 'generator model',
 
         swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
         Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        # print(Xt_f_attrs)
-        Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        print(Xt_f_attrs)
-        # break
+        # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
 
         ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
         swapped_id_emb = id_extractor.module.id_forward(swapped_face)
@@ -154,11 +146,8 @@ def train_one_epoch(G: 'generator model',
                                                                              diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
-        #     scaled_loss.backward()
-        # lossG.backward(retain_graph=True)
-        # torch.autograd.set_detect_anomaly(True)
-        # lossG.backward(retain_graph=True)
-        # lossG.backward()
+            # scaled_loss.backward()
+        lossG.backward()
 
         opt_G.step()
         if args.scheduler:
@@ -166,12 +155,10 @@ def train_one_epoch(G: 'generator model',
         
         # discriminator training
         opt_D.zero_grad()
-        # lossD = compute_discriminator_loss(D, Y, Xs, diff_person)
-
         lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
         
         # with amp.scale_loss(lossD, opt_D) as scaled_loss:
-        #     scaled_loss.backward()
+            # scaled_loss.backward()
         lossD.backward() 
 
         if (not args.discr_force) or (loss_adv_accumulated < 4.):
@@ -346,8 +333,8 @@ def train(args, config):
     opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
     opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
-    # G, opt_G = amp.initialize(G, opt_G, opt_level=config['optim_level)
-    # D, opt_D = amp.initialize(D, opt_D, opt_level=config['optim_level)
+    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
+    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     
     if args.scheduler:
         scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
@@ -425,7 +412,7 @@ def train(args, config):
                         config)
         
 
-        
+    if config['global_rank'] == 0:        
         
         ##This below is validation part
         running_vloss = 0.0
@@ -467,8 +454,8 @@ def train(args, config):
 
                 if args.diff_eq_same:
                     val_same_person = val_diff_person
-                
-                
+            
+                    
                 val_swapped_face, val_recon_f_src, val_recon_f_tgt = G.module.forward(val_Xt_f, val_Xs_f, val_id_embedding)
                 
                 ## calculate the 4 metrics
@@ -656,7 +643,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str)
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=4, type=int)
+    parser.add_argument('--batch_size', default=3, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
