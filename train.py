@@ -44,6 +44,7 @@ import torch
 
 def train_one_epoch(G: 'generator model', 
                     D: 'discriminator model', 
+                    id_extractor: 'id_extractor model',
                     opt_G: "generator opt", 
                     opt_D: "discriminator opt",
                     scheduler_G: "scheduler G opt",
@@ -60,13 +61,13 @@ def train_one_epoch(G: 'generator model',
     
 
     
-    ##loading pretrained models for extracting IDs
-    f_3d_path = "/datasets/pretrained/pretrained_model.pth"
-    f_id_path = "/datasets/pretrained/backbone.pth"
+    # ##loading pretrained models for extracting IDs
+    # f_3d_path = "/datasets/pretrained/pretrained_model.pth"
+    # f_id_path = "/datasets/pretrained/backbone.pth"
     
-    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
-    id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
-    #print(id_extractor)
+    # id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
+    # id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
+    # #print(id_extractor)
     
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
@@ -74,7 +75,9 @@ def train_one_epoch(G: 'generator model',
         
         id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
-
+        id_ext_src_input = id_ext_src_input.to(args.device)
+        id_ext_tgt_input = id_ext_tgt_input.to(args.device)
+        
         Xs_f = Xs_f.to(args.device)
         # Xs.shape
         Xt_f = Xt_f.to(args.device)
@@ -83,10 +86,11 @@ def train_one_epoch(G: 'generator model',
         realtime_batch_size = Xt_f.shape[0] 
         # print("realtime_batchsize : ", data)
         # break
-
+        # print(type(Xt_f))
         ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
-        id_embedding, src_id_emb, tgt_id_emb = id_extractor(id_ext_src_input, id_ext_tgt_input)
-        id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(args.device), src_id_emb.to(args.device), tgt_id_emb.to(args.device)
+        id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input)
+        # print(type(id_embedding))
+        # id_embedding, src_id_emb, tgt_id_emb = id_embedding.to(args.device), src_id_emb.to(args.device), tgt_id_emb.to(args.device)
 
 
 
@@ -99,16 +103,18 @@ def train_one_epoch(G: 'generator model',
         # generator training
         opt_G.zero_grad() ##축적된 gradients를 비워준다
 
+        # G = G.to(args.device)
 
-
-        swapped_face, recon_f_src, recon_f_tgt = G.module(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+        swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
         Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+        # print(Xt_f_attrs)
         Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-
+        print(Xt_f_attrs)
+        # break
 
         ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
         swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-        swapped_id_emb = swapped_id_emb.to(args.device)
+        # swapped_id_emb = swapped_id_emb.to(args.device)
 
         #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
 
@@ -145,14 +151,14 @@ def train_one_epoch(G: 'generator model',
         
         lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                              eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, config)
+                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
 
         # with amp.scale_loss(lossG, opt_G) as scaled_loss:
         #     scaled_loss.backward()
         # lossG.backward(retain_graph=True)
         # torch.autograd.set_detect_anomaly(True)
         # lossG.backward(retain_graph=True)
-        lossG.backward()
+        # lossG.backward()
 
         opt_G.step()
         if args.scheduler:
@@ -273,7 +279,7 @@ def train_one_epoch(G: 'generator model',
             G.train()
 
 # def train(args, config):
-def train(config):
+def train(args, config):
     
     ##Multi GPU setting
     assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
@@ -290,11 +296,18 @@ def train(config):
     # batch_size = config['batch_size
     # max_epoch = config['max_epoch
     
+    ## initializing id extractor model
+    f_3d_path = "/datasets/pretrained/pretrained_model.pth"
+    f_id_path = "/datasets/pretrained/backbone.pth"
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
+    id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
+    id_extractor.eval()
+
     # initializing main models
     # G = AEI_Net(config['backbone, num_blocks=config['num_blocks, c_id=512).to(device)
-    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain)
+    G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(args.device)
     G = DistributedDataParallel(G, device_ids=[config['local_rank']])
-    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d)
+    D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(args.device)
     D = DistributedDataParallel(D, device_ids=[config['local_rank']])
     
 
@@ -302,12 +315,14 @@ def train(config):
     # initializing model for identity extraction
     netArc = iresnet100(fp16=False)
     netArc.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
+    netArc = netArc.to(args.device)
     # netArc=netArc.cuda()
     netArc = DistributedDataParallel(netArc, device_ids=[config['local_rank']])
     netArc.eval()
+    
 
-    
-    
+
+
     if args.eye_detector_loss:
         model_ft = models.FAN(4, "False", "False", 98)
         # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
@@ -322,7 +337,7 @@ def train(config):
                                   if k in model_weights}
             model_weights.update(pretrained_weights)
             model_ft.load_state_dict(model_weights)
-        # model_ft = model_ft.to(args.device)
+        model_ft = model_ft.to(args.device)
         model_ft = DistributedDataParallel(model_ft, device_ids=[config['local_rank']])
         model_ft.eval()
     else:
@@ -373,7 +388,8 @@ def train(config):
     # train_dataloader = DataLoader(train_dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(train_dataset, shuffle=True))
     # valid_dataloader = DataLoader(validation_dataset, batch_size=config['batch_size, shuffle=False, drop_last=True)
-    valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
+    # valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
+    valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
     # print(next(iter(dataloader)))
     # print(next(iter(dataloader))[0])
     ##In case of multi GPU, turn off shuffle
@@ -388,12 +404,13 @@ def train(config):
     for epoch in range(0, max_epoch):
         # if epoch >= 1:
         #     config['id_mode = 'Hififace'
-            
+        torch.cuda.empty_cache()
         G.train()
         D.train()
-        torch.cuda.empty_cache()
+        
         train_one_epoch(G,
                         D,
+                        id_extractor,
                         opt_G,
                         opt_D,
                         scheduler_G,
@@ -421,18 +438,19 @@ def train(config):
         G.eval()
         D.eval()
         
-    ##loading pretrained models for extracting IDs
-        f_3d_path = "/datasets/pretrained/pretrained_model.pth"
-        f_id_path = "/datasets/pretrained/backbone.pth"
-        id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode)
-        id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
-        id_extractor.eval()
+    # ##loading pretrained models for extracting IDs
+    #     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
+    #     f_id_path = "/datasets/pretrained/backbone.pth"
+    #     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
+    #     id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
+    #     id_extractor.eval()
 
         # Disable gradient computation and reduce memory consumption.
         with torch.no_grad():
             for i, valid_minibatch in enumerate(valid_dataloader):
                 val_id_ext_src_input, val_id_ext_tgt_input, val_Xt_f, val_Xt_b, val_Xs_f, val_Xs_b, val_same_person = valid_minibatch
-
+                val_id_ext_src_input = val_id_ext_src_input.to(args.device)
+                val_id_ext_tgt_input = val_id_ext_tgt_input.to(args.device)
                 val_Xs_f = val_Xs_f.to(args.device)
                 # Xs.shape
                 val_Xt_f = val_Xt_f.to(args.device)
@@ -442,7 +460,7 @@ def train(config):
                 # break
 
                 ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
-                val_id_embedding, val_src_id_emb, val_tgt_id_emb = id_extractor(val_id_ext_src_input, val_id_ext_tgt_input)
+                val_id_embedding, val_src_id_emb, val_tgt_id_emb = id_extractor.module.forward(val_id_ext_src_input, val_id_ext_tgt_input)
                 val_id_embedding, val_src_id_emb, val_tgt_id_emb = val_id_embedding.to(args.device), val_src_id_emb.to(args.device), val_tgt_id_emb.to(args.device)
 
                 val_diff_person = torch.ones_like(val_same_person)
@@ -451,7 +469,7 @@ def train(config):
                     val_same_person = val_diff_person
                 
                 
-                val_swapped_face, val_recon_f_src, val_recon_f_tgt = G.module(val_Xt_f, val_Xs_f, val_id_embedding)
+                val_swapped_face, val_recon_f_src, val_recon_f_tgt = G.module.forward(val_Xt_f, val_Xs_f, val_id_embedding)
                 
                 ## calculate the 4 metrics
                 
@@ -525,7 +543,7 @@ def main(args):
     
     print("Starting training")\
     # train(args, device=device)
-    train(config)
+    train(args, config)
     
     # Clean up distributed training
     destroy_process_group()
@@ -575,7 +593,6 @@ if __name__ == "__main__":
     # parser.add_argument('--vgg_data_path', default='/datasets/VGG', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')
     # parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ', type=str,help='path to ffhq dataset in string format')
     parser.add_argument('--ffhq_data_path', default='/datasets/FFHQ_parsed_img', type=str,help='path to ffhq dataset in string format')
-    
     parser.add_argument('--train_ratio', default=0.9, type=float, help='how much data to be used as training set. The rest will be used as validation set. e.g.) if 0.9, validation data will be 0.1 (10%)')
     
     # parser.add_argument('--celeba_data_path', default='/datasets/CelebHQ/CelebA-HQ-img', help='Path to the dataset. If not VGG2 dataset is used, param --vgg should be set False')

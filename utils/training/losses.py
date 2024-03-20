@@ -35,10 +35,9 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
 
     # attr loss  ##Y_attr is the target multi scale attr
     if args.optim_level == "O2" or args.optim_level == "O3":
-        Y_attr = G.ca_forward(Xt_f.type(torch.half), Xs_f.type(torch.half))
-        
+        Y_attr = G.module.ca_forward(Xt_f.type(torch.half), Xs_f.type(torch.half))
     else:
-        Y_attr = G.ca_forward(Xt_f, Xs_f)
+        Y_attr = G.module.ca_forward(Xt_f, Xs_f)
     
     L_attr = 0
     for i in range(len(Xt_f_attrs)): 

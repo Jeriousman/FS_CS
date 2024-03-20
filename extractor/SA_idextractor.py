@@ -14,11 +14,11 @@ class ShapeAwareIdentityExtractor(nn.Module):
     def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mode = 'hififace'):
         super(ShapeAwareIdentityExtractor, self).__init__()
         
-        self.device = torch.device(0)
+        # self.device = torch.device(0)
         self.mode = mode # binary : hififace / arcface
 
         self.f_3d = torch.load(f_3d_checkpoint_path)
-        self.f_3d = self.f_3d.to(self.device)
+        # self.f_3d = self.f_3d.to(self.device)
         self.f_3d.eval()
 
         self.f_id = iresnet100(pretrained=False, fp16=False)
@@ -47,18 +47,18 @@ class ShapeAwareIdentityExtractor(nn.Module):
         im.save("/workspace/images/resized.jpg")
 
 
-        c_s = self.f_3d(source_img.to(self.device))
+        c_s = self.f_3d(source_img)#.to(self.device))
         #print(c_s)
 
         #target_img, lm_src = read_data(i_target, lm3d_std)
         #target_img = target_img.to(self.device)
         target_img = F.interpolate(i_target, size=224, mode='bilinear')
-        c_t = self.f_3d(target_img.to(self.device))
+        c_t = self.f_3d(target_img)#.to(self.device))
 
         c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)
 
-        v_id_source = F.normalize(self.f_id(F.interpolate((i_source - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
-        v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+        v_id_source = F.normalize(self.f_id(F.interpolate((i_source - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2)#.to(self.device)
+        v_id_target = F.normalize(self.f_id(F.interpolate((i_target - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2)#.to(self.device)
         
         v_sid = torch.cat((c_fuse, v_id_source), dim=1)
 
@@ -105,22 +105,22 @@ class ShapeAwareIdentityExtractor(nn.Module):
         if self.mode == 'hififace': 
 #            print("id_forward for hififace !!!!!!!!!!")
 
-            i_swapped = i_swapped.cpu()
-            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+            i_swapped = i_swapped#.cpu()
+            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2)#.to(self.device)
 
 
             ### i_swapped must be an image ###
             #swapped_img, lm_swapped = read_data(i_swapped, lm3d_std)
             #swapped_img = swapped_img.to(self.device) 
             swapped_img = F.interpolate(i_swapped, size=224, mode='bilinear')
-            c_swapped = self.f_3d(swapped_img.to(self.device))
+            c_swapped = self.f_3d(swapped_img)#.to(self.device))
             v_swapped = torch.cat((c_swapped, swapped_emb), dim=1)
             return v_swapped
 
         elif self.mode == 'arcface': 
 
-            i_swapped = i_swapped.cpu()
-            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2).to(self.device)
+            i_swapped = i_swapped#.cpu()
+            swapped_emb = F.normalize(self.f_id(F.interpolate((i_swapped - 0.5)/0.5, size=112, mode='bilinear')), dim=-1, p=2)#.to(self.device)
             return swapped_emb
 
         else:
@@ -139,12 +139,12 @@ class ShapeAwareIdentityExtractor(nn.Module):
         #source_img, lm_src = read_data(i_source, lm3d_std)
         #source_img = source_img.to(self.device) 
         source_img = F.interpolate(i_source, size=224, mode='bilinear')
-        c_s = self.f_3d(source_img.to(self.device))
+        c_s = self.f_3d(source_img)#.to(self.device))
 
         #target_img, lm_tgt = read_data(i_target, lm3d_std)
         #target_img = target_img.to(self.device)
         target_img = F.interpolate(i_target, size=224, mode='bilinear')
-        c_t = self.f_3d(target_img.to(self.device))
+        c_t = self.f_3d(target_img)#.to(self.device))
 
         #swapped_img, lm_swapped = read_data(i_swapped, lm3d_std)
         #swapped_img = swapped_img.to(self.device)
@@ -166,7 +166,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
         '''
 
         with torch.no_grad():
-            c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1).to(self.device)
+            c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)#.to(self.device)
             _, _, _, q_fuse = self.face_model.compute_for_render(c_fuse)
         #_, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
 

@@ -168,7 +168,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
         output5 = self.deconv5(output4) ## 64 > 128
         adain_5 = AdaIN_layer(id_emb.size()[1], output5.size()[1])
-        output5 = adain_5(output2, id_emb) if 5<= self.num_adain else output5 # conditional injection
+        output5 = adain_5(output5, id_emb) if 5<= self.num_adain else output5 # conditional injection
 
         # print('output5:', output5.shape)
         
