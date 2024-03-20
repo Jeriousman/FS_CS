@@ -26,11 +26,11 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     # adversarial loss
     L_adv = 0.
     for di in Di:
-        L_adv += hinge_loss(di[0], True).mean(dim=[1, 2, 3])
+        L_adv = L_adv + hinge_loss(di[0].detach(), True).mean(dim=[1, 2, 3])
     L_adv = torch.sum(L_adv * diff_person) / (diff_person.sum() + 1e-4)
 
     # id loss
-    L_id =(1 - torch.cosine_similarity(src_id_emb, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
+    L_id = (1 - torch.cosine_similarity(src_id_emb, swapped_id_emb, dim=1)).mean()  ##id_embed = source id embed. 
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
@@ -41,7 +41,7 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     
     L_attr = 0
     for i in range(len(Xt_f_attrs)): 
-        L_attr += torch.mean(torch.pow(Xt_f_attrs[i] - Y_attr[i], 2).reshape(args.batch_size, -1), dim=1).mean()
+        L_attr = L_attr + torch.mean(torch.pow(Xt_f_attrs[i] - Y_attr[i], 2).reshape(args.batch_size, -1), dim=1).mean()
     L_attr /= 2.0 ##2 bcuz ?
 
     # reconstruction loss ##같은 인물이지만 같은 데이터일 필요는 없다고 생각하기 때문에 같은 사람것을 사용 
@@ -125,16 +125,16 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
 ##Why id_embed?
 def compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_source, recon_target, diff_person, device):
     # fake part
-    fake_D = D(swapped_face.detach())
+    fake_D = D.module.forward(swapped_face.detach())
     loss_fake = 0
     for di in fake_D:
-        loss_fake += torch.sum(hinge_loss(di[0], False).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
+        loss_fake = loss_fake + torch.sum(hinge_loss(di[0], False).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
 
     # ground truth part
     true_D = D(Xs_f)
     loss_true = 0
     for di in true_D:
-        loss_true += torch.sum(hinge_loss(di[0], True).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
+        loss_true = loss_true + torch.sum(hinge_loss(di[0], True).mean(dim=[1, 2, 3]) * diff_person) / (diff_person.sum() + 1e-4)
 
     lossD = 0.5*(loss_true.mean() + loss_fake.mean())
     

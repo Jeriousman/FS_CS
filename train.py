@@ -86,184 +86,179 @@ def train_one_epoch(G: 'generator model',
         same_person = same_person.to(args.device)
         realtime_batch_size = Xt_f.shape[0] 
 
-        id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+        with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
 
-        diff_person = torch.ones_like(same_person)
+            id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
-        if args.diff_eq_same:
-            same_person = diff_person
+            diff_person = torch.ones_like(same_person)
 
-
-        # generator training
-        opt_G.zero_grad() ##축적된 gradients를 비워준다
-
-        # G = G.to(args.device)
-
-        swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
-        Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            if args.diff_eq_same:
+                same_person = diff_person
 
 
-        ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
-        swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-        # swapped_id_emb = swapped_id_emb.to(args.device)
+            # generator training
+            opt_G.zero_grad() ##축적된 gradients를 비워준다
 
-        #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
-
-
-
-        # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
+            Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
 
-  
+            ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
+            swapped_id_emb = id_extractor.module.id_forward(swapped_face)
+            # swapped_id_emb = swapped_id_emb.to(args.device)
+
+            #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+
+
+            # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+            # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            
+            Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+            
         
-        Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
-        
-    
-        if args.eye_detector_loss:
-            Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
-            swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
-            eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
-        else:
-            eye_heatmaps = None
-        
-        # landmark extractor
-        if args.landmark_detector_loss:
-            Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
-            swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
-            all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
-            all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
-        else:
-            all_landmark_heatmaps = None
-            all_landmarks = None
-
-
-        
-        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
-                                                                             eye_heatmaps, loss_adv_accumulated, 
-                                                                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
-
-        # with amp.scale_loss(lossG, opt_G) as scaled_loss:
-            # scaled_loss.backward()
-        lossG.backward()
-
-        opt_G.step()
-        if args.scheduler:
-            scheduler_G.step()
-        
-        # discriminator training
-        opt_D.zero_grad()
-        lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
-        
-        # with amp.scale_loss(lossD, opt_D) as scaled_loss:
-            # scaled_loss.backward()
-        lossD.backward() 
-
-        if (not args.discr_force) or (loss_adv_accumulated < 4.):
-            opt_D.step()
-        if args.scheduler:
-            scheduler_D.step()
-        
-        
-        batch_time = time.time() - start_time
-
-        if iteration % args.show_step == 0:
-            images = [Xs_f, Xt_f, swapped_face]
             if args.eye_detector_loss:
-                Xt_f_eyes_img = paint_eyes(Xt_f, Xt_f_eyes)
-                Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
-                images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
-            image = make_image_list(images)
-            if args.use_wandb:
-                wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+                Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
+                swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
+                eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
             else:
-                cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
-        
-        if iteration % 10 == 0:
-            print(f'epoch: {epoch}    {iteration} / {len(train_dataloader)}')
-            print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
-            if args.eye_detector_loss:
-                print(f'L_l2_eyes: {L_l2_eyes.item()}')
+                eye_heatmaps = None
+            
+            # landmark extractor
             if args.landmark_detector_loss:
-                print(f'L_landmarks: {L_landmarks.item()}')
-            if args.cycle_loss:
-                pass
-            if args.contrastive_loss:
-                pass
-            if args.shape_loss:
-                pass
-                
-            print(f'loss_adv_accumulated: {loss_adv_accumulated}')
+                Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
+                swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
+                all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
+                all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
+            else:
+                all_landmark_heatmaps = None
+                all_landmarks = None
+
+
+            
+            lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                                                                                eye_heatmaps, loss_adv_accumulated, 
+                                                                                diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
+
+            with amp.scale_loss(lossG, opt_G) as scaled_loss:
+                scaled_loss.backward()
+            # torch.autograd.set_detect_anomaly(True)
+            # lossG.backward()
+            opt_G.step()
             if args.scheduler:
-                print(f'scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()}')
-
-        if args.use_wandb:
-            if args.eye_detector_loss:
-                wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
-            if args.landmark_detector_loss:
-                wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
-            if args.cycle_loss:
-                wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
-            if args.cycle_loss:
-                wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
-            if args.contrastive_loss:
-                wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
-            if args.shape_loss:
-                pass
-
-            # 설정 필요하면 args에 true false 추가
-            wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
-            wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
+                scheduler_G.step()
             
-                # wandb.log({"loss_shape": L_shape.item()}, commit=False)
-                
-            wandb.log({
-                       "loss_id": L_id.item(),
-                       "lossD": lossD.item(),
-                       "lossG": lossG.item(),
-                       "loss_adv": L_adv.item(),
-                       "loss_attr": L_attr.item(),
-                       "loss_rec": L_rec.item(),
-                    #    "loss_cycle": L_cycle.item(),
-                    #    "loss_cycle_identity": L_cycle_identity.item(),
-                    #    "loss_contrastive": L_contrastive.item(),
-                       "loss_source_unet": L_source_unet.item(),
-                       "loss_target_unet": L_target_unet.item(),                       
-                    #    "loss_landmarks": L_landmarks.item()
-                       })
-        
-        if iteration % 10000 == 0:
+            # discriminator training
+            opt_D.zero_grad()
+            lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
+            with amp.scale_loss(lossD, opt_D) as scaled_loss:
+                scaled_loss.backward()
+            # lossD.backward() 
+            # lossD.backward(retain_graph=True)
+            if (not args.discr_force) or (loss_adv_accumulated < 4.):
+                opt_D.step()
+            if args.scheduler:
+                scheduler_D.step()
             
-            if config['global_rank'] == 0:
+            
+            batch_time = time.time() - start_time
+
+            if iteration % args.show_step == 0:
+                images = [Xs_f, Xt_f, swapped_face]
+                if args.eye_detector_loss:
+                    Xt_f_eyes_img = paint_eyes(Xt_f, Xt_f_eyes)
+                    Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
+                    images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
+                image = make_image_list(images)
+                if args.use_wandb:
+                    wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+                else:
+                    cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
+            
+            if iteration % 10 == 0:
+                print(f'epoch: {epoch}    {iteration} / {len(train_dataloader)}')
+                print(f'lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
+                print(f'L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
+                if args.eye_detector_loss:
+                    print(f'L_l2_eyes: {L_l2_eyes.item()}')
+                if args.landmark_detector_loss:
+                    print(f'L_landmarks: {L_landmarks.item()}')
+                if args.cycle_loss:
+                    pass
+                if args.contrastive_loss:
+                    pass
+                if args.shape_loss:
+                    pass
                     
-                torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
-                torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
+                print(f'loss_adv_accumulated: {loss_adv_accumulated}')
+                if args.scheduler:
+                    print(f'scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()}')
 
-                torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-                torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+            if args.use_wandb:
+                if args.eye_detector_loss:
+                    wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
+                if args.landmark_detector_loss:
+                    wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
+                if args.cycle_loss:
+                    wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
+                if args.cycle_loss:
+                    wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
+                if args.contrastive_loss:
+                    wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
+                if args.shape_loss:
+                    pass
 
-        if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
-
-            G.eval()
-
-            res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
-            res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
-            res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
-            res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
-            res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
-            res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
+                # 설정 필요하면 args에 true false 추가
+                wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
+                wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
+                
+                    # wandb.log({"loss_shape": L_shape.item()}, commit=False)
+                    
+                wandb.log({
+                        "loss_id": L_id.item(),
+                        "lossD": lossD.item(),
+                        "lossG": lossG.item(),
+                        "loss_adv": L_adv.item(),
+                        "loss_attr": L_attr.item(),
+                        "loss_rec": L_rec.item(),
+                        #    "loss_cycle": L_cycle.item(),
+                        #    "loss_cycle_identity": L_cycle_identity.item(),
+                        #    "loss_contrastive": L_contrastive.item(),
+                        "loss_source_unet": L_source_unet.item(),
+                        "loss_target_unet": L_target_unet.item(),                       
+                        #    "loss_landmarks": L_landmarks.item()
+                        })
             
-            output1 = np.concatenate((res1, res2, res3), axis=0)
-            output2 = np.concatenate((res4, res5, res6), axis=0)
-            
-            output = np.concatenate((output1, output2), axis=1)
+            if iteration % 10000 == 0:
+                
+                if config['global_rank'] == 0:
+                        
+                    torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+                    torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-            wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+                    torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                    torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
 
-            G.train()
+            if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
+
+                G.eval()
+
+                res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
+                res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
+                res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
+                res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
+                res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
+                res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
+                
+                output1 = np.concatenate((res1, res2, res3), axis=0)
+                output2 = np.concatenate((res4, res5, res6), axis=0)
+                
+                output = np.concatenate((output1, output2), axis=1)
+
+                wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+
+                G.train()
 
 # def train(args, config):
 def train(args, config):
@@ -293,8 +288,13 @@ def train(args, config):
     # initializing main models
     # G = AEI_Net(config['backbone, num_blocks=config['num_blocks, c_id=512).to(device)
     G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(args.device)
+    opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
+    G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
     G = DistributedDataParallel(G, device_ids=[config['local_rank']])
+    
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(args.device)
+    opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
+    D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     D = DistributedDataParallel(D, device_ids=[config['local_rank']])
     
 
@@ -330,8 +330,8 @@ def train(args, config):
     else:
         model_ft=None
     
-    opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
-    opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
+    # opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
+    # opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
 
     # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
     # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
@@ -630,8 +630,8 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler', default=False, type=bool, help='If True decreasing LR is used for learning of generator and discriminator')
     parser.add_argument('--scheduler_step', default=5000, type=int)
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
-    parser.add_argument('--eye_detector_loss', default=True, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
-    parser.add_argument('--landmark_detector_loss', default=True, type=bool, help='If True landmark loss is applied to generator')
+    parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
+    parser.add_argument('--landmark_detector_loss', default=False, type=bool, help='If True landmark loss is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
@@ -649,8 +649,8 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=100, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    # parser.add_argument('--optim_level', default='O2', type=str)
-    parser.add_argument('--optim_level', default='None', type=str)
+    parser.add_argument('--optim_level', default='O2', type=str)
+    # parser.add_argument('--optim_level', default='None', type=str)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()

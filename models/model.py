@@ -177,7 +177,8 @@ class ArcMarginModel(nn.Module):
         one_hot = torch.zeros(cosine.size(), device=device)
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
-        output *= self.s
+        output = output * self.s
+        # output *= self.s
         return output
 
 
@@ -238,7 +239,8 @@ class SelfAttentionLayer(nn.Module):
         #     mask = torch.ones_like(qk_weight, dtype=torch.bool).triu(diagonal = 1)  ##if diagonal =1, the diagonal lives by 1
         #     qk_weight.masked_fill(mask, -torch.inf)
 
-        qk_weight /= math.sqrt(self.head_dim)
+        # qk_weight /= math.sqrt(self.head_dim)
+        qk_weight = qk_weight / math.sqrt(self.head_dim)
         qk_weight_softmaxed = F.softmax(qk_weight, dim=-1)
 
         ## (batch_size, n_head, seq_len, seq_len) @ (batch_size, n_head, seq_len, head_dim) -> (batch_size, n_head, seq_len, head_dim)
@@ -380,7 +382,8 @@ class FlowFaceCrossAttentionLayer(nn.Module):
            
         ## (batch_size, self.n_head, self.q_dim, seq_len) -> (batch_size, self.n_head, seq_len, seq_len) 
         qk_weight = q @ k.transpose(-1, -2)   
-        qk_weight /= math.sqrt(self.head_dim)
+        # qk_weight /= math.sqrt(self.head_dim)
+        qk_weight = qk_weight + math.sqrt(self.head_dim)
         # qk_weight.shape 
 
         qk_weight_softmaxed = F.softmax(qk_weight, dim = -1)

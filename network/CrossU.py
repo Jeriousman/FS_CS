@@ -31,12 +31,12 @@ class CrossUnetAttentionGenerator(nn.Module):
         self.FFCA6 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*4096, n_head=self.n_head, q_dim=self.q_dim//32, k_dim=self.k_dim//32, kv_dim=self.kv_dim//32)
         self.FFCA7 = FlowFaceCrossAttentionModel(seq_len=self.seq_len*4096, n_head=self.n_head, q_dim=3, k_dim=3, kv_dim=3)  ##computationally expensive
         
-        self.AdaIN_layer1 = AdaIN_layer(769, 1024)
-        self.AdaIN_layer2 = AdaIN_layer(769, 512)
-        self.AdaIN_layer3 = AdaIN_layer(769, 256)
-        self.AdaIN_layer4 = AdaIN_layer(769, 128)
-        self.AdaIN_layer5 = AdaIN_layer(769, 64)
-        self.AdaIN_layer6 = AdaIN_layer(769, 32)
+        self.AdaIN_layer1 = AdaIN_ResBlock(769, 1024)
+        self.AdaIN_layer2 = AdaIN_ResBlock(769, 512)
+        self.AdaIN_layer3 = AdaIN_ResBlock(769, 256)
+        self.AdaIN_layer4 = AdaIN_ResBlock(769, 128)
+        self.AdaIN_layer5 = AdaIN_ResBlock(769, 64)
+        self.AdaIN_layer6 = AdaIN_ResBlock(769, 32)
         
         
         # ##noskip_deconv4x4을 하면 crossattention을 안해도 되니 컴퓨팅을 아낄수있다
