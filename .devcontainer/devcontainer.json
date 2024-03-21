@@ -1,5 +1,5 @@
 {
-	"name": "Tory-Justin-Hojun-Trinity",
+	"name": "Tory-Justin-Hojun-Trinity-multiGPUs",
 	"build": {
 		"dockerfile": "../tmp/Dockerfile",
 		"context": ".."
@@ -11,7 +11,7 @@
 		"\"device=4,5\"" ,
 		// 컨테이너의 이름을 짓는 옵션
 		"--name",
-		"Tory-Justin-Hojun-Trinity",
+		"Tory-Justin-Hojun-Trinity-multiGPUs",
 		"-v",
 		"/IM_data/:/datasets/DOB",
 		"-v",

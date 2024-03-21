@@ -69,97 +69,203 @@ def train_one_epoch(G: 'generator model',
     # id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
     # id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     # #print(id_extractor)
-    
+    if args.mixed_precision == True:
+        scaler = torch.cuda.amp.GradScaler()
+        
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         
-        id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
+        if args.mixed_precision == True:
+            with torch.autocast(device_type='cuda', dtype=torch.float16):
+            
+                
+                id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
-        id_ext_src_input = id_ext_src_input.to(args.device)
-        id_ext_tgt_input = id_ext_tgt_input.to(args.device)
+                id_ext_src_input = id_ext_src_input.to(args.device)
+                id_ext_tgt_input = id_ext_tgt_input.to(args.device)
+                
+                Xs_f = Xs_f.to(args.device)
+                # Xs.shape
+                Xt_f = Xt_f.to(args.device)
+                # Xt.shape
+                same_person = same_person.to(args.device)
+                realtime_batch_size = Xt_f.shape[0] 
+
+                # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
+
+                id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+
+                diff_person = torch.ones_like(same_person)
+
+                if args.diff_eq_same:
+                    same_person = diff_person
+
+
+                # generator training
+                opt_G.zero_grad() ##축적된 gradients를 비워준다
+
+                swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
+                Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+                # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
+
+                ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
+                swapped_id_emb = id_extractor.module.id_forward(swapped_face)
+                # swapped_id_emb = swapped_id_emb.to(args.device)
+
+                #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+
+
+                # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+                # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+                # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+                
+                Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+                
+
+                if args.eye_detector_loss:
+                    Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
+                    swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
+                    eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
+                else:
+                    eye_heatmaps = None
+                
+                # landmark extractor
+                if args.landmark_detector_loss:
+                    Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
+                    swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
+                    all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
+                    all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
+                else:
+                    all_landmark_heatmaps = None
+                    all_landmarks = None
+
+
+
+
+                
+                lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                                                                                    eye_heatmaps, loss_adv_accumulated, 
+                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
+
+                # discriminator training
+                opt_D.zero_grad()
+                lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
+             
+                
+        else: ##mixed_precision False인 경우에는 이라는 뜻
+            id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
+
+            id_ext_src_input = id_ext_src_input.to(args.device)
+            id_ext_tgt_input = id_ext_tgt_input.to(args.device)
+            
+            Xs_f = Xs_f.to(args.device)
+            # Xs.shape
+            Xt_f = Xt_f.to(args.device)
+            # Xt.shape
+            same_person = same_person.to(args.device)
+            realtime_batch_size = Xt_f.shape[0] 
+
+            # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
+
+            id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+
+            diff_person = torch.ones_like(same_person)
+
+            if args.diff_eq_same:
+                same_person = diff_person
+
+
+            # generator training
+            opt_G.zero_grad() ##축적된 gradients를 비워준다
+
+            swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
+            Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+
+
+            ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
+            swapped_id_emb = id_extractor.module.id_forward(swapped_face)
+            # swapped_id_emb = swapped_id_emb.to(args.device)
+
+            #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+
+
+            # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
+            # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+            
+            Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+            
+
+            if args.eye_detector_loss:
+                Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
+                swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
+                eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
+            else:
+                eye_heatmaps = None
+            
+            # landmark extractor
+            if args.landmark_detector_loss:
+                Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
+                swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
+                all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
+                all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
+            else:
+                all_landmark_heatmaps = None
+                all_landmarks = None
+
+
+
+
+            
+            lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                                                                                eye_heatmaps, loss_adv_accumulated, 
+                                                                                diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
+
+            # discriminator training
+            opt_D.zero_grad()
+            lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
+
+        # if (iteration + 1) % 100 != 0 and not last_step: # Accumulate gradients for 100 steps
+        #     with G.no_sync() and D.no_sync(): # Disable gradient synchronization
+        #             loss = loss_fn(model(data), labels) # Forward step
+        #             loss.backward() # Backward step + gradient ACCUMULATION
         
-        Xs_f = Xs_f.to(args.device)
-        # Xs.shape
-        Xt_f = Xt_f.to(args.device)
-        # Xt.shape
-        same_person = same_person.to(args.device)
-        realtime_batch_size = Xt_f.shape[0] 
-
-        # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
-
-        id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
-
-        diff_person = torch.ones_like(same_person)
-
-        if args.diff_eq_same:
-            same_person = diff_person
-
-
-        # generator training
-        opt_G.zero_grad() ##축적된 gradients를 비워준다
-
-        swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
-        Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-
-
-        ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
-        swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-        # swapped_id_emb = swapped_id_emb.to(args.device)
-
-        #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
-
-
-        # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
-        # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-        
-        Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
-        
-    
-        if args.eye_detector_loss:
-            Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
-            swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
-            eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
+        if args.mixed_precision == True:
+        ##for amp implementation (@hojun Seo)        
+            scaler.scale(lossG).backward(retrain_graph=True)
+            scaler.step(opt_G)
+            if args.scheduler:
+                scheduler_G.step()
+                
         else:
-            eye_heatmaps = None
-        
-        # landmark extractor
-        if args.landmark_detector_loss:
-            Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
-            swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
-            all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
-            all_landmarks = [Xt_f_landmarks, swapped_face_landmarks]
+            lossG.backward()
+            opt_G.step()
+            if args.scheduler:
+                scheduler_G.step()
+                
+        if args.mixed_precision == True:
+        ##for amp implementation (@hojun Seo)
+            scaler.scale(lossD).backward()
+            if (not args.discr_force) or (loss_adv_accumulated < 4.):
+                scaler.step(opt_D)
+            if args.scheduler:
+                scheduler_D.step()
+            
         else:
-            all_landmark_heatmaps = None
-            all_landmarks = None
-
-
-        
-        lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
-                                                                            eye_heatmaps, loss_adv_accumulated, 
-                                                                            diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
-
-        # with amp.scale_loss(lossG, opt_G) as scaled_loss:
-        #     scaled_loss.backward()
-        # torch.autograd.set_detect_anomaly(True)
-        lossG.backward()
-        opt_G.step()
-        if args.scheduler:
-            scheduler_G.step()
-        
-        # discriminator training
-        opt_D.zero_grad()
-        lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
-        # with amp.scale_loss(lossD, opt_D) as scaled_loss:
-        #     scaled_loss.backward()
-        lossD.backward() 
-        # lossD.backward(retain_graph=True)
-        if (not args.discr_force) or (loss_adv_accumulated < 4.):
-            opt_D.step()
-        if args.scheduler:
-            scheduler_D.step()
+            lossD.backward() 
+            if (not args.discr_force) or (loss_adv_accumulated < 4.):
+                opt_D.step()
+            if args.scheduler:
+                scheduler_D.step()
+            
+        if args.mixed_precision == True:
+            scaler.update() ##even tho we have 2 loss backwards, update should only be done once
+        else:
+            pass
+            
         
         
         batch_time = time.time() - start_time
