@@ -267,6 +267,10 @@ def train_one_epoch(G: 'generator model',
             pass
             
         
+        '''
+        Here onwards, we must (maybe) convert amp mixed precision tensors in autocast region manually if we want to use them in float32 format
+        '''
+        
         
         batch_time = time.time() - start_time
 
@@ -642,11 +646,31 @@ def main(args):
         config.ffhq_data_path = args.ffhq_data_path
         # config.celeba_data_path = config['celeba_data_path
         # config.dob_data_path = config['dob_data_path
+        config.train_ratio = args.train_ratio
+        config.G_path = args.G_path
+        config.D_path = args.D_path
+
         config.weight_adv = args.weight_adv
         config.weight_attr = args.weight_attr
         config.weight_id = args.weight_id
         config.weight_rec = args.weight_rec
         config.weight_eyes = args.weight_eyes
+        config.weight_cycle = args.weight_cycle
+        config.weight_cycle_identity = args.weight_cycle_identity
+        config.weight_contrastive = args.weight_contrastive
+        config.weight_source_unet = args.weight_source_unet
+        config.weight_target_unet = args.weight_target_unet
+        config.weight_landmarks = args.weight_landmarks
+        config.backbone = args.backbone
+        config.num_blocks = args.num_blocks
+        config.num_adain = args.num_adain
+        config.id_mode = args.id_mode
+        config.seq_len = args.seq_len
+        config.n_head = args.n_head
+        config.total_embed_dim = args.total_embed_dim
+        config.q_dim = args.q_dim
+        config.k_dim = args.k_dim
+        config.kv_dim = args.kv_dim
         config.same_person = args.same_person
         config.same_identity = args.same_identity
         config.diff_eq_same = args.diff_eq_same
@@ -655,25 +679,41 @@ def main(args):
         config.scheduler_step = args.scheduler_step
         config.scheduler_gamma = args.scheduler_gamma
         config.eye_detector_loss = args.eye_detector_loss
-        config.pretrained = args.pretrained
+        config.landmark_detector_loss = args.landmark_detector_loss
+        config.cycle_loss = args.cycle_loss
+        config.contrastive_loss = args.contrastive_loss
+        config.shape_loss = args.shape_loss
+        config.wandb_id = args.wandb_id
         config.run_name = args.run_name
-        config.G_path = args.G_path
-        config.D_path = args.D_path
+        config.wandb_project = args.wandb_project
+        
         config.batch_size = args.batch_size
         config.lr_G = args.lr_G
         config.lr_D = args.lr_D
+        config.max_epoch = args.max_epoch
+        config.show_step = args.show_step
+        config.save_epoch = args.save_epoch
+        config.mixed_precision = args.mixed_precision
+        config.device = args.device
+
+        config.pretrained = args.pretrained
+
+
+        config.batch_size = args.batch_size
+        config.lr_G = args.lr_G
+        config.lr_D = args.lr_D
+        
     elif not os.path.exists('./images'):
         os.mkdir('./images')
-        
+
         
     # Setup distributed training
-    init_process_group(backend='nccl', timeout=datetime.timedelta(seconds=5400))
-    torch.cuda.set_device(config['local_rank'])  
-
-
+    print('Setting up distributed training..')
     
-
-
+    init_process_group(backend='nccl', timeout=datetime.timedelta(seconds=5400))
+    print('initiating distributed process with nccl')
+    torch.cuda.set_device(config['local_rank'])  
+    print('setting device with cuda in local rank')
     
     print("Starting training")\
     # train(args, device=device)
@@ -681,6 +721,7 @@ def main(args):
     
     # Clean up distributed training
     destroy_process_group()
+    print('destroyed distributed process after training')
     # config = dict()
     # config['local_rank'] = int(os.environ(['LOCAL_RANK']))
     # config['global_rank'] = int(os.environ(['RANK']))
@@ -766,8 +807,6 @@ if __name__ == "__main__":
     parser.add_argument('--q_dim', default=1024, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
     parser.add_argument('--k_dim', default=1024, type=int, help="Full key dim (and/or key's value dimension) before dividing by num head ")
     parser.add_argument('--kv_dim', default=1024, type=int, help='value dim of key before dividing by num head. Key value dimension doesnt neccessarily have to be same as key dim')
-    # parser.add_argument('--seq_len', default=196, type=int, help='number of patches of ViT. It would normally be H*W = 196 or 256')
-    
     
     parser.add_argument('--same_person', default=0.2, type=float, help='Probability of using same person identity during training')
     parser.add_argument('--same_identity', default=True, type=bool, help='Using simswap approach, when source_id = target_id. Only possible with vgg=True')
@@ -796,8 +835,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=100, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    # parser.add_argument('--optim_level', default='O2', type=str)
-    parser.add_argument('--optim_level', default='None', type=str)
+    parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()

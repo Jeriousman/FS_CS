@@ -34,10 +34,13 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     ##즉, embed는 source face의 arcface embedding, ZY는 swapped Face의 embedding?
 
     # attr loss  ##Y_attr is the target multi scale attr
-    if args.optim_level == "O2" or args.optim_level == "O3":
-        Y_attr = G.module.ca_forward(Xt_f.type(torch.half), Xs_f.type(torch.half))
-    else:
-        Y_attr = G.module.ca_forward(Xt_f, Xs_f)
+    # if args.optim_level == "O2" or args.optim_level == "O3":
+    #     Y_attr = G.module.ca_forward(Xt_f.type(torch.half), Xs_f.type(torch.half))
+    # else:
+    #     Y_attr = G.module.ca_forward(Xt_f, Xs_f)
+    
+    # attr loss  ##Y_attr is the target multi scale attr
+    Y_attr = G.module.ca_forward(Xt_f, Xs_f)
     
     L_attr = 0
     for i in range(len(Xt_f_attrs)): 
