@@ -69,14 +69,14 @@ def train_one_epoch(G: 'generator model',
     # id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
     # id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     # #print(id_extractor)
-    if args.mixed_precision == True:
+    if args.mixed_precision:
         scaler = torch.cuda.amp.GradScaler()
         
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         
-        if args.mixed_precision == True:
+        if args.mixed_precision:
             with torch.autocast(device_type='cuda', dtype=torch.float16):
             
                 
@@ -93,7 +93,6 @@ def train_one_epoch(G: 'generator model',
                 realtime_batch_size = Xt_f.shape[0] 
 
                 # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
-
                 id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
                 diff_person = torch.ones_like(same_person)
@@ -104,11 +103,12 @@ def train_one_epoch(G: 'generator model',
 
                 # generator training
                 opt_G.zero_grad() ##축적된 gradients를 비워준다
-
                 swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
                 Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
                 # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
+                # print(swapped_face.dtype)
+                # print(Xt_f_attrs[0].dtype)
 
                 ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
                 swapped_id_emb = id_extractor.module.id_forward(swapped_face)
@@ -233,9 +233,9 @@ def train_one_epoch(G: 'generator model',
         #             loss = loss_fn(model(data), labels) # Forward step
         #             loss.backward() # Backward step + gradient ACCUMULATION
         
-        if args.mixed_precision == True:
+        if args.mixed_precision:
         ##for amp implementation (@hojun Seo)        
-            scaler.scale(lossG).backward(retrain_graph=True)
+            scaler.scale(lossG).backward()
             scaler.step(opt_G)
             if args.scheduler:
                 scheduler_G.step()
@@ -246,7 +246,7 @@ def train_one_epoch(G: 'generator model',
             if args.scheduler:
                 scheduler_G.step()
                 
-        if args.mixed_precision == True:
+        if args.mixed_precision:
         ##for amp implementation (@hojun Seo)
             scaler.scale(lossD).backward()
             if (not args.discr_force) or (loss_adv_accumulated < 4.):
@@ -263,7 +263,7 @@ def train_one_epoch(G: 'generator model',
                 ##https://aimaster.tistory.com/83
                 scheduler_D.step()
             
-        if args.mixed_precision == True:
+        if args.mixed_precision:
             scaler.update() ##even tho we have 2 loss backwards, update should only be done once
         else:
             pass
@@ -393,7 +393,7 @@ def train(args, config):
     ## initializing id extractor model
     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
     f_id_path = "/datasets/pretrained/backbone.pth"
-    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.mixed_precision, args.id_mode).to(args.device)
     id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     id_extractor.eval()
 
@@ -412,7 +412,11 @@ def train(args, config):
 
     
     # initializing model for identity extraction
-    netArc = iresnet100(fp16=False)
+
+    if args.mixed_precision == True:  
+        netArc = iresnet100(fp16=True)
+    else:
+        netArc = iresnet100(fp16=False)
     netArc.load_state_dict(torch.load('/datasets/pretrained/backbone.pth'))
     netArc = netArc.to(args.device)
     # netArc=netArc.cuda()
@@ -836,7 +840,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=100, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--mixed_precision', default=False, type=bool)
+    parser.add_argument('--mixed_precision', default=True, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()

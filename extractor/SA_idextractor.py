@@ -11,17 +11,20 @@ sys.path.append('./extractor/')
 from deep3D.models.bfm import ParametricFaceModel
 
 class ShapeAwareIdentityExtractor(nn.Module):
-    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mode = 'hififace'):
+    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mixed_precision, mode = 'hififace'):
         super(ShapeAwareIdentityExtractor, self).__init__()
         
         # self.device = torch.device(0)
         self.mode = mode # binary : hififace / arcface
-
+        self.mixed_precision = mixed_precision
         self.f_3d = torch.load(f_3d_checkpoint_path)
         # self.f_3d = self.f_3d.to(self.device)
         self.f_3d.eval()
-
-        self.f_id = iresnet100(pretrained=False, fp16=False)
+        if self.mixed_precision:  
+            self.f_id = iresnet100(pretrained=False, fp16=True)
+        else:
+            self.f_id = iresnet100(pretrained=False, fp16=False)
+                
         self.f_id.load_state_dict(torch.load(f_id_checkpoint_path, map_location='cpu'))
         self.f_id.eval()
 
