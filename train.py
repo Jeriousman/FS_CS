@@ -252,6 +252,7 @@ def train_one_epoch(G: 'generator model',
             if (not args.discr_force) or (loss_adv_accumulated < 4.):
                 scaler.step(opt_D)
             if args.scheduler:
+                ##https://aimaster.tistory.com/83
                 scheduler_D.step()
             
         else:
@@ -259,6 +260,7 @@ def train_one_epoch(G: 'generator model',
             if (not args.discr_force) or (loss_adv_accumulated < 4.):
                 opt_D.step()
             if args.scheduler:
+                ##https://aimaster.tistory.com/83
                 scheduler_D.step()
             
         if args.mixed_precision == True:
@@ -486,7 +488,7 @@ def train(args, config):
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(train_dataset, shuffle=True))
     # valid_dataloader = DataLoader(validation_dataset, batch_size=config['batch_size, shuffle=False, drop_last=True)
     # valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
-    valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    valid_dataloader = DataLoader(validation_dataset, batch_size=args.val_batch_size, shuffle=True, drop_last=True)
     # print(next(iter(dataloader)))
     # print(next(iter(dataloader))[0])
     ##In case of multi GPU, turn off shuffle
@@ -688,6 +690,8 @@ def main(args):
         config.wandb_project = args.wandb_project
         
         config.batch_size = args.batch_size
+        config.val_batch_size = args.val_batch_size
+        
         config.lr_G = args.lr_G
         config.lr_D = args.lr_D
         config.max_epoch = args.max_epoch
@@ -698,10 +702,6 @@ def main(args):
 
         config.pretrained = args.pretrained
 
-
-        config.batch_size = args.batch_size
-        config.lr_G = args.lr_G
-        config.lr_D = args.lr_D
         
     elif not os.path.exists('./images'):
         os.mkdir('./images')
@@ -830,6 +830,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_entity', default='your-login', type=str)
     # training params you probably don't want to change
     parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--val_batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
