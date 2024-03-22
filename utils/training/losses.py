@@ -21,8 +21,10 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 
 
 
+# def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
+#                              diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
 def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
+                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -40,7 +42,8 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     #     Y_attr = G.module.ca_forward(Xt_f, Xs_f)
     
     # attr loss  ##Y_attr is the target multi scale attr
-    Y_attr = G.module.ca_forward(Xt_f, Xs_f, mixed_id_embedding)
+    # Y_attr = G.module.ca_forward(Xt_f, Xs_f, swapped_id_emb)
+    Y_attr = G.module.ca_forward(Xt_f, Xs_f)
     
     L_attr = 0
     for i in range(len(Xt_f_attrs)): 
@@ -101,6 +104,7 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         L_landmarks = 0
         
     if args.shape_loss:
+        pass
         L_shape = l1_loss(q_fuse, q_r)
     else:
         L_shape = 0

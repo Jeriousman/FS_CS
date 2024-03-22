@@ -145,9 +145,13 @@ def train_one_epoch(G: 'generator model',
                     all_landmarks = None
 
                     
+                # lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                #                                                                     eye_heatmaps, loss_adv_accumulated, 
+                #                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
         
                 
                 
@@ -306,7 +310,7 @@ def train_one_epoch(G: 'generator model',
                 print(f'GPU {config["local_rank"]} L_landmarks: {L_landmarks.item()} \n')
             if args.cycle_loss:
                 print(f'GPU {config["local_rank"]} L_cycle: {L_cycle.item()} \n')
-            if args.cycle_identity_loss:
+            # if args.cycle_identity_loss:
                 print(f'GPU {config["local_rank"]} L_cycle_identity: {L_cycle_identity.item()} \n')
             if args.contrastive_loss:
                 print(f'GPU {config["local_rank"]} L_contrastive: {L_contrastive.item()} \n')
@@ -327,7 +331,7 @@ def train_one_epoch(G: 'generator model',
                 wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
             if args.cycle_loss:
                 wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
-            if args.cycle_identity_loss:
+            # if args.cycle_identity_loss:
                 wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
             if args.contrastive_loss:
                 wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
@@ -844,11 +848,11 @@ if __name__ == "__main__":
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
-    parser.add_argument('--use_wandb', default=True, type=bool, help='Use wandb to track your experiments or not')
+    parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
     parser.add_argument('--wandb_id', default='123456', type=bool, help='unique IDs for wandb run')
     parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str, help='name of project. for example, faceswap_basemodel')
