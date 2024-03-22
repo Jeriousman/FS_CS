@@ -217,7 +217,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         return torch.tanh(output7), torch.tanh(src_z_attr7), torch.tanh(tgt_z_attr7)
 
 
-    def ca_forward(self, target, source, id_emb): ##cross attention forward
+    def ca_forward(self, target, source): ##cross attention forward
             '''
             src나 tgt나 다 똑같다.
             src_bottlneck_attr = 1024x4x4
@@ -276,7 +276,6 @@ class CrossUnetAttentionGenerator(nn.Module):
             ##1024x4x4 -> 1024x8x8 (output1)
             z_cross_attr0 = z_cross_attr0.reshape(batch_size, -1, width0, width0)  ## z_cross_attr0 becomes [B, 1024, 8, 8]
             output1 = self.deconv1(z_cross_attr0) ## 4 > 8  ##스킵커넥션없이 conv만 해서 키운것. output1 = [B, 1024, 8, 8]
-            output1 = self.AdaIN_layer1(output1, id_emb) if 1<= self.num_adain else output1
             ##1024x8x8 -> 512x16x16 (output2)
             
             ## z_cross_attr1 = [B, seq_len, dim] = (batch_size, 64, 1024)
@@ -285,19 +284,16 @@ class CrossUnetAttentionGenerator(nn.Module):
             z_cross_attr1 = z_cross_attr1.reshape(batch_size, -1, width1, width1)
             # print('reshaped z_cross_attr1:', z_cross_attr1.shape)
             output2 = self.deconv2(output1, z_cross_attr1) ## 8 > 16
-            output2 = self.AdaIN_layer2(output2, id_emb) if 1<= self.num_adain else output2
             # print('output2:', output2.shape)
             
             ##512x16x16 -> 256x32x32 (output3)
             z_cross_attr2 = z_cross_attr2.reshape(batch_size, -1, width2, width2)
             output3 = self.deconv3(output2, z_cross_attr2) ## 16 > 32
-            output3 = self.AdaIN_layer3(output3, id_emb) if 1<= self.num_adain else output3
             # print('output3:', output3.shape)
             
             ##256x32x32 -> 128x64x64 (output4)
             z_cross_attr3 = z_cross_attr3.reshape(batch_size, -1, width3, width3)
             output4 = self.deconv4(output3, z_cross_attr3) ## 32 > 64
-            output4 = self.AdaIN_layer4(output4, id_emb) if 1<= self.num_adain else output4
             # print('output4:', output4.shape)
             
             # ##128x64x64 -> 64x128x128 (output5)
@@ -308,13 +304,11 @@ class CrossUnetAttentionGenerator(nn.Module):
             ##128x64x64 -> 64x128x128 (output5)
             # z_cross_attr4 = z_cross_attr4.reshape(batch_size, -1, width4, width4)
             output5 = self.deconv5(output4) ## 64 > 128
-            output5 = self.AdaIN_layer5(output5, id_emb) if 1<= self.num_adain else output5
             # print('output5:', output5.shape)
             
             ##64x128x128 -> 32x256x256 (output6)
             # z_cross_attr5 = z_cross_attr5.reshape(batch_size, -1, width5, width5)
             output6 = self.deconv6(output5) ## 128 > 256
-            output6 = self.AdaIN_layer6(output6, id_emb) if 1<= self.num_adain else output6
             # print('output6:', output6.shape)
             
             

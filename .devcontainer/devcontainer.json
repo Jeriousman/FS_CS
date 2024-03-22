@@ -1,5 +1,5 @@
 {
-	"name": "multigpu",
+	"name": "Tory-Justin-Hojun-Trinity-multiGPUs",
 	"build": {
 		"dockerfile": "../tmp/Dockerfile",
 		"context": ".."
@@ -8,10 +8,10 @@
 	"runArgs": [
 		// GPU 사용을 위한 옵션(nvidia 관련 설정 필요)
 		"--gpus",
-		"\"device=4,5\"",
+		"\"device=4,5\"" ,
 		// 컨테이너의 이름을 짓는 옵션
 		"--name",
-		"multigpu",
+		"Tory-Justin-Hojun-Trinity-multiGPUs",
 		"-v",
 		"/IM_data/:/datasets/DOB",
 		"-v",
