@@ -114,7 +114,7 @@ def train_one_epoch(G: 'generator model',
                 swapped_id_emb = id_extractor.module.id_forward(swapped_face)
                 # swapped_id_emb = swapped_id_emb.to(args.device)
 
-                #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+                q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
 
 
                 # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
@@ -145,9 +145,9 @@ def train_one_epoch(G: 'generator model',
 
 
                 
-                lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
 
                 # discriminator training
                 opt_D.zero_grad()
@@ -295,17 +295,22 @@ def train_one_epoch(G: 'generator model',
         if iteration % 10 == 0:
             print(f'GPU {config["local_rank"]} epoch: {epoch}   current iteration: {iteration} / max iteration size: {len(train_dataloader)}')
             print(f'GPU {config["local_rank"]} lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
-            print(f'GPU {config["local_rank"]} L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
+            print(f'GPU {config["local_rank"]} L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()} \n')
             if args.eye_detector_loss:
-                print(f'GPU {config["local_rank"]} L_l2_eyes: {L_l2_eyes.item()}')
+                print(f'GPU {config["local_rank"]} L_l2_eyes: {L_l2_eyes.item()} \n')
             if args.landmark_detector_loss:
-                print(f'GPU {config["local_rank"]} L_landmarks: {L_landmarks.item()}')
+                print(f'GPU {config["local_rank"]} L_landmarks: {L_landmarks.item()} \n')
             if args.cycle_loss:
-                pass
+                print(f'GPU {config["local_rank"]} L_cycle: {L_cycle.item()} \n')
+            if args.cycle_identity_loss:
+                print(f'GPU {config["local_rank"]} L_cycle_identity: {L_cycle_identity.item()} \n')
             if args.contrastive_loss:
-                pass
+                print(f'GPU {config["local_rank"]} L_contrastive: {L_contrastive.item()} \n')
+            if args.unet_loss:
+                print(f'GPU {config["local_rank"]} L_source_unet: {L_source_unet.item()} \n')    
+                print(f'GPU {config["local_rank"]} L_target_unet: {L_target_unet.item()} \n')
             if args.shape_loss:
-                pass
+                print(f'GPU {config["local_rank"]} L_shape: {L_shape.item()} \n')
                 
             print(f'GPU {config["local_rank"]} loss_adv_accumulated: {loss_adv_accumulated} \n')
             if args.scheduler:
@@ -318,16 +323,19 @@ def train_one_epoch(G: 'generator model',
                 wandb.log({"loss_landmarks": L_landmarks.item()}, commit=False)
             if args.cycle_loss:
                 wandb.log({"loss_cycle": L_cycle.item()}, commit=False)
-            if args.cycle_loss:
+            if args.cycle_identity_loss:
                 wandb.log({"loss_cycle_identity": L_cycle_identity.item()}, commit=False)
             if args.contrastive_loss:
                 wandb.log({"loss_contrastive": L_contrastive.item()}, commit=False)
+            if args.unet_loss:
+                wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False) 
+                wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
             if args.shape_loss:
-                pass
+                wandb.log({"loss_shape": L_shape.item()}, commit=False)
 
             # 설정 필요하면 args에 true false 추가
-            wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
-            wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
+            # wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
+            # wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
             
                 # wandb.log({"loss_shape": L_shape.item()}, commit=False)
                 
@@ -341,8 +349,8 @@ def train_one_epoch(G: 'generator model',
                     #    "loss_cycle": L_cycle.item(),
                     #    "loss_cycle_identity": L_cycle_identity.item(),
                     #    "loss_contrastive": L_contrastive.item(),
-                    "loss_source_unet": L_source_unet.item(),
-                    "loss_target_unet": L_target_unet.item(),                       
+                    # "loss_source_unet": L_source_unet.item(),
+                    # "loss_target_unet": L_target_unet.item(),                       
                     #    "loss_landmarks": L_landmarks.item()
                     })
         
@@ -829,7 +837,9 @@ if __name__ == "__main__":
     parser.add_argument('--landmark_detector_loss', default=False, type=bool, help='If True landmark loss is applied to generator')
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
     parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    
     
     # info about this run
     parser.add_argument('--use_wandb', default=True, type=bool, help='Use wandb to track your experiments or not')

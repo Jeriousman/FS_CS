@@ -22,7 +22,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 
 
 def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, all_heatmaps, args):
+                             diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
     # adversarial loss
     L_adv = 0.
     for di in Di:
@@ -101,7 +101,7 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         L_landmarks = 0
         
     if args.shape_loss:
-        pass
+        L_shape = l1_loss(q_fuse, q_r)
         ## L1(Q_fuse, Q_r)
 
         
@@ -109,16 +109,16 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
     # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
     
     # test code
-    lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle
-    loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
+    # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle
+    # loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
 
     # hojun code
     # lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet+ args.weight_landmarks*L_landmarks
-    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_contrastive*L_contrastive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet + args.weight_landmarks*L_landmarks
+    lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_contrastive*L_contrastive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet + args.weight_landmarks*L_landmarks + args.weight_shape*L_shape
     # loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
     
     # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
-    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks
+    return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape
 
 
 
