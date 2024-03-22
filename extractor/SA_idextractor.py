@@ -11,7 +11,7 @@ sys.path.append('./extractor/')
 from deep3D.models.bfm import ParametricFaceModel
 
 class ShapeAwareIdentityExtractor(nn.Module):
-    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mixed_precision, mode = 'hififace', align = False):
+    def __init__(self, f_3d_checkpoint_path, f_id_checkpoint_path, mixed_precision, mode = 'hififace'):
         super(ShapeAwareIdentityExtractor, self).__init__()
         
         # self.device = torch.device(0)
@@ -29,7 +29,6 @@ class ShapeAwareIdentityExtractor(nn.Module):
         self.f_id.eval()
 
         self.face_model = ParametricFaceModel()
-        self.align = align
         
 
     @torch.no_grad()
@@ -41,26 +40,14 @@ class ShapeAwareIdentityExtractor(nn.Module):
         #source_img, lm_src = read_data(i_source, lm3d_std) 1) 256 -> 224 crop 2) align
         #source_img = source_img.to(self.device) 
         #print("source img shape : ", source_img.size())
-        
-        if self.align == True:
-            
-            source_img, lm_src = read_data(i_source, lm3d_std) # 1) 256 -> 224 crop 2) align
-            #source_img = source_img.to(self.device) 
-
-            target_img, lm_src = read_data(i_target, lm3d_std)
-            #target_img = target_img.to(self.device)
-
-        else:
-
-            source_img = F.interpolate(i_source, size=224, mode='bilinear') # Instead of alinging & cropping, simply resize assuming input images are well cropped
+        source_img = F.interpolate(i_source, size=224, mode='bilinear') # Instead of alinging & cropping, simply resize assuming input images are well cropped
                                                                         # 1) Align 과정에서 쓰는 landmark를 98개 쓰는 것으로 대체 -> 당장은 어려워보임
                                                                         # 2) foreground만 input으로 넣기 -> deep3d값 잘 나오는진 호준님거랑 싱크 맞추고 테스트해야할듯
-            target_img = F.interpolate(i_target, size=224, mode='bilinear')
         
         # for testing
         tensor_to_pil = transforms.ToPILImage()
         im = tensor_to_pil(source_img[0]).convert('RGB')
-        # im.save("/workspace/images/resized.jpg")
+        im.save("/workspace/images/resized.jpg")
 
 
         c_s = self.f_3d(source_img)#.to(self.device))
@@ -68,7 +55,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
 
         #target_img, lm_src = read_data(i_target, lm3d_std)
         #target_img = target_img.to(self.device)
-
+        target_img = F.interpolate(i_target, size=224, mode='bilinear')
         c_t = self.f_3d(target_img)#.to(self.device))
 
         c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)
@@ -162,11 +149,9 @@ class ShapeAwareIdentityExtractor(nn.Module):
         target_img = F.interpolate(i_target, size=224, mode='bilinear')
         c_t = self.f_3d(target_img)#.to(self.device))
 
-        #target_img = F.interpolate(i_swapped, size=224, mode='bilinear')
-
         #swapped_img, lm_swapped = read_data(i_swapped, lm3d_std)
-        i_swapped = i_swapped.to(self.device)
-        c_r = self.f_3d(F.interpolate(i_swapped, size=224, mode='bilinear')) # 이렇게 그냥 input으로 들어오는 hojun님으로부터 1차로 crop된 image의 foreground를 resize만 해서 바로 넣어봤을 때 어떨지 테스트해봐야함.
+        #swapped_img = swapped_img.to(self.device)
+        #c_r = self.f_3d(F.interpolate(swapped_img, size=224, mode='bilinear')) # 이렇게 그냥 input으로 들어오는 hojun님으로부터 1차로 crop된 image의 foreground를 resize만 해서 바로 넣어봤을 때 어떨지 테스트해봐야함.
         
         #c_r = self.f_3d(swapped_img) #test를 위해서 잠시 꺼놓기
 
@@ -186,10 +171,10 @@ class ShapeAwareIdentityExtractor(nn.Module):
         with torch.no_grad():
             c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)#.to(self.device)
             _, _, _, q_fuse = self.face_model.compute_for_render(c_fuse)
-        _, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
+        #_, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
 
-        return q_fuse, q_r
-        #return q_fuse, q_fuse
+        #return q_fuse, q_r
+        return q_fuse, q_fuse
 
     # @torch.no_grad()
     # def forward(self, i_source, i_target):
