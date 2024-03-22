@@ -102,6 +102,8 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         
     if args.shape_loss:
         L_shape = l1_loss(q_fuse, q_r)
+    else:
+        L_shape = 0
         ## L1(Q_fuse, Q_r)
 
         

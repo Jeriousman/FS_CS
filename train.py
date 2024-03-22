@@ -113,9 +113,10 @@ def train_one_epoch(G: 'generator model',
                 ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
                 swapped_id_emb = id_extractor.module.id_forward(swapped_face)
                 # swapped_id_emb = swapped_id_emb.to(args.device)
-
-                q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
-
+                if args.shape_loss:
+                    q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+                else:
+                    q_fuse, q_r = 0, 0
 
                 # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
                 # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
@@ -142,13 +143,12 @@ def train_one_epoch(G: 'generator model',
                     all_landmarks = None
 
 
-
-
-                
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
                                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
-
+        
+                
+                
                 # discriminator training
                 opt_D.zero_grad()
                 lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
@@ -189,8 +189,10 @@ def train_one_epoch(G: 'generator model',
             swapped_id_emb = id_extractor.module.id_forward(swapped_face)
             # swapped_id_emb = swapped_id_emb.to(args.device)
 
-            #q_fuse, q_r = id_extractor.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
-
+            if args.shape_loss:
+                q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+            else:
+                q_fuse, q_r = 0, 0
 
             # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
             # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
@@ -220,9 +222,9 @@ def train_one_epoch(G: 'generator model',
 
 
             
-            lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
-                                                                                eye_heatmaps, loss_adv_accumulated, 
-                                                                                diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, all_landmark_heatmaps, args)
+            lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
+                                                                                    eye_heatmaps, loss_adv_accumulated, 
+                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
 
             # discriminator training
             opt_D.zero_grad()
@@ -806,6 +808,8 @@ if __name__ == "__main__":
     parser.add_argument('--weight_source_unet', default=2., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
     parser.add_argument('--weight_target_unet', default=2., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
     parser.add_argument('--weight_landmarks', default=3., type=float, help='Landmark Loss weight for generator')
+    parser.add_argument('--weight_shape', default=3., type=float, help='Shape Loss weight for generator')
+    
     
 
     
@@ -838,7 +842,7 @@ if __name__ == "__main__":
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
@@ -848,7 +852,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_project', default='your-project-name', type=str, help='name of project. for example, faceswap_basemodel')
     parser.add_argument('--wandb_entity', default='your-login', type=str, help='name of team in wandb. ours is dob_faceswapteam')
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=10, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
     parser.add_argument('--val_batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)

@@ -29,7 +29,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
         self.f_id.eval()
 
         self.face_model = ParametricFaceModel()
-
+        
 
     @torch.no_grad()
     def forward(self, i_source, i_target):
