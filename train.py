@@ -247,7 +247,7 @@ def train_one_epoch(G: 'generator model',
         else:
             lossG.backward()
             opt_G.step()
-            if args.scheduler:
+            if args.scheduler: 
                 scheduler_G.step()
                 
         if args.mixed_precision:
@@ -409,7 +409,7 @@ def train(args, config):
     ## initializing id extractor model
     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
     f_id_path = "/datasets/pretrained/backbone.pth"
-    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.mixed_precision, args.id_mode).to(args.device)
+    id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.mixed_precision, args.id_mode, args.deep3d_align).to(args.device)
     id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     id_extractor.eval()
 
@@ -823,7 +823,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
     parser.add_argument('--num_adain', default=6, type=int, help='Numbers of AdaIN_ResBlocks') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
     parser.add_argument('--id_mode', default='arcface', type=str, help='Mode change is possible between 1) arcface 2) hififace') # 1부터 6까지. AdaIN_Resblock을 시작점으로부터 N개 사용한다는 의미
-    
+    parser.add_argument('--deep3d_align', default=False, type=bool, help='Whether to use align_img method in deep3d or not') 
     parser.add_argument('--seq_len', default=196, type=int, help='sequence length = height*width, number of patches of ViT. It would normally be H*W = 196 or 256')
     parser.add_argument('--n_head', default=2, type=int, help='number of multi attention head')
     parser.add_argument('--total_embed_dim', default=512, type=int, help="Full query dim (and query's value dimension) before dividing by num head ")
@@ -848,7 +848,7 @@ if __name__ == "__main__":
     
     
     # info about this run
-    parser.add_argument('--use_wandb', default=True, type=bool, help='Use wandb to track your experiments or not')
+    parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
     parser.add_argument('--wandb_id', default='123456', type=bool, help='unique IDs for wandb run')
     parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str, help='name of project. for example, faceswap_basemodel')
