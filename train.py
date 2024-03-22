@@ -21,8 +21,8 @@ import torchvision.transforms as transforms
 import torch.optim.lr_scheduler as scheduler
 
 ## custom imports
-sys.path.append('./apex/')
-from apex import amp
+# sys.path.append('./apex/')
+# from apex import amp
 
 from network.CrossU import CrossUnetAttentionGenerator, UNet
 from extractor.SA_idextractor import ShapeAwareIdentityExtractor
@@ -272,14 +272,18 @@ def train_one_epoch(G: 'generator model',
         '''
         Here onwards, we must (maybe) convert amp mixed precision tensors in autocast region manually if we want to use them in float32 format
         '''
-        
+        # print('Xt_f data type: ', Xt_f.dtype)
+        # print('swapped_face data type: ', Xt_f.dtype)
+        # print(f'lossD: {lossD.item()}')
         
         batch_time = time.time() - start_time
-
+        
         if iteration % args.show_step == 0:
             images = [Xs_f, Xt_f, swapped_face]
             if args.eye_detector_loss:
                 Xt_f_eyes_img = paint_eyes(Xt_f, Xt_f_eyes)
+                # print(f'eyes: ', {Xt_f_eyes.shape})
+                # break
                 Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
                 images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
             image = make_image_list(images)
@@ -289,7 +293,7 @@ def train_one_epoch(G: 'generator model',
                 cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
         
         if iteration % 10 == 0:
-            print(f'GPU {config["local_rank"]} epoch: {epoch}    {iteration} / {len(train_dataloader)}')
+            print(f'GPU {config["local_rank"]} epoch: {epoch}   current iteration: {iteration} / max iteration size: {len(train_dataloader)}')
             print(f'GPU {config["local_rank"]} lossD: {lossD.item()}    lossG: {lossG.item()} batch_time: {batch_time}s')
             print(f'GPU {config["local_rank"]} L_adv: {L_adv.item()} L_id: {L_id.item()} L_attr: {L_attr.item()} L_rec: {L_rec.item()}')
             if args.eye_detector_loss:
@@ -378,8 +382,8 @@ def train(args, config):
     ##Multi GPU setting
     assert torch.cuda.is_available(), "Training on CPU is not supported as Multi-GPU strategy is set"
     device = args.device
-    print(f"GPU {config['local_rank']} is using device: {args.device}")
-    print(f"GPU {config['local_rank']} is loading dataset")
+    print(f"[GPU {config['local_rank']}] is using device: {args.device}")
+    print(f"[GPU {config['local_rank']}] is loading dataset")
 
     # training params
     batch_size = args.batch_size
@@ -465,9 +469,9 @@ def train(args, config):
             # D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device(config['local_rank'])), strict=False)
             G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')), strict=False)
             D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device('cpu')), strict=False)
-            print("Loaded pretrained weights for G and D")
+            print(f'[GPU {config["local_rank"]}]: Loaded pretrained weights for G and D')
         except FileNotFoundError as e:
-            print("Not found pretrained weights. Continue without any pretrained weights.")
+            print(f'[GPU {config["local_rank"]}]: Not found pretrained weights. Continue without any pretrained weights.')
     
     # if config['vgg:
     
@@ -483,8 +487,8 @@ def train(args, config):
     
     train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
 
-    print(f"Training Data Size : {len(train_dataset)}")
-    print(f"Validation Data Size : {len(validation_dataset)}")
+    print(f'[GPU {config["local_rank"]}]: Training Data Size : {len(train_dataset)}')
+    print(f'[GPU {config["local_rank"]}]: Validation Data Size : {len(validation_dataset)}')
     
     # dataloader = DataLoader(dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
 
@@ -647,64 +651,64 @@ def main(args):
                    settings=wandb.Settings(start_method='fork'),
                 #    id=args.wandb_id,
                    resume='allow')
-        config = wandb.config
+        configs = wandb.config
         # config.vgg_data_path = config['vgg_data_path
-        config.ffhq_data_path = args.ffhq_data_path
+        configs.ffhq_data_path = args.ffhq_data_path
         # config.celeba_data_path = config['celeba_data_path
         # config.dob_data_path = config['dob_data_path
-        config.train_ratio = args.train_ratio
-        config.G_path = args.G_path
-        config.D_path = args.D_path
+        configs.train_ratio = args.train_ratio
+        configs.G_path = args.G_path
+        configs.D_path = args.D_path
 
-        config.weight_adv = args.weight_adv
-        config.weight_attr = args.weight_attr
-        config.weight_id = args.weight_id
-        config.weight_rec = args.weight_rec
-        config.weight_eyes = args.weight_eyes
-        config.weight_cycle = args.weight_cycle
-        config.weight_cycle_identity = args.weight_cycle_identity
-        config.weight_contrastive = args.weight_contrastive
-        config.weight_source_unet = args.weight_source_unet
-        config.weight_target_unet = args.weight_target_unet
-        config.weight_landmarks = args.weight_landmarks
-        config.backbone = args.backbone
-        config.num_blocks = args.num_blocks
-        config.num_adain = args.num_adain
-        config.id_mode = args.id_mode
-        config.seq_len = args.seq_len
-        config.n_head = args.n_head
-        config.total_embed_dim = args.total_embed_dim
-        config.q_dim = args.q_dim
-        config.k_dim = args.k_dim
-        config.kv_dim = args.kv_dim
-        config.same_person = args.same_person
-        config.same_identity = args.same_identity
-        config.diff_eq_same = args.diff_eq_same
-        config.discr_force = args.discr_force
-        config.scheduler = args.scheduler
-        config.scheduler_step = args.scheduler_step
-        config.scheduler_gamma = args.scheduler_gamma
-        config.eye_detector_loss = args.eye_detector_loss
-        config.landmark_detector_loss = args.landmark_detector_loss
-        config.cycle_loss = args.cycle_loss
-        config.contrastive_loss = args.contrastive_loss
-        config.shape_loss = args.shape_loss
-        config.wandb_id = args.wandb_id
-        config.run_name = args.run_name
-        config.wandb_project = args.wandb_project
+        configs.weight_adv = args.weight_adv
+        configs.weight_attr = args.weight_attr
+        configs.weight_id = args.weight_id
+        configs.weight_rec = args.weight_rec
+        configs.weight_eyes = args.weight_eyes
+        configs.weight_cycle = args.weight_cycle
+        configs.weight_cycle_identity = args.weight_cycle_identity
+        configs.weight_contrastive = args.weight_contrastive
+        configs.weight_source_unet = args.weight_source_unet
+        configs.weight_target_unet = args.weight_target_unet
+        configs.weight_landmarks = args.weight_landmarks
+        configs.backbone = args.backbone
+        configs.num_blocks = args.num_blocks
+        configs.num_adain = args.num_adain
+        configs.id_mode = args.id_mode
+        configs.seq_len = args.seq_len
+        configs.n_head = args.n_head
+        configs.total_embed_dim = args.total_embed_dim
+        configs.q_dim = args.q_dim
+        configs.k_dim = args.k_dim
+        configs.kv_dim = args.kv_dim
+        configs.same_person = args.same_person
+        configs.same_identity = args.same_identity
+        configs.diff_eq_same = args.diff_eq_same
+        configs.discr_force = args.discr_force
+        configs.scheduler = args.scheduler
+        configs.scheduler_step = args.scheduler_step
+        configs.scheduler_gamma = args.scheduler_gamma
+        configs.eye_detector_loss = args.eye_detector_loss
+        configs.landmark_detector_loss = args.landmark_detector_loss
+        configs.cycle_loss = args.cycle_loss
+        configs.contrastive_loss = args.contrastive_loss
+        configs.shape_loss = args.shape_loss
+        configs.wandb_id = args.wandb_id
+        configs.run_name = args.run_name
+        configs.wandb_project = args.wandb_project
         
-        config.batch_size = args.batch_size
-        config.val_batch_size = args.val_batch_size
+        configs.batch_size = args.batch_size
+        configs.val_batch_size = args.val_batch_size
         
-        config.lr_G = args.lr_G
-        config.lr_D = args.lr_D
-        config.max_epoch = args.max_epoch
-        config.show_step = args.show_step
-        config.save_epoch = args.save_epoch
-        config.mixed_precision = args.mixed_precision
-        config.device = args.device
+        configs.lr_G = args.lr_G
+        configs.lr_D = args.lr_D
+        configs.max_epoch = args.max_epoch
+        configs.show_step = args.show_step
+        configs.save_epoch = args.save_epoch
+        configs.mixed_precision = args.mixed_precision
+        configs.device = args.device
 
-        config.pretrained = args.pretrained
+        configs.pretrained = args.pretrained
 
         
     elif not os.path.exists('./images'):
@@ -712,20 +716,21 @@ def main(args):
 
         
     # Setup distributed training
-    print('Setting up distributed training..')
+    print(f'[GPU {config["local_rank"]}]: Setting up distributed training..')
     
     init_process_group(backend='nccl', timeout=datetime.timedelta(seconds=5400))
-    print('initiating distributed process with nccl')
-    torch.cuda.set_device(config['local_rank'])  
-    print('setting device with cuda in local rank')
+    print(f'[GPU {config["local_rank"]}]: initiating distributed process with nccl')
     
-    print("Starting training")\
+    torch.cuda.set_device(config['local_rank'])  
+    print(f'[GPU {config["local_rank"]}]: setting device with cuda in local rank')
+    
+    print(f'[GPU {config["local_rank"]}]: Starting training')\
     # train(args, device=device)
     train(args, config)
     
     # Clean up distributed training
     destroy_process_group()
-    print('destroyed distributed process after training')
+    print(f'[GPU {config["local_rank"]}]: destroyed distributed process after training')
     # config = dict()
     # config['local_rank'] = int(os.environ(['LOCAL_RANK']))
     # config['global_rank'] = int(os.environ(['RANK']))
@@ -782,7 +787,7 @@ if __name__ == "__main__":
 
     
     # weights for loss
-    parser.add_argument('--weight_adv', default=8, type=float, help='Adversarial Loss weight')
+    parser.add_argument('--weight_adv', default=1, type=float, help='Adversarial Loss weight')
     parser.add_argument('--weight_attr', default=10, type=float, help='Attributes weight')
     parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
@@ -822,25 +827,25 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
     parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--landmark_detector_loss', default=False, type=bool, help='If True landmark loss is applied to generator')
-    parser.add_argument('--cycle_loss', default=False, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
-    parser.add_argument('--contrastive_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
+    parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
     
     # info about this run
-    parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
+    parser.add_argument('--use_wandb', default=True, type=bool, help='Use wandb to track your experiments or not')
     parser.add_argument('--wandb_id', default='123456', type=bool, help='unique IDs for wandb run')
     parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
-    parser.add_argument('--wandb_project', default='your-project-name', type=str)
-    parser.add_argument('--wandb_entity', default='your-login', type=str)
+    parser.add_argument('--wandb_project', default='your-project-name', type=str, help='name of project. for example, faceswap_basemodel')
+    parser.add_argument('--wandb_entity', default='your-login', type=str, help='name of team in wandb. ours is dob_faceswapteam')
     # training params you probably don't want to change
-    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--batch_size', default=10, type=int)
     parser.add_argument('--val_batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
-    parser.add_argument('--show_step', default=100, type=int)
+    parser.add_argument('--show_step', default=2, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--mixed_precision', default=True, type=bool)
+    parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()

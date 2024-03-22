@@ -45,4 +45,19 @@ def paint_eyes(images, eyes):
 
 
 
+# def paint_landmarks(images, landmarks):
+#     list_eyes = []
+#     for i in range(len(images)):
+#         mask = torch2image(images[i])
+#         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB) 
+        
+#         cv2.circle(mask, (int(eyes[i][0]),int(eyes[i][1])), radius=1, color=(0,255,255), thickness=-1)Xt_f_landmarks
+#         cv2.circle(mask, (int(eyes[i][2]),int(eyes[i][3])), radius=1, color=(0,255,255), thickness=-1)swapped_face_landmarks
+        
+#         mask = mask[:, :, ::-1]
+#         mask = transforms_base(Image.fromarray(mask))
+#         list_eyes.append(mask)
+#     tensor_eyes = torch.stack(list_eyes)
+#     return tensor_eyes
+
 
