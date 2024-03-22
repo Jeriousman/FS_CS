@@ -93,7 +93,7 @@ def train_one_epoch(G: 'generator model',
                 realtime_batch_size = Xt_f.shape[0] 
 
                 # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
-                id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+                mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
                 diff_person = torch.ones_like(same_person)
 
@@ -103,7 +103,7 @@ def train_one_epoch(G: 'generator model',
 
                 # generator training
                 opt_G.zero_grad() ##축적된 gradients를 비워준다
-                swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
+                swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, mixed_id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
                 Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
                 # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
@@ -147,7 +147,7 @@ def train_one_epoch(G: 'generator model',
                     
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
         
                 
                 

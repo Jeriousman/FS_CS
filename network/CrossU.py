@@ -217,7 +217,7 @@ class CrossUnetAttentionGenerator(nn.Module):
         return torch.tanh(output7), torch.tanh(src_z_attr7), torch.tanh(tgt_z_attr7)
 
 
-    def ca_forward(self, target, source): ##cross attention forward
+    def ca_forward(self, target, source, mixed_id_embedding): ##cross attention forward
             '''
             src나 tgt나 다 똑같다.
             src_bottlneck_attr = 1024x4x4
