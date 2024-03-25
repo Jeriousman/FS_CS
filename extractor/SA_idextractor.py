@@ -29,7 +29,6 @@ class ShapeAwareIdentityExtractor(nn.Module):
         self.f_id.eval()
 
         self.face_model = ParametricFaceModel()
-        
 
     @torch.no_grad()
     def forward(self, i_source, i_target):
@@ -142,7 +141,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
 
         c_r = self.f_3d(F.interpolate(i_swapped, size=224, mode='bilinear')) # 이렇게 그냥 input으로 들어오는 hojun님으로부터 1차로 crop된 image의 foreground를 resize만 해서 바로 넣어봤을 때 어떨지 테스트해봐야함.
 
-
+        #print("reach here?")
         '''
         (B, 257)
         80 # id layer
@@ -156,10 +155,13 @@ class ShapeAwareIdentityExtractor(nn.Module):
 
         with torch.no_grad():
             c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)#.to(self.device)
-            print(f"c_fuse device : {c_fuse.device}")
-            _, _, _, q_fuse = self.face_model.compute_for_render(c_fuse)
-        _, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
+            #print(f"c_fuse device : {c_fuse.device}")
+            _, _, _, q_fuse = self.face_model.compute_for_render(c_fuse.cpu())
+            #print("reach here??")
+        _, _, _, q_r = self.face_model.compute_for_render(c_r.cpu()) #test를 위해서 잠시 꺼놓기
 
+        #print("q_fuse : ", q_fuse.shape)
+        #print("q_r : ", q_r.shape)
         return q_fuse, q_r
         #return q_fuse, q_fuse
 
