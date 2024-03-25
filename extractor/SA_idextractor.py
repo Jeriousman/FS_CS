@@ -66,8 +66,6 @@ class ShapeAwareIdentityExtractor(nn.Module):
         v_sid = torch.cat((c_fuse, v_id_source), dim=1)
 
 
-
-
         if self.mode == 'hififace': 
             '''
             return :
@@ -132,30 +130,18 @@ class ShapeAwareIdentityExtractor(nn.Module):
     
     @torch.no_grad()
     def shapeloss_forward(self, i_source, i_target, i_swapped): # shapeloss score를 계산하기 위한 method. 실제 shape_loss function에서도 이 method를 이용한다.
-                                            # i_source, i_target, i_swapped이 형태?가 같아야 한다. tensor상태이던 image 상태이던.
-
-        #if self.mode == 'arcface': # arcface mode라는 것은 아직 epoch이 2보다 작다는 뜻 -> shape loss 사용 안함
-        #    return torch.zeros(2, 68, 2).to(self.device), torch.zeros(2, 68, 2).to(self.device)
 
         lm3d_std = load_lm3d("./deep3D/BFM") 
 
-        #source_img, lm_src = read_data(i_source, lm3d_std)
-        #source_img = source_img.to(self.device) 
+
         source_img = F.interpolate(i_source, size=224, mode='bilinear')
         c_s = self.f_3d(source_img)#.to(self.device))
 
-        #target_img, lm_tgt = read_data(i_target, lm3d_std)
-        #target_img = target_img.to(self.device)
         target_img = F.interpolate(i_target, size=224, mode='bilinear')
         c_t = self.f_3d(target_img)#.to(self.device))
 
-        #swapped_img, lm_swapped = read_data(i_swapped, lm3d_std)
-        #swapped_img = swapped_img.to(self.device)
-        #c_r = self.f_3d(F.interpolate(swapped_img, size=224, mode='bilinear')) # 이렇게 그냥 input으로 들어오는 hojun님으로부터 1차로 crop된 image의 foreground를 resize만 해서 바로 넣어봤을 때 어떨지 테스트해봐야함.
-        
-        #c_r = self.f_3d(swapped_img) #test를 위해서 잠시 꺼놓기
+        c_r = self.f_3d(F.interpolate(i_swapped, size=224, mode='bilinear')) # 이렇게 그냥 input으로 들어오는 hojun님으로부터 1차로 crop된 image의 foreground를 resize만 해서 바로 넣어봤을 때 어떨지 테스트해봐야함.
 
-        #c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)
 
         '''
         (B, 257)
@@ -170,11 +156,12 @@ class ShapeAwareIdentityExtractor(nn.Module):
 
         with torch.no_grad():
             c_fuse = torch.cat((c_s[:, :80], c_t[:, 80:]), dim=1)#.to(self.device)
+            print(f"c_fuse device : {c_fuse.device}")
             _, _, _, q_fuse = self.face_model.compute_for_render(c_fuse)
-        #_, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
+        _, _, _, q_r = self.face_model.compute_for_render(c_r) #test를 위해서 잠시 꺼놓기
 
-        #return q_fuse, q_r
-        return q_fuse, q_fuse
+        return q_fuse, q_r
+        #return q_fuse, q_fuse
 
     # @torch.no_grad()
     # def forward(self, i_source, i_target):

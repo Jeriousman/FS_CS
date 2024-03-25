@@ -300,6 +300,8 @@ class ParametricFaceModel:
         #print("coeff type ", type(coeffs))
         coef_dict = self.split_coeff(coeffs)
         #print(f"coeff id and exp type : {type(coef_dict['id'])} {type(coef_dict['exp'])}")
+        
+
         face_shape = self.compute_shape(coef_dict['id'], coef_dict['exp'])
         #print(f"angle type : {type(coef_dict['angle'])}")
         rotation = self.compute_rotation(coef_dict['angle'].cpu())

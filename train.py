@@ -144,7 +144,7 @@ def train_one_epoch(G: 'generator model',
                 #                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, mixed_id_embedding, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
         
                 lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
                 # discriminator training
@@ -165,7 +165,7 @@ def train_one_epoch(G: 'generator model',
 
             # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
 
-            id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+            mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
             diff_person = torch.ones_like(same_person)
 
@@ -175,7 +175,7 @@ def train_one_epoch(G: 'generator model',
             # generator training
             opt_G.zero_grad() ##축적된 gradients를 비워준다
 
-            swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
+            swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, mixed_id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
             Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
             # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
@@ -213,7 +213,7 @@ def train_one_epoch(G: 'generator model',
 
             lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, mixed_id_embedding, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
             # discriminator training
             opt_D.zero_grad()
             lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
@@ -830,7 +830,7 @@ if __name__ == "__main__":
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
@@ -847,7 +847,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=2, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--mixed_precision', default=True, type=bool)
+    parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()
