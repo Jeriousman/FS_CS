@@ -21,7 +21,7 @@ class ShapeAwareIdentityExtractor(nn.Module):
         # self.f_3d = self.f_3d.to(self.device)
         self.f_3d.eval()
         if self.mixed_precision:  
-            self.f_id = iresnet100(pretrained=False, fp16=True)
+            self.f_id = iresnet100(pretrained=False, fp16=False)
         else:
             self.f_id = iresnet100(pretrained=False, fp16=False)
                 

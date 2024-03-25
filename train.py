@@ -70,52 +70,48 @@ def train_one_epoch(G: 'generator model',
     # id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     # #print(id_extractor)
     if args.mixed_precision:
-        scaler = torch.cuda.amp.GradScaler()
+        scaler = torch.cuda.amp.GradScaler(enabled=False)
         
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         
         if args.mixed_precision:
-            with torch.autocast(device_type='cuda', dtype=torch.float16):
-            
-                
+            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=True): ##input data는 일단 그대로 flaot32이지만 input이 계산될때 + output은 float16이된다
+                           
                 id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
 
                 id_ext_src_input = id_ext_src_input.to(args.device)
                 id_ext_tgt_input = id_ext_tgt_input.to(args.device)
-                
                 Xs_f = Xs_f.to(args.device)
                 # Xs.shape
                 Xt_f = Xt_f.to(args.device)
                 # Xt.shape
                 same_person = same_person.to(args.device)
                 realtime_batch_size = Xt_f.shape[0] 
-
+                with torch.autocast(device_type="cuda", enabled=False):
                 # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
-                mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
+                    mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input.float(), id_ext_tgt_input.float()) ## id_embedding = [B, 769]
+                    # print('mixed_id_embedding', mixed_id_embedding.dtype) ##mixed_id_embedding is float32 bcuz of enabled=False and id_ext_src_input.float()..
 
                 diff_person = torch.ones_like(same_person)
-
+                
                 if args.diff_eq_same:
                     same_person = diff_person
-
 
                 # generator training
                 opt_G.zero_grad() ##축적된 gradients를 비워준다
                 swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, mixed_id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
                 Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
                 # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
+                # print('recon_f_src', recon_f_src.dtype)  ## recon_f_src is still float16 because we are using autocast
+                with torch.autocast(device_type="cuda", enabled=False):
+                    ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
+                    swapped_id_emb = id_extractor.module.id_forward(swapped_face.float())
 
-                # print(swapped_face.dtype)
-                # print(Xt_f_attrs[0].dtype)
-
-                ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
-                swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-                # swapped_id_emb = swapped_id_emb.to(args.device)
-                
                 if args.shape_loss:
-                    q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
+                    with torch.autocast(device_type="cuda", enabled=False):
+                        q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input.float(), id_ext_tgt_input.float(), swapped_face.float())  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
                 else:
                     pass
                     q_fuse, q_r = 0, 0
@@ -123,10 +119,9 @@ def train_one_epoch(G: 'generator model',
                 # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
                 # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
                 # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-                
+
                 Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
                 
-
                 if args.eye_detector_loss:
                     Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
                     swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
@@ -143,19 +138,14 @@ def train_one_epoch(G: 'generator model',
                 else:
                     all_landmark_heatmaps = None
                     all_landmarks = None
-
                     
                 # lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                 #                                                                     eye_heatmaps, loss_adv_accumulated, 
                 #                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
-                
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
                                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
         
-                
-                
-
                 lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
                 # discriminator training
                 opt_D.zero_grad()
@@ -182,14 +172,12 @@ def train_one_epoch(G: 'generator model',
             if args.diff_eq_same:
                 same_person = diff_person
 
-
             # generator training
             opt_G.zero_grad() ##축적된 gradients를 비워준다
 
             swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
             Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
             # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-
 
             ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
             swapped_id_emb = id_extractor.module.id_forward(swapped_face)
@@ -203,10 +191,8 @@ def train_one_epoch(G: 'generator model',
             # Y, recon_f_src, recon_f_tgt = G(Xt, Xs, id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다. MAE의 경우 Xt_embed, Xs_embed를 넣으면 될 것 같다 (same latent space)
             # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
             # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-            
             Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
             
-
             if args.eye_detector_loss:
                 Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
                 swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
@@ -225,13 +211,9 @@ def train_one_epoch(G: 'generator model',
                 all_landmarks = None
 
 
-
-
-            
             lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
                                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
-
             # discriminator training
             opt_D.zero_grad()
             lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
@@ -865,7 +847,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=2, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--mixed_precision', default=False, type=bool)
+    parser.add_argument('--mixed_precision', default=True, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()
