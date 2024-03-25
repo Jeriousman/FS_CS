@@ -847,7 +847,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=2, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
-    parser.add_argument('--mixed_precision', default=True, type=bool)
+    parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
     args = parser.parse_args()
