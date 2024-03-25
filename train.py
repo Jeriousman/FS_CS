@@ -830,7 +830,7 @@ if __name__ == "__main__":
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
