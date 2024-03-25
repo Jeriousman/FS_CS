@@ -144,7 +144,7 @@ def train_one_epoch(G: 'generator model',
                 #                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
-                                                                                    diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
+                                                                                    diff_person, same_person, mixed_id_embedding, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
         
                 lossD = compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_f_src, recon_f_tgt, diff_person, args.device)
                 # discriminator training
