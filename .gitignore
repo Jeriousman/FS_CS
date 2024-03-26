@@ -24,3 +24,5 @@ current_model*
 saved_models*
 wandb*
 wandb/
+deep3D/BFM/*
+deep3D/BFM/

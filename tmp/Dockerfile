@@ -40,7 +40,9 @@ RUN pip3 install --no-cache-dir -Iv \
     ##from here it is for MAE environment
     timm==0.4.12 matplotlib info-nce-pytorch \
     # retinaface_pytorch face-alignment
-    face-alignment
+    face-alignment\
+    # dlib for metrics
+    dlib
 
 # RUN pip uninstall -y torch torchvision
 
