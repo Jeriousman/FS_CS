@@ -26,3 +26,4 @@ wandb*
 wandb/
 deep3D/BFM/*
 deep3D/BFM/
+images/*
