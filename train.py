@@ -4,7 +4,6 @@ import time
 import cv2
 import wandb
 from PIL import Image
-import metric
 import os
 
 #For Native Torch multi GPUs
@@ -529,6 +528,7 @@ def train(args, config):
                         epoch,
                         loss_adv_accumulated,
                         config)
+        
 
     if config['global_rank'] == 0:        
         
@@ -576,44 +576,35 @@ def train(args, config):
                     
                 val_swapped_face, val_recon_f_src, val_recon_f_tgt = G.module.forward(val_Xt_f, val_Xs_f, val_id_embedding)
                 
-                pose_value, fid_value, id_value, expression_value = 0, 0, 0, 0
-                metrics_processors = []
-                if args.metrics_pose:
-                    metrics_processors.append("POSE")
-                if args.metrics_fid:
-                    metrics_processors.append("FID")
-                if args.metrics_id:
-                    metrics_processors.append("ID")
-                if args.metrics_expression:
-                    metrics_processors.append("EXPRESSION")
-
-                result = metric.run(val_Xs_f, val_Xt_f, val_swapped_face, metrics_processors)
-                # result = metric.run(val_Xs_f, val_Xt_f, val_Xt_f, metrics_processors)
-                print("metrics result : ", result)
-                if args.metrics_pose:
-                    pose_value = result["metrics.POSE"]
-                if args.metrics_fid:
-                    fid_value = result["metrics.FID"]
-                if args.metrics_id:
-                    id_value = result["metrics.ID"]
-                if args.metrics_expression:
-                    expression_value = result["metrics.EXPRESSION"]
+                ## calculate the 4 metrics
+                
+                ## pose_value = POSE(val_swapped_face, val_Xt)
+                ## id_value = ID(val_swapped_face)
+                ## fid_value = FID(val_swapped_face)
+                ## expression_value = EXPRESSION(val_swapped_face)
                 
                 
                 
-                # running_vloss += vloss
-                running_pose_metric += pose_value
-                running_id_metric += id_value
-                running_fid_metric += fid_value
-                running_expression_metric += expression_value
-
-
-                if args.use_wandb and config['global_rank'] == 0:
-                                    
+                ## probably losses dont need to be calculated
+                # voutputs = model(vinputs)
+                # vloss = loss_fn(val_swapped_face)
+                if config['global_rank'] == 0:
+                
+                    # running_vloss += vloss
+                    running_pose_metric += pose_value
+                    running_id_metric += id_value
+                    running_fid_metric += fid_value
+                    running_expression_metric += expression_value
+                        
+                    
                     wandb.log({"running_pose_metric": running_pose_metric, "running_id_metric": running_id_metric, "running_fid_metric": running_fid_metric}, commit=False)
                     if args.landmark_detector_loss:
                         wandb.log({"running_expression_metric": running_expression_metric}, commit=False)
                         
+                    ## logging and checking validation images generated swapped faces    
+                    # if (i % 50 == 0):
+                        # wandb.log({"Val Generated Images" : wandb.Image()})
+                        # wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
                         
             if config['global_rank'] == 0: 
                 
@@ -839,7 +830,7 @@ if __name__ == "__main__":
     parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
@@ -853,18 +844,12 @@ if __name__ == "__main__":
     parser.add_argument('--val_batch_size', default=4, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
-    parser.add_argument('--max_epoch', default=1000, type=int)
+    parser.add_argument('--max_epoch', default=2000, type=int)
     parser.add_argument('--show_step', default=2, type=int)
     parser.add_argument('--save_epoch', default=1, type=int)
     parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
-    # metrics info
-    parser.add_argument('--metrics_expression', default=False, type=bool)
-    parser.add_argument('--metrics_fid', default=True, type=bool)
-    parser.add_argument('--metrics_id', default=True, type=bool)
-    parser.add_argument('--metrics_pose', default=True, type=bool)
-    
     args = parser.parse_args()
     
 
