@@ -529,7 +529,6 @@ def train(args, config):
                         epoch,
                         loss_adv_accumulated,
                         config)
-    print("now global rank : ", config['global_rank'])
 
     if config['global_rank'] == 0:        
         
@@ -602,11 +601,6 @@ def train(args, config):
                 
                 
                 
-                ## probably losses dont need to be calculated
-                # voutputs = model(vinputs)
-                # vloss = loss_fn(val_swapped_face)
-                
-                
                 # running_vloss += vloss
                 running_pose_metric += pose_value
                 running_id_metric += id_value
@@ -615,22 +609,11 @@ def train(args, config):
 
 
                 if args.use_wandb and config['global_rank'] == 0:
-                
-                    # running_vloss += vloss
-                    running_pose_metric += pose_value
-                    running_id_metric += id_value
-                    running_fid_metric += fid_value
-                    running_expression_metric += expression_value
-                        
-                    
+                                    
                     wandb.log({"running_pose_metric": running_pose_metric, "running_id_metric": running_id_metric, "running_fid_metric": running_fid_metric}, commit=False)
                     if args.landmark_detector_loss:
                         wandb.log({"running_expression_metric": running_expression_metric}, commit=False)
                         
-                    ## logging and checking validation images generated swapped faces    
-                    # if (i % 50 == 0):
-                        # wandb.log({"Val Generated Images" : wandb.Image()})
-                        # wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
                         
             if config['global_rank'] == 0: 
                 
