@@ -1,18 +1,12 @@
 */__pycache__/*
 */__pycache__/
-.ipynb_checkpoints
 __pycache__
-examples/*
 insightface_func/models/antelope/*
 coordinate_reg/model/*
 arcface_model/backbone.pth
-arcface_model/backbone.pth.1
 AdaptiveWingLoss/
-mae/
 AdaptiveWingLoss/AWL_detector/*
-weights/*
 *.pyc
-ckpt/*.pth
 dataset/*
 experiments/*
 mae
@@ -27,3 +21,4 @@ wandb/
 deep3D/BFM/*
 deep3D/BFM/
 images/*
+examples/videos/
