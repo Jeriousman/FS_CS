@@ -56,6 +56,7 @@ def train_one_epoch(G: 'generator model',
                     train_dataloader: torch.utils.data.DataLoader,
                     device: 'torch device',
                     epoch:int,
+                    starting_iteration: 'iteration currently at', 
                     loss_adv_accumulated:int,
                     config:dict
                     ):
@@ -75,6 +76,7 @@ def train_one_epoch(G: 'generator model',
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
+        iteration  = starting_iteration + iteration
         
         if args.mixed_precision:
             with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=True): ##input data는 일단 그대로 flaot32이지만 input이 계산될때 + output은 float16이된다
@@ -348,11 +350,57 @@ def train_one_epoch(G: 'generator model',
             
             if config['global_rank'] == 0:
                     
-                torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
-                torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
+                # torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
+                # torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
 
-                torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
-                torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                # torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                # torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+                
+                torch.save({
+                    'epoch': epoch,
+                    'iteration': iteration,
+                    'batch_size': args.batch_size,
+                    'model_state_dict': G.module.state_dict(),
+                    'optimizer_state_dict': opt_G.module.state_dict(),
+                    'wandb_project': args.wandb_project,
+                    'wandb_entity': args.wandb_entity
+                }, f'./saved_models_{args.run_name}/G_latest.pth')
+                
+                print('Generator model checkpoint saved')
+
+                torch.save({
+                    'epoch': epoch,
+                    'iteration': iteration,
+                    'batch_size': args.batch_size,
+                    'model_state_dict': D.module.state_dict(),
+                    'optimizer_state_dict': opt_D.module.state_dict(),
+                    'wandb_project': args.wandb_project,
+                    'wandb_entity': args.wandb_entity
+                }, f'./saved_models_{args.run_name}/D_latest.pth')
+                           
+                print('Discriminator model checkpoint saved')
+
+                torch.save({
+                    'epoch': epoch,
+                    'iteration': iteration,
+                    'batch_size': args.batch_size,
+                    'model_state_dict': G.module.state_dict(),
+                    'optimizer_state_dict': opt_G.module.state_dict(),
+                    'wandb_project': args.wandb_project,
+                    'wandb_entity': args.wandb_entity
+                }, f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
+
+                torch.save({
+                    'epoch': epoch,
+                    'iteration': iteration,
+                    'batch_size': args.batch_size,
+                    'model_state_dict': D.module.state_dict(),
+                    'optimizer_state_dict': opt_D.module.state_dict(),
+                    'wandb_project': args.wandb_project,
+                    'wandb_entity': args.wandb_entity
+                }, f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')                
+
+              
 
         if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
 
@@ -461,12 +509,29 @@ def train(args, config):
         scheduler_G = None
         scheduler_D = None
         
+    starting_epoch = 0
     if args.pretrained:
         try:
             # G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device(config['local_rank'])), strict=False)
             # D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device(config['local_rank'])), strict=False)
-            G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')), strict=False)
-            D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device('cpu')), strict=False)
+            # G.module.load_state_dict(torch.load(args.G_path, map_location=torch.device('cpu')), strict=False)
+            # D.module.load_state_dict(torch.load(args.D_path, map_location=torch.device('cpu')), strict=False)
+            
+            G_state = torch.load(f'./saved_models_{args.run_name}/G_latest.pth')
+            D_state = torch.load(f'./saved_models_{args.run_name}/D_latest.pth')
+            
+            G.load_state_dict(G_state['model_state_dict'])
+            starting_epoch = G_state['epoch'] + 1
+            starting_iteration = G_state['iteration'] + 1
+            opt_G.load_state_dict(G_state['optimizer_state_dict'])
+            print(f'GPU {config['local_rank']} - Preloading model ./saved_models_{args.run_name}/G_latest.pt')
+            
+            D.load_state_dict(D_state['model_state_dict'])
+            starting_epoch = D_state['epoch'] + 1
+            starting_iteration = D_state['iteration'] + 1
+            opt_D.load_state_dict(D_state['optimizer_state_dict'])
+            print(f'GPU {config['local_rank']} - Preloading model ./saved_models_{args.run_name}/D_latest.pt')
+                        
             print(f'[GPU {config["local_rank"]}]: Loaded pretrained weights for G and D')
         except FileNotFoundError as e:
             print(f'[GPU {config["local_rank"]}]: Not found pretrained weights. Continue without any pretrained weights.')
@@ -506,7 +571,7 @@ def train(args, config):
     # Будем считать аккумулированный adv loss, чтобы обучать дискриминатор только когда он ниже порога, если discr_force=True
     loss_adv_accumulated = 20.
     
-    for epoch in range(0, max_epoch):
+    for epoch in range(starting_epoch, max_epoch):
         # if epoch >= 1:
         #     config['id_mode = 'Hififace'
         torch.cuda.empty_cache()
@@ -526,6 +591,7 @@ def train(args, config):
                         train_dataloader,
                         device,
                         epoch,
+                        starting_iteration,
                         loss_adv_accumulated,
                         config)
         
