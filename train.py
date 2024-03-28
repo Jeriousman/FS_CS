@@ -76,8 +76,6 @@ def train_one_epoch(G: 'generator model',
         
     # Xs.shape
     for iteration, data in enumerate(train_dataloader):
-        if iteration == 1:
-            break
         start_time = time.time()
         iteration  = starting_iteration + iteration
         
