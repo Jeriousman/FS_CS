@@ -4,6 +4,7 @@ import time
 import cv2
 import wandb
 from PIL import Image
+import metric
 import os
 
 #For Native Torch multi GPUs
@@ -361,7 +362,7 @@ def train_one_epoch(G: 'generator model',
                     'iteration': iteration,
                     'batch_size': args.batch_size,
                     'model_state_dict': G.module.state_dict(),
-                    'optimizer_state_dict': opt_G.module.state_dict(),
+                    'optimizer_state_dict': opt_G.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
                 }, f'./saved_models_{args.run_name}/G_latest.pth')
@@ -373,7 +374,7 @@ def train_one_epoch(G: 'generator model',
                     'iteration': iteration,
                     'batch_size': args.batch_size,
                     'model_state_dict': D.module.state_dict(),
-                    'optimizer_state_dict': opt_D.module.state_dict(),
+                    'optimizer_state_dict': opt_D.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
                 }, f'./saved_models_{args.run_name}/D_latest.pth')
@@ -385,7 +386,7 @@ def train_one_epoch(G: 'generator model',
                     'iteration': iteration,
                     'batch_size': args.batch_size,
                     'model_state_dict': G.module.state_dict(),
-                    'optimizer_state_dict': opt_G.module.state_dict(),
+                    'optimizer_state_dict': opt_G.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
                 }, f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
@@ -395,7 +396,7 @@ def train_one_epoch(G: 'generator model',
                     'iteration': iteration,
                     'batch_size': args.batch_size,
                     'model_state_dict': D.module.state_dict(),
-                    'optimizer_state_dict': opt_D.module.state_dict(),
+                    'optimizer_state_dict': opt_D.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
                 }, f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')                
@@ -524,18 +525,19 @@ def train(args, config):
             starting_epoch = G_state['epoch'] + 1
             starting_iteration = G_state['iteration'] + 1
             opt_G.load_state_dict(G_state['optimizer_state_dict'])
-            print(f'GPU {config['local_rank']} - Preloading model ./saved_models_{args.run_name}/G_latest.pt')
+            print(f'GPU {config["local_rank"]} - Preloading model ./saved_models_{args.run_name}/G_latest.pt')
             
             D.load_state_dict(D_state['model_state_dict'])
             starting_epoch = D_state['epoch'] + 1
             starting_iteration = D_state['iteration'] + 1
             opt_D.load_state_dict(D_state['optimizer_state_dict'])
-            print(f'GPU {config['local_rank']} - Preloading model ./saved_models_{args.run_name}/D_latest.pt')
+            print(f'GPU {config["local_rank"]} - Preloading model ./saved_models_{args.run_name}/D_latest.pt')
                         
             print(f'[GPU {config["local_rank"]}]: Loaded pretrained weights for G and D')
         except FileNotFoundError as e:
             print(f'[GPU {config["local_rank"]}]: Not found pretrained weights. Continue without any pretrained weights.')
-    
+    else:
+        starting_iteration = 0
     # if config['vgg:
     
     dataset = FaceEmbedCombined(ffhq_data_path = args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
@@ -642,35 +644,43 @@ def train(args, config):
                     
                 val_swapped_face, val_recon_f_src, val_recon_f_tgt = G.module.forward(val_Xt_f, val_Xs_f, val_id_embedding)
                 
-                ## calculate the 4 metrics
+                pose_value, fid_value, id_value, expression_value = 0, 0, 0, 0
+                metrics_processors = []
+                if args.metrics_pose:
+                    metrics_processors.append("POSE")
+                if args.metrics_fid:
+                    metrics_processors.append("FID")
+                if args.metrics_id:
+                    metrics_processors.append("ID")
+                if args.metrics_expression:
+                    metrics_processors.append("EXPRESSION")
+
+                result = metric.run(val_Xs_f, val_Xt_f, val_swapped_face, metrics_processors)
+                print("metrics result : ", result)
+                if args.metrics_pose:
+                    pose_value = result["metrics.POSE"]
+                if args.metrics_fid:
+                    fid_value = result["metrics.FID"]
+                if args.metrics_id:
+                    id_value = result["metrics.ID"]
+                if args.metrics_expression:
+                    expression_value = result["metrics.EXPRESSION"]
                 
-                ## pose_value = POSE(val_swapped_face, val_Xt)
-                ## id_value = ID(val_swapped_face)
-                ## fid_value = FID(val_swapped_face)
-                ## expression_value = EXPRESSION(val_swapped_face)
                 
                 
-                
-                ## probably losses dont need to be calculated
-                # voutputs = model(vinputs)
-                # vloss = loss_fn(val_swapped_face)
-                if config['global_rank'] == 0:
-                
-                    # running_vloss += vloss
-                    running_pose_metric += pose_value
-                    running_id_metric += id_value
-                    running_fid_metric += fid_value
-                    running_expression_metric += expression_value
-                        
-                    
+                # running_vloss += vloss
+                running_pose_metric += pose_value
+                running_id_metric += id_value
+                running_fid_metric += fid_value
+                running_expression_metric += expression_value
+
+
+                if args.use_wandb and config['global_rank'] == 0:
+                                    
                     wandb.log({"running_pose_metric": running_pose_metric, "running_id_metric": running_id_metric, "running_fid_metric": running_fid_metric}, commit=False)
                     if args.landmark_detector_loss:
                         wandb.log({"running_expression_metric": running_expression_metric}, commit=False)
                         
-                    ## logging and checking validation images generated swapped faces    
-                    # if (i % 50 == 0):
-                        # wandb.log({"Val Generated Images" : wandb.Image()})
-                        # wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
                         
             if config['global_rank'] == 0: 
                 
@@ -687,6 +697,7 @@ def train(args, config):
                 ## adding functions for WandB to log the metrics
                 ## put up the generated validation images in WandB
                 ## saving functions for best G and D
+
 
                 # torch.save(model.state_dict(), model_path)
             
@@ -886,7 +897,7 @@ if __name__ == "__main__":
     parser.add_argument('--same_person', default=0.2, type=float, help='Probability of using same person identity during training')
     parser.add_argument('--same_identity', default=True, type=bool, help='Using simswap approach, when source_id = target_id. Only possible with vgg=True')
     parser.add_argument('--diff_eq_same', default=False, type=bool, help='Don\'t use info about where is defferent identities')
-    parser.add_argument('--pretrained', default=True, type=bool, help='If using the pretrained weights for training or not')
+    parser.add_argument('--pretrained', default=False, type=bool, help='If using the pretrained weights for training or not')
     parser.add_argument('--discr_force', default=False, type=bool, help='If True Discriminator would not train when adversarial loss is high')
     parser.add_argument('--scheduler', default=False, type=bool, help='If True decreasing LR is used for learning of generator and discriminator')
     parser.add_argument('--scheduler_step', default=5000, type=int)
@@ -916,6 +927,11 @@ if __name__ == "__main__":
     parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
 
+    # metrics info
+    parser.add_argument('--metrics_expression', default=False, type=bool)
+    parser.add_argument('--metrics_fid', default=True, type=bool)
+    parser.add_argument('--metrics_id', default=True, type=bool)
+    parser.add_argument('--metrics_pose', default=True, type=bool)
     args = parser.parse_args()
     
 
