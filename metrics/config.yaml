@@ -1,0 +1,29 @@
+models:
+  ID: 
+    cosface:
+      model_path: 'models/ACC9928.pth'
+  POSE:
+    hopenet:
+      model_path: 'models/hopenet_robust_alpha1.pkl'
+  EXPRESSION:
+    dlib:
+      model_path: 'models/shape_predictor_68_face_landmarks.dat'
+  FID:
+    inception:
+      model_path: 'models/pt_inception-2015-12-05-6726825d.pth'
+      batch_size: 1
+      dims: 2048
+
+
+# processors: ["ID", "POSE",  "EXPRESSION", "FID"]
+
+
+params:
+  target_path: 'data/target/'
+  source_path: 'data/source/'
+  swapped_path: 'data/swapped/'
+  execution_threads: 2
+
+
+
+## src dst 개수 동일한지 체크
