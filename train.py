@@ -841,7 +841,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_entity', default='your-login', type=str, help='name of team in wandb. ours is dob_faceswapteam')
     # training params you probably don't want to change
     parser.add_argument('--batch_size', default=8, type=int)
-    parser.add_argument('--val_batch_size', default=4, type=int)
+    parser.add_argument('--val_batch_size', default=8, type=int)
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
