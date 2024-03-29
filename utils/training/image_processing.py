@@ -66,15 +66,14 @@ def read_torch_image(path: str) -> torch.tensor:
 def get_faceswap_(source_path: str, target_path: str, 
                  G: 'generator model', netArc: 'arcface model', 
                  device: 'torch device') -> np.array:
+
     source = read_torch_image(source_path)
     source = source.to(device)
-
     embeds = netArc(F.interpolate(source, [112, 112], mode='bilinear', align_corners=False))
     # embeds = F.normalize(embeds, p=2, dim=1)
 
     target = read_torch_image(target_path)
     target = target.cuda()
-
     with torch.no_grad():
         Yt, _ = G(target, embeds)
         Yt = torch2image(Yt)
@@ -88,24 +87,18 @@ def get_faceswap_(source_path: str, target_path: str,
 # Xt_f, Xs_f, id_embedding
 
 def get_faceswap(source_path: str, target_path: str, 
-                 G: 'generator model', id_extractor: 'arcface model', 
+                 G: 'generator model', id_extractor: 'id_extractor', 
                  device: 'torch device') -> np.array:
     source = read_torch_image(source_path)
-    # source = source.to(device)
-
-    
-
-    # embeds = F.normalize(embeds, p=2, dim=1)
-
     target = read_torch_image(target_path)
     # target = target.to(device)
 
-    id_embedding, src_emb, tgt_emb = id_extractor(source, target)
-    id_embedding, src_emb, tgt_emb = id_embedding.to(device), src_emb.to(device), tgt_emb.to(device)
-
+    id_embedding, src_emb, tgt_emb = id_extractor.module.forward(source.to(device), target.to(device))
+    
     with torch.no_grad():
-        Yt, recon_src, recon_tgt = G(target.to(device), source.to(device), id_embedding)
+        Yt, recon_src, recon_tgt = G.module.forward(target.to(device), source.to(device), id_embedding)
         Yt = torch2image(Yt)
+    
 
     source = torch2image(source)
     target = torch2image(target)
