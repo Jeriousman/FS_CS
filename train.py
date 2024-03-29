@@ -280,7 +280,7 @@ def train_one_epoch(G: 'generator model',
                 Yt_f_eyes_img = paint_eyes(swapped_face, swapped_face_eyes)
                 images.extend([Xt_f_eyes_img, Yt_f_eyes_img])
             image = make_image_list(images)
-            if args.use_wandb:
+            if (args.use_wandb) and config['global_rank'] == 0:
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
             else:
                 cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
@@ -309,7 +309,7 @@ def train_one_epoch(G: 'generator model',
             if args.scheduler:
                 print(f'GPU {config["local_rank"]} scheduler_G lr: {scheduler_G.get_last_lr()} scheduler_D lr: {scheduler_D.get_last_lr()} \n')
 
-        if args.use_wandb:
+        if args.use_wandb and config['global_rank'] == 0:
             if args.eye_detector_loss:
                 wandb.log({"loss_eyes": L_l2_eyes.item()}, commit=False)
             if args.landmark_detector_loss:
@@ -399,7 +399,7 @@ def train_one_epoch(G: 'generator model',
                     'optimizer_state_dict': opt_D.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
-                }, f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')                
+                }, f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')                
 
               
 
@@ -413,7 +413,7 @@ def train_one_epoch(G: 'generator model',
             res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
             res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
             res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
-            
+
             output1 = np.concatenate((res1, res2, res3), axis=0)
             output2 = np.concatenate((res4, res5, res6), axis=0)
             
@@ -422,6 +422,7 @@ def train_one_epoch(G: 'generator model',
             wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
 
             G.train()
+
 
 # def train(args, config):
 def train(args, config):
@@ -911,7 +912,7 @@ if __name__ == "__main__":
     
     
     # info about this run
-    parser.add_argument('--use_wandb', default=False, type=bool, help='Use wandb to track your experiments or not')
+    parser.add_argument('--use_wandb', default=True, type=bool, help='Use wandb to track your experiments or not')
     parser.add_argument('--wandb_id', default='123456', type=bool, help='unique IDs for wandb run')
     parser.add_argument('--run_name', required=True, type=str, help='Name of this run. Used to create folders where to save the weights.')
     parser.add_argument('--wandb_project', default='your-project-name', type=str, help='name of project. for example, faceswap_basemodel')
