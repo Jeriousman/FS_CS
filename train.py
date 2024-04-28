@@ -284,6 +284,11 @@ def train_one_epoch(G: 'generator model',
                 wandb.log({"gen_images":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
             else:
                 cv2.imwrite('./images/generated_image.jpg', image[:,:,::-1])
+
+            if (args.use_wandb) and (args.use_reconsimg)  and config['global_rank'] == 0:
+                images = [Xs_f, recon_f_src, Xt_f, recon_f_tgt]
+                image = make_image_list(images)
+                wandb.log({"OrgSrc_ReconSrc_OrgTgt_ReconTgt":wandb.Image(image, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})   
         
         if iteration % 10 == 0:
             print(f'GPU {config["local_rank"]} epoch: {epoch}   current iteration: {iteration} / max iteration size: {len(train_dataloader)}')
@@ -347,7 +352,11 @@ def train_one_epoch(G: 'generator model',
                     #    "loss_landmarks": L_landmarks.item()
                     })
         
-        if iteration % 10000 == 0:
+        #if iteration % 10000 == 0:
+            
+        #if epoch % args.max_epoch == 0: # From this
+        if iteration == 0 & epoch % args.save_epoch == 0: # To this
+
             
             if config['global_rank'] == 0:
                     
@@ -403,25 +412,25 @@ def train_one_epoch(G: 'generator model',
 
               
 
-        if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
+        #if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
+        # if (iteration % 1000 == 0) and (args.use_wandb) and config['global_rank'] == 0: 
+        #     G.eval()
 
-            G.eval()
+        #     res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
+        #     res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
+        #     res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
+        #     res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
+        #     res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
+        #     res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
 
-            res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
-            res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
-            res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
-            res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
-            res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
-            res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
-
-            output1 = np.concatenate((res1, res2, res3), axis=0)
-            output2 = np.concatenate((res4, res5, res6), axis=0)
+        #     output1 = np.concatenate((res1, res2, res3), axis=0)
+        #     output2 = np.concatenate((res4, res5, res6), axis=0)
             
-            output = np.concatenate((output1, output2), axis=1)
+        #     output = np.concatenate((output1, output2), axis=1)
 
-            wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
+        #     wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
 
-            G.train()
+        #     G.train()
 
 
 # def train(args, config):
@@ -863,17 +872,17 @@ if __name__ == "__main__":
 
     
     # weights for loss
-    parser.add_argument('--weight_adv', default=1, type=float, help='Adversarial Loss weight')
-    parser.add_argument('--weight_attr', default=10, type=float, help='Attributes weight')
-    parser.add_argument('--weight_id', default=20, type=float, help='Identity Loss weight')
+    parser.add_argument('--weight_adv', default=2, type=float, help='Adversarial Loss weight')
+    parser.add_argument('--weight_attr', default=15, type=float, help='Attributes weight')
+    parser.add_argument('--weight_id', default=10, type=float, help='Identity Loss weight')
     parser.add_argument('--weight_rec', default=10, type=float, help='Reconstruction Loss weight')
-    parser.add_argument('--weight_eyes', default=2., type=float, help='Eyes Loss weight')
+    parser.add_argument('--weight_eyes', default=1.5, type=float, help='Eyes Loss weight')
     parser.add_argument('--weight_cycle', default=1., type=float, help='Cycle Loss weight for generator')
     parser.add_argument('--weight_cycle_identity', default=1., type=float, help='Cycle Identity Loss weight for generator')
-    parser.add_argument('--weight_contrastive', default=1., type=float, help='Contrastive Loss weight for idendity embedding of generator')
-    parser.add_argument('--weight_source_unet', default=2., type=float, help='Source Image Unet Reconstruction Loss weight for generator')
-    parser.add_argument('--weight_target_unet', default=2., type=float, help='Target Image Unet Reconstruction Loss weight for generator')
-    parser.add_argument('--weight_landmarks', default=3., type=float, help='Landmark Loss weight for generator')
+    parser.add_argument('--weight_contrastive', default=1.5, type=float, help='Contrastive Loss weight for idendity embedding of generator')
+    parser.add_argument('--weight_source_unet', default=0.5, type=float, help='Source Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_target_unet', default=0.5, type=float, help='Target Image Unet Reconstruction Loss weight for generator')
+    parser.add_argument('--weight_landmarks', default=2., type=float, help='Landmark Loss weight for generator')
     parser.add_argument('--weight_shape', default=3., type=float, help='Shape Loss weight for generator')
     
     
@@ -905,10 +914,10 @@ if __name__ == "__main__":
     parser.add_argument('--scheduler_gamma', default=0.2, type=float, help='It is value, which shows how many times to decrease LR')
     parser.add_argument('--eye_detector_loss', default=False, type=bool, help='If True eye loss with using AdaptiveWingLoss detector is applied to generator')
     parser.add_argument('--landmark_detector_loss', default=False, type=bool, help='If True landmark loss is applied to generator')
-    parser.add_argument('--cycle_loss', default=True, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
+    parser.add_argument('--cycle_loss', default=False, type=bool, help='If True, cycle & cycle identity losses are applied to generator')
     parser.add_argument('--contrastive_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
     parser.add_argument('--unet_loss', default=True, type=bool, help='If True, unet losses for source and target are applied to generator')
-    parser.add_argument('--shape_loss', default=True, type=bool, help='If True, contrastive loss is applied to generator')
+    parser.add_argument('--shape_loss', default=False, type=bool, help='If True, contrastive loss is applied to generator')
     
     
     # info about this run
@@ -923,10 +932,11 @@ if __name__ == "__main__":
     parser.add_argument('--lr_G', default=4e-4, type=float)
     parser.add_argument('--lr_D', default=4e-4, type=float)
     parser.add_argument('--max_epoch', default=2000, type=int)
-    parser.add_argument('--show_step', default=2, type=int)
-    parser.add_argument('--save_epoch', default=1, type=int)
+    parser.add_argument('--show_step', default=20, type=int)
+    parser.add_argument('--save_epoch', default=2, type=int)
     parser.add_argument('--mixed_precision', default=False, type=bool)
     parser.add_argument('--device', default='cuda', type=str, help='setting device between cuda and cpu')
+    parser.add_argument('--use_reconsimg', default=True, type=bool, help='create reconsimg for wandb')
 
     # metrics info
     parser.add_argument('--metrics_expression', default=False, type=bool)
