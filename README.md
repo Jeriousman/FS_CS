@@ -1,6 +1,4 @@
-# FS-Ghost
-
-## Face Swap Model Ghost (Sber-Swap) Code & Docs
+# Cross Swap
 
 ### 1. 환경설정 (hojun-mae 기준)
 
@@ -62,3 +60,4 @@ docker exec -it ghost_container /bin/bash
 ```
 python train.py --run_name {YOUR_RUN_NAME} --pretrained True --G_path {PATH_TO_GPATH} -- D_path {PATH_TO_G_PATH}
 ```
+### Inspired by Ghost 
