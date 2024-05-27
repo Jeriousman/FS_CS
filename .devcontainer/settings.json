@@ -1,0 +1,4 @@
+{
+    // 이 설정을 켜줘야 shift + Enter로 Jupyter 실행 가능
+    "jupyter.sendSelectionToInteractiveWindow": true
+}

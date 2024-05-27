@@ -1,0 +1,7 @@
+__pycache__
+datasets/
+checkpoints/resnet.pth
+# BFM/*
+models/pretrained_model/
+venv/
+data/
