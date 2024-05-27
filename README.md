@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-# CrossSwap
-FS model with cross attention 
-=======
+
 # Cross Swap
 
 Using a novel cross-attention mechanism + U-Net structure equipped with richer ID extractor.
@@ -58,11 +55,10 @@ docker exec -it ghost_container /bin/bash
   
 ~~- Video Swap~~
   
-  ```
+  
   ~~python inference.py --source_paths {PATH_TO_IMAGE} --target_faces_paths {PATH_TO_IMAGE} --target_video {PATH_TO_VIDEO} --G_path~~ ~~{Pretrained_Model_PATH}~~
-  ```
+  
   
 
 
 ### Inspired by Ghost 
->>>>>>> f4683589e7ab2fcb8e529a7172a8eaeeb7cd9d7f
