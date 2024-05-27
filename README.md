@@ -1,5 +1,5 @@
 
-# Cross Swap
+# CS
 
 Using a novel cross-attention mechanism + U-Net structure equipped with richer ID extractor.
 Science paper work is ongoing (first authur)
