@@ -1,5 +1,8 @@
 # Cross Swap
 
+Using a novel cross-attention mechanism + U-Net structure equipped with richer ID extractor.
+Science paper work is ongoing (first authur)
+
 ### 1. 환경설정 (hojun-mae 기준)
 
 ```
@@ -40,24 +43,21 @@ docker exec -it ghost_container /bin/bash
 
 구글 드라이브 : [ckpt_epoch75 - Google Drive](https://drive.google.com/drive/folders/1JmS-y-zAH0-DtC-oG0OPVcidVOU99sNA?usp=sharing)
 
-### 5. Inference
+### 5. Training
 
 - Image Swap
   
   ```
-  python inference.py --target_path {PATH_TO_IMAGE} --image_to_image True --G_path {Pretrained_Model_PATH}
+  pre-trained model이 있을때 pre-trained 모델을 가져와서 트레이닝 계속하는 방법
+  torchrun --standalone --nproc_per_node=1 train.py --run_name train_essential --wandb_project faceswap_h100 --wandb_entity dob_faceswapteam --pretrained True --show_step 20
   ```
   
-- Video Swap
+~~- Video Swap~~
   
   ```
-  python inference.py --source_paths {PATH_TO_IMAGE} --target_faces_paths {PATH_TO_IMAGE} --target_video {PATH_TO_VIDEO} --G_path {Pretrained_Model_PATH}
+  ~~python inference.py --source_paths {PATH_TO_IMAGE} --target_faces_paths {PATH_TO_IMAGE} --target_video {PATH_TO_VIDEO} --G_path~~ ~~{Pretrained_Model_PATH}~~
   ```
   
 
-### 6. Train
-** AdaptiveWingLoss 별도 다운로드 필요 : https://github.com/NastyaMittseva/AdaptiveWingLoss/tree/6a6e42fcc435dc8fd604f211390099725a4222a6
-```
-python train.py --run_name {YOUR_RUN_NAME} --pretrained True --G_path {PATH_TO_GPATH} -- D_path {PATH_TO_G_PATH}
-```
+
 ### Inspired by Ghost 
