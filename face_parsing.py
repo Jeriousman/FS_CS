@@ -1,7 +1,12 @@
+'''
+face_parsing.py에서는 crossSwap에서 사용할 source/target 얼굴을 foreground와 background로 나누어준다.
+우리가 생각하는 로직대로 얼굴에서 필요한 랜드마크를 파싱해주는 하여, 어떤 부위는 foreground이고 어떤 부위는 background로 나누어서 f/b을 나눈다.
+main contributor -> 토리
+'''
+
+
 from face_parsing_pytorch.logger import setup_logger
-
 from face_parsing_pytorch.model import BiSeNet
-
 import torch
 import os
 import os.path as osp
@@ -12,6 +17,9 @@ import cv2
 import argparse
 import glob
 import torch.nn.functional as F
+
+
+
 
 def vis_parsing_maps(args, im, parsing_anno, stride, save_path):
     

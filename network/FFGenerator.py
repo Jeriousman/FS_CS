@@ -223,7 +223,7 @@ class AEI_Net(nn.Module):
 
 
 ####################################################################################
-## CrossU
+## CrossU의 Unet구현
 
 class UNet(nn.Module):  ##Multi-level Attributes Encoder
     def __init__(self, backbone):

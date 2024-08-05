@@ -37,7 +37,7 @@ from utils.training.landmark_detector import detect_all_landmarks
 from AdaptiveWingLoss.core import models
 from arcface_model.iresnet import iresnet100
 from models.model import FlowFaceCrossAttentionModel, FlowFaceCrossAttentionLayer
-import torch
+
 
 
 
@@ -71,48 +71,52 @@ def train_one_epoch(G: 'generator model',
     # id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
     # id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
     # #print(id_extractor)
+
+    ## mixed-precision을 사용하기 위해 amp 라이브러리를 사용한다. fp32 -> fp16 으로 계산하기 위함이다. 그러나 현재 fp16을 사용하면 gradient가 깨지는 현상이 발생하고 있기 때문에, 사용하지말고 사용하기 위해 코드 수정을 해야할 것으로 보인다.
     if args.mixed_precision:
-        scaler = torch.cuda.amp.GradScaler(enabled=False)
+        scaler = torch.cuda.amp.GradScaler(enabled=False)  
         
-    # Xs.shape
+
     for iteration, data in enumerate(train_dataloader):
         start_time = time.time()
         iteration  = starting_iteration + iteration
         
+        ##amp mixed-precision을 사용하는 경우:
         if args.mixed_precision:
             with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=True): ##input data는 일단 그대로 flaot32이지만 input이 계산될때 + output은 float16이된다
-                           
-                id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
-
+                '''
+                ##id_ext_src_input과 id_ext_tgt_input은 shape aware identity extractor (저스틴 파트)의 인풋으로 사용된다.
+                Xt_f는 target face 인풋의 foreground, Xt_b는 target face 인풋의 background 데이터이다.
+                Xs_f는 source face 인풋의 foreground, Xs_b는 source face 인풋의 background 데이터이다.
+                same_person은 Ghost의 코드에서 온 것인데, 정확한 의미는 모르겠으나 일단 남겨두었다. (큰 의미 없는 것으로 보임)
+                '''
+                id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data 
                 id_ext_src_input = id_ext_src_input.to(args.device)
                 id_ext_tgt_input = id_ext_tgt_input.to(args.device)
                 Xs_f = Xs_f.to(args.device)
-                # Xs.shape
                 Xt_f = Xt_f.to(args.device)
-                # Xt.shape
                 same_person = same_person.to(args.device)
                 realtime_batch_size = Xt_f.shape[0] 
+
                 with torch.autocast(device_type="cuda", enabled=False):
                 # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
                     mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input.float(), id_ext_tgt_input.float()) ## id_embedding = [B, 769]
                     # print('mixed_id_embedding', mixed_id_embedding.dtype) ##mixed_id_embedding is float32 bcuz of enabled=False and id_ext_src_input.float()..
 
                 diff_person = torch.ones_like(same_person)
-                
                 if args.diff_eq_same:
                     same_person = diff_person
 
                 # generator training
-                opt_G.zero_grad() ##축적된 gradients를 비워준다
+                opt_G.zero_grad() ##generator optimizer의 축적된 gradients를 비워준다
                 swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, mixed_id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
                 Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-                # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-                # print('recon_f_src', recon_f_src.dtype)  ## recon_f_src is still float16 because we are using autocast
+    
                 with torch.autocast(device_type="cuda", enabled=False):
-                    ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
+                    ##swapped_id_emb = ArcFace value. this embedding is for infoNCE loss mostly
                     swapped_id_emb = id_extractor.module.id_forward(swapped_face.float())
 
-                if args.shape_loss:
+                if args.shape_loss:  ##저스틴이 개발한 shape aware identity extractor의 shape loss는 여기서 계산한다.
                     with torch.autocast(device_type="cuda", enabled=False):
                         q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input.float(), id_ext_tgt_input.float(), swapped_face.float())  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
                 else:
@@ -123,17 +127,17 @@ def train_one_epoch(G: 'generator model',
                 # Xt_attrs = G.CUMAE_tgt(Xt) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
                 # Xs_attrs = G.CUMAE_src(Xs) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
-                Di = D.module(swapped_face)  ##이렇게 나온  swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
+                Di = D.module(swapped_face)  ##이렇게 나온 swapped face 결과물을 Discriminator에 넣어서 가짜로 구별을 해내는지 확인해 보는 것이다. 0과 가까우면 가짜라고하는것이다.
                 
-                if args.eye_detector_loss:
-                    Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부문에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다
+                if args.eye_detector_loss: 
+                    Xt_f_eyes, Xt_f_heatmap_left, Xt_f_heatmap_right = detect_landmarks(Xt_f, model_ft)  ##detect_landmarks 부분에 다른 eye loss 뿐만이 아니라 다른 part도 계산하고 싶으면 여기다 코드를 추가해서 넣으면 될거같다. 현재는 눈만 감지하는중.
                     swapped_face_eyes, swapped_face_heatmap_left, swapped_face_heatmap_right = detect_landmarks(swapped_face, model_ft)
                     eye_heatmaps = [Xt_f_heatmap_left, Xt_f_heatmap_right, swapped_face_heatmap_left, swapped_face_heatmap_right]    
                 else:
                     eye_heatmaps = None
                 
                 # landmark extractor
-                if args.landmark_detector_loss:
+                if args.landmark_detector_loss: ## 눈만 감지해서 loss 계산하는 것 뿐만이 아닌, 다양한 랜드마크를 모두 참고하여 loss를 계산하기 위함. 처음 트레이닝할 때에는 얼굴이 제대로 생성되지 않을 것이기 때문에, 몇 epoch 이후에 이 loss를 활성화 시켜야 한다.
                     Xt_f_pred_heatmap, Xt_f_landmarks = detect_all_landmarks(Xt_f, model_ft)
                     swapped_face_pred_heatmap, swapped_face_landmarks = detect_all_landmarks(swapped_face, model_ft)
                     all_landmark_heatmaps = [Xt_f_pred_heatmap, swapped_face_pred_heatmap]
@@ -142,9 +146,6 @@ def train_one_epoch(G: 'generator model',
                     all_landmark_heatmaps = None
                     all_landmarks = None
                     
-                # lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
-                #                                                                     eye_heatmaps, loss_adv_accumulated, 
-                #                                                                     diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
                 lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
                                                                                     diff_person, same_person, mixed_id_embedding, src_id_emb, tgt_id_emb, swapped_id_emb, recon_f_src, recon_f_tgt, q_fuse, q_r, all_landmark_heatmaps, args)
@@ -153,25 +154,21 @@ def train_one_epoch(G: 'generator model',
                 # discriminator training
                 opt_D.zero_grad()
                 
-        else: ##mixed_precision False인 경우에는 이라는 뜻
+        else: ##mixed_precision을 쓰지 않는 경우. 현재는 이것으로 트레이닝을 해야한다. amp 실행 시 gradient가 망가짐.
+           
             id_ext_src_input, id_ext_tgt_input, Xt_f, Xt_b, Xs_f, Xs_b, same_person = data
-
             id_ext_src_input = id_ext_src_input.to(args.device)
             id_ext_tgt_input = id_ext_tgt_input.to(args.device)
             
             Xs_f = Xs_f.to(args.device)
-            # Xs.shape
             Xt_f = Xt_f.to(args.device)
-            # Xt.shape
+
             same_person = same_person.to(args.device)
             realtime_batch_size = Xt_f.shape[0] 
-
-            # with torch.autocast(device_type="cuda", dtype=torch.float16):  ## 이거  때문에 개망하기때문에 나중에 없애고 인덴트 들여써라  
 
             mixed_id_embedding, src_id_emb, tgt_id_emb = id_extractor.module.forward(id_ext_src_input, id_ext_tgt_input) ## id_embedding = [B, 769]
 
             diff_person = torch.ones_like(same_person)
-
             if args.diff_eq_same:
                 same_person = diff_person
 
@@ -180,11 +177,9 @@ def train_one_epoch(G: 'generator model',
 
             swapped_face, recon_f_src, recon_f_tgt = G.module.forward(Xt_f, Xs_f, mixed_id_embedding) ##제너레이터에 target face와 source face identity를 넣어서 결과물을 만든다.
             Xt_f_attrs = G.module.CUMAE_tgt(Xt_f) # UNet으로 Xt의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
-            # Xs_f_attrs = G.module.CUMAE_src(Xs_f) # UNet으로 Xs의 bottleneck 이후 feature maps -> 238번 line을 통해 forward가 돌아갈 때 한 번에 계산해놓을 수 있을듯?
 
             ##swapped_emb = ArcFace value. this is for infoNCE loss mostly
             swapped_id_emb = id_extractor.module.id_forward(swapped_face)
-            # swapped_id_emb = swapped_id_emb.to(args.device)
 
             if args.shape_loss:
                 q_fuse, q_r = id_extractor.module.shapeloss_forward(id_ext_src_input, id_ext_tgt_input, swapped_face)  # Y가 network의 output tensor에 denorm까지 되었다고 가정 & q_r은 지금 당장 잡아낼 수가 없으므로(swap 결과가 초반엔 별로여서) 당장은 q_fuse를 똑같이 씀
@@ -212,7 +207,6 @@ def train_one_epoch(G: 'generator model',
             else:
                 all_landmark_heatmaps = None
                 all_landmarks = None
-
 
             lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape = compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di,
                                                                                     eye_heatmaps, loss_adv_accumulated, 
@@ -261,13 +255,9 @@ def train_one_epoch(G: 'generator model',
         else:
             pass
             
-        
         '''
         Here onwards, we must (maybe) convert amp mixed precision tensors in autocast region manually if we want to use them in float32 format
         '''
-        # print('Xt_f data type: ', Xt_f.dtype)
-        # print('swapped_face data type: ', Xt_f.dtype)
-        # print(f'lossD: {lossD.item()}')
         
         batch_time = time.time() - start_time
         
@@ -334,8 +324,7 @@ def train_one_epoch(G: 'generator model',
             # 설정 필요하면 args에 true false 추가
             # wandb.log({"loss_source_unet": L_source_unet.item()}, commit=False)
             # wandb.log({"loss_target_unet": L_target_unet.item()}, commit=False)
-            
-                # wandb.log({"loss_shape": L_shape.item()}, commit=False)
+            # wandb.log({"loss_shape": L_shape.item()}, commit=False)
                 
             wandb.log({
                     "loss_id": L_id.item(),
@@ -358,36 +347,33 @@ def train_one_epoch(G: 'generator model',
         if iteration == 0 & epoch % args.save_epoch == 0: # To this
 
             
-            if config['global_rank'] == 0:
+            if config['global_rank'] == 0: ##Multi-GPUs를 사용하고 있기 때문에 GPU 0에서만 모델을 트레이닝한 후 checkpoint를 저장하기 위한 설정.
                     
                 # torch.save(G.module.state_dict(), f'./saved_models_{args.run_name}/G_latest.pth')
                 # torch.save(D.module.state_dict(), f'./saved_models_{args.run_name}/D_latest.pth')
-
                 # torch.save(G.module.state_dict(), f'./current_models_{args.run_name}/G_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
                 # torch.save(D.module.state_dict(), f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')
                 
                 torch.save({
-                    'epoch': epoch,
-                    'iteration': iteration,
-                    'batch_size': args.batch_size,
-                    'model_state_dict': G.module.state_dict(),
-                    'optimizer_state_dict': opt_G.state_dict(),
-                    'wandb_project': args.wandb_project,
-                    'wandb_entity': args.wandb_entity
-                }, f'./saved_models_{args.run_name}/G_latest.pth')
-                
+                    'epoch': epoch, ## 몇번째 epoch까지 트레이닝 하고 있었는지,
+                    'iteration': iteration, ## 몇번째 iteration까지 트레이닝 하고 있었는지
+                    'batch_size': args.batch_size, ##트레이닝하면서 사용한 batch size 기록
+                    'model_state_dict': G.module.state_dict(), ##모델 parameter tensors
+                    'optimizer_state_dict': opt_G.state_dict(),##옵티마이저 parameter tensors
+                    'wandb_project': args.wandb_project,  ##WandB를 사용한다면 기록 
+                    'wandb_entity': args.wandb_entity  ##WandB를 사용한다면 기록
+                }, f'./saved_models_{args.run_name}/G_latest.pth')  ##저장할 모델 명
                 print('Generator model checkpoint saved')
 
                 torch.save({
-                    'epoch': epoch,
-                    'iteration': iteration,
+                    'epoch': epoch, 
+                    'iteration': iteration, 
                     'batch_size': args.batch_size,
                     'model_state_dict': D.module.state_dict(),
                     'optimizer_state_dict': opt_D.state_dict(),
                     'wandb_project': args.wandb_project,
                     'wandb_entity': args.wandb_entity
-                }, f'./saved_models_{args.run_name}/D_latest.pth')
-                           
+                }, f'./saved_models_{args.run_name}/D_latest.pth')   
                 print('Discriminator model checkpoint saved')
 
                 torch.save({
@@ -411,29 +397,22 @@ def train_one_epoch(G: 'generator model',
                 }, f'./current_models_{args.run_name}/D_' + str(epoch)+ '_' + f"{iteration:06}" + '.pth')                
 
               
-
         #if (iteration % 100 == 0) and (args.use_wandb) and config['global_rank'] == 0:
         # if (iteration % 1000 == 0) and (args.use_wandb) and config['global_rank'] == 0: 
         #     G.eval()
-
         #     res1 = get_faceswap('examples/images/training/source1.png', 'examples/images/training/target1.png', G, id_extractor, device)
         #     res2 = get_faceswap('examples/images/training/source2.png', 'examples/images/training/target2.png', G, id_extractor, device)  
         #     res3 = get_faceswap('examples/images/training/source3.png', 'examples/images/training/target3.png', G, id_extractor, device)
         #     res4 = get_faceswap('examples/images/training/source4.png', 'examples/images/training/target4.png', G, id_extractor, device)
         #     res5 = get_faceswap('examples/images/training/source5.png', 'examples/images/training/target5.png', G, id_extractor, device)  
         #     res6 = get_faceswap('examples/images/training/source6.png', 'examples/images/training/target6.png', G, id_extractor, device)
-
         #     output1 = np.concatenate((res1, res2, res3), axis=0)
         #     output2 = np.concatenate((res4, res5, res6), axis=0)
-            
         #     output = np.concatenate((output1, output2), axis=1)
-
         #     wandb.log({"our_images":wandb.Image(output, caption=f"{epoch:03}" + '_' + f"{iteration:06}")})
-
         #     G.train()
 
 
-# def train(args, config):
 def train(args, config):
     
     ##Multi GPU setting
@@ -446,11 +425,6 @@ def train(args, config):
     batch_size = args.batch_size
     max_epoch = args.max_epoch    
     
-    
-    # # training params
-    # batch_size = config['batch_size
-    # max_epoch = config['max_epoch
-    
     ## initializing id extractor model
     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
     f_id_path = "/datasets/pretrained/backbone.pth"
@@ -459,21 +433,15 @@ def train(args, config):
     id_extractor.eval()
 
     # initializing main models
-    # G = AEI_Net(config['backbone, num_blocks=config['num_blocks, c_id=512).to(device)
     G = CrossUnetAttentionGenerator(backbone='unet', num_adain = args.num_adain).to(args.device)
     opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
-    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
     G = DistributedDataParallel(G, device_ids=[config['local_rank']])
     
     D = MultiscaleDiscriminator(input_nc=3, n_layers=5, norm_layer=torch.nn.InstanceNorm2d).to(args.device)
     opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
-    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     D = DistributedDataParallel(D, device_ids=[config['local_rank']])
     
-
-    
     # initializing model for identity extraction
-
     if args.mixed_precision == True:  
         netArc = iresnet100(fp16=True)
     else:
@@ -484,9 +452,6 @@ def train(args, config):
     netArc = DistributedDataParallel(netArc, device_ids=[config['local_rank']])
     netArc.eval()
     
-
-
-
     if args.eye_detector_loss:
         model_ft = models.FAN(4, "False", "False", 98)
         # checkpoint = torch.load('./AdaptiveWingLoss/AWL_detector/WFLW_4HG.pth')
@@ -506,12 +471,6 @@ def train(args, config):
         model_ft.eval()
     else:
         model_ft=None
-    
-    # opt_G = optim.Adam(G.parameters(), lr=args.lr_G, betas=(0, 0.999), weight_decay=1e-4)
-    # opt_D = optim.Adam(D.parameters(), lr=args.lr_D, betas=(0, 0.999), weight_decay=1e-4)
-
-    # G, opt_G = amp.initialize(G, opt_G, opt_level=args.optim_level)
-    # D, opt_D = amp.initialize(D, opt_D, opt_level=args.optim_level)
     
     if args.scheduler:
         scheduler_G = scheduler.StepLR(opt_G, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
@@ -548,48 +507,32 @@ def train(args, config):
             print(f'[GPU {config["local_rank"]}]: Not found pretrained weights. Continue without any pretrained weights.')
     else:
         starting_iteration = 0
-    # if config['vgg:
     
+    ## 커스텀 데이터셋 불러오기
     dataset = FaceEmbedCombined(ffhq_data_path = args.ffhq_data_path, same_prob=0.8, same_identity=args.same_identity)
-    # dataset = FaceEmbedCombined(ffhq_data_path=config['ffhq_data_path, same_prob=0.8, same_identity=config['same_identity)
-    # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    # dataset = FaceEmbedCustom('/workspace/examples/images/training')
-    
-
+    ##데이터셋을 train/validation세트로 분할
     dataset_size = len(dataset)
     train_size = int(dataset_size * args.train_ratio)
     validation_size = int(dataset_size - train_size)
-    
     train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
 
+    ## Multi-GPU 셋팅 안에서 각 GPU 안에 train/validation 데이터 사이즈 체크하기
     print(f'[GPU {config["local_rank"]}]: Training Data Size : {len(train_dataset)}')
     print(f'[GPU {config["local_rank"]}]: Validation Data Size : {len(validation_dataset)}')
     
-    # dataloader = DataLoader(dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
-
-    # train_dataloader = DataLoader(train_dataset, batch_size=config['batch_size, shuffle=True, drop_last=True)
+    ##나누어진 데이터를 각각의 데이터로더에 넣는다. Multi GPU를 사용하기 때문에, shuffle을 False로 해주어야하고, 대신 sampler에서 DistributedSampler를 설정해 준 후 거기에 shuffle을 True로 넣는다.
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(train_dataset, shuffle=True))
-    # valid_dataloader = DataLoader(validation_dataset, batch_size=config['batch_size, shuffle=False, drop_last=True)
-    # valid_dataloader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, sampler=DistributedSampler(validation_dataset, shuffle=True))
+    ##validation data는 모든 gpu에서 계산하는 것이 아니기 때문에 DistributedSampler를 설정하지 않아도 된다.
     valid_dataloader = DataLoader(validation_dataset, batch_size=args.val_batch_size, shuffle=True, drop_last=True)
-    # print(next(iter(dataloader)))
-    # print(next(iter(dataloader))[0])
-    ##In case of multi GPU, turn off shuffle
-    # dataloader = DataLoader(dataset, batch_size=config['batch_size, sampler=DistributedSampler(dataset, shuffle=True))
-
-
-    
 
     # Будем считать аккумулированный adv loss, чтобы обучать дискриминатор только когда он ниже порога, если discr_force=True
     loss_adv_accumulated = 20.
     
     for epoch in range(starting_epoch, max_epoch):
-        # if epoch >= 1:
-        #     config['id_mode = 'Hififace'
         torch.cuda.empty_cache()
         G.train()
         D.train()
-        
+        ##training 시작
         train_one_epoch(G,
                         D,
                         id_extractor,
@@ -607,26 +550,18 @@ def train(args, config):
                         loss_adv_accumulated,
                         config)
         
-
+    ##Multi-GPU 환경에서 global rank가 0인 단 하나의 지피유에서만 validation data를 사용하여 4가지 metrics를 계산한다.
     if config['global_rank'] == 0:        
         
         ##This below is validation part
-        running_vloss = 0.0
+        # running_vloss = 0.0
         running_pose_metric = 0.0
         running_id_metric = 0.0
         running_fid_metric = 0.0
         running_expression_metric = 0.0
-            # Set the model to evaluation mode, disabling dropout and using population
-            # statistics for batch normalization.
+
         G.eval()
         D.eval()
-        
-    # ##loading pretrained models for extracting IDs
-    #     f_3d_path = "/datasets/pretrained/pretrained_model.pth"
-    #     f_id_path = "/datasets/pretrained/backbone.pth"
-    #     id_extractor = ShapeAwareIdentityExtractor(f_3d_path, f_id_path, args.id_mode).to(args.device)
-    #     id_extractor = DistributedDataParallel(id_extractor, device_ids=[config['local_rank']])
-    #     id_extractor.eval()
 
         # Disable gradient computation and reduce memory consumption.
         with torch.no_grad():
@@ -635,12 +570,9 @@ def train(args, config):
                 val_id_ext_src_input = val_id_ext_src_input.to(args.device)
                 val_id_ext_tgt_input = val_id_ext_tgt_input.to(args.device)
                 val_Xs_f = val_Xs_f.to(args.device)
-                # Xs.shape
                 val_Xt_f = val_Xt_f.to(args.device)
-                # Xt.shape
                 val_same_person = val_same_person.to(args.device)
                 val_realtime_batch_size = val_Xt_f.shape[0] 
-                # break
 
                 ##id_embedding = arcface + shapeaware embedding, [src_emb, tgt_emb] = arcface embedding
                 val_id_embedding, val_src_id_emb, val_tgt_id_emb = id_extractor.module.forward(val_id_ext_src_input, val_id_ext_tgt_input)
@@ -676,17 +608,12 @@ def train(args, config):
                 if args.metrics_expression:
                     expression_value = result["metrics.EXPRESSION"]
                 
-                
-                
-                # running_vloss += vloss
                 running_pose_metric += pose_value
                 running_id_metric += id_value
                 running_fid_metric += fid_value
                 running_expression_metric += expression_value
 
-
                 if args.use_wandb and config['global_rank'] == 0:
-                                    
                     wandb.log({"running_pose_metric": running_pose_metric, "running_id_metric": running_id_metric, "running_fid_metric": running_fid_metric}, commit=False)
                     if args.landmark_detector_loss:
                         wandb.log({"running_expression_metric": running_expression_metric}, commit=False)
@@ -707,15 +634,13 @@ def train(args, config):
                 ## adding functions for WandB to log the metrics
                 ## put up the generated validation images in WandB
                 ## saving functions for best G and D
-
-
                 # torch.save(model.state_dict(), model_path)
             
 
 def main(args):
 
+    ##Multi-GPU를 Pytorch에서 구성하기 위한 파트
     config = dict()
-    # config.update(vars(args))
     config['local_rank'] = int(os.environ['LOCAL_RANK'])
     config['global_rank'] = int(os.environ['RANK'])
 
@@ -727,9 +652,7 @@ def main(args):
         print("Configuration:")
         for key, value in config.items():
             print(f"{key:>20}: {value}")  
-
-
-
+    ##WandB는 모든 GPU를 참고할 필요없고 global rank 0 GPU 하나에서만 확인하면 되기 때문에 아래와 같이 체크를 함.
     if args.use_wandb==True and config['global_rank'] == 0:
         wandb.init(project=args.wandb_project, 
                    entity=args.wandb_entity, 
@@ -737,10 +660,7 @@ def main(args):
                 #    id=args.wandb_id,
                    resume='allow')
         configs = wandb.config
-        # config.vgg_data_path = config['vgg_data_path
         configs.ffhq_data_path = args.ffhq_data_path
-        # config.celeba_data_path = config['celeba_data_path
-        # config.dob_data_path = config['dob_data_path
         configs.train_ratio = args.train_ratio
         configs.G_path = args.G_path
         configs.D_path = args.D_path
@@ -799,16 +719,13 @@ def main(args):
     elif not os.path.exists('./images'):
         os.mkdir('./images')
 
-        
+    ##Multi-GPU를 Pytorch에서 구성하기 위한 파트     
     # Setup distributed training
     print(f'[GPU {config["local_rank"]}]: Setting up distributed training..')
-    
     init_process_group(backend='nccl', timeout=datetime.timedelta(seconds=5400))
     print(f'[GPU {config["local_rank"]}]: initiating distributed process with nccl')
-    
     torch.cuda.set_device(config['local_rank'])  
     print(f'[GPU {config["local_rank"]}]: setting device with cuda in local rank')
-    
     print(f'[GPU {config["local_rank"]}]: Starting training')\
     # train(args, device=device)
     train(args, config)
@@ -816,43 +733,6 @@ def main(args):
     # Clean up distributed training
     destroy_process_group()
     print(f'[GPU {config["local_rank"]}]: destroyed distributed process after training')
-    # config = dict()
-    # config['local_rank'] = int(os.environ(['LOCAL_RANK']))
-    # config['global_rank'] = int(os.environ(['RANK']))
-
-    # assert config['local_rank'] != -1, "LOCAL_RANK environment variable not set"
-    # assert config['global_rank'] != -1, "RANK environment variable not set"
-
-
-    # # Print configuration (only once per server)
-    # if config['local_rank'] == 0:
-    #     print("Configuration:")
-    #     for key, value in config.items():
-    #         print(f"{key:>20}: {value}")
-            
-    # # Setup distributed training
-    # init_process_group(backend='nccl')
-    # torch.cuda.set_device(config.local_rank)
-    
-    # # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    # # device = 'cpu'
-    # if not torch.cuda.is_available():
-    #     print('cuda is not available. using cpu. check if it\'s ok')
-    
-    # print("Starting training")
-    # train(args, gpu_config)
-    
-    # # Clean up distributed training
-    # destroy_process_group()
-
-
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # if not torch.cuda.is_available():
-    #     print('cuda is not available. using cpu. check if it\'s ok')
-    
-
-
 
 
 if __name__ == "__main__":
@@ -870,7 +750,6 @@ if __name__ == "__main__":
     parser.add_argument('--G_path', default='./saved_models/G.pth', help='Path to pretrained weights for G. Only used if pretrained=True')
     parser.add_argument('--D_path', default='./saved_models/D.pth', help='Path to pretrained weights for D. Only used if pretrained=True')
 
-    
     # weights for loss
     parser.add_argument('--weight_adv', default=2, type=float, help='Adversarial Loss weight')
     parser.add_argument('--weight_attr', default=15, type=float, help='Attributes weight')
@@ -885,12 +764,8 @@ if __name__ == "__main__":
     parser.add_argument('--weight_landmarks', default=2., type=float, help='Landmark Loss weight for generator')
     parser.add_argument('--weight_shape', default=3., type=float, help='Shape Loss weight for generator')
     
-    
 
-    
     # training params you may want to change
-    
-    
     ##parameters for model configs
     parser.add_argument('--backbone', default='unet', const='unet', nargs='?', choices=['unet', 'linknet', 'resnet'], help='Backbone for attribute encoder. The other modes are not applicable')
     parser.add_argument('--num_blocks', default=2, type=int, help='Numbers of AddBlocks at AddResblock')
@@ -944,12 +819,6 @@ if __name__ == "__main__":
     parser.add_argument('--metrics_id', default=True, type=bool)
     parser.add_argument('--metrics_pose', default=True, type=bool)
     args = parser.parse_args()
-    
-
-
-    # if bool(config['vgg_data_path)==False and config['same_identity==True:
-    #     raise ValueError("Sorry, you can't use some other dataset than VGG2 Faces with param same_identity=True")
-    
 
     # Создаем папки, чтобы было куда сохранять последние веса моделей, а также веса с каждой эпохи
     if not os.path.exists(f'./saved_models_{args.run_name}'):

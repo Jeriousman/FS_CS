@@ -53,7 +53,10 @@ def make_image_list(images) -> np.ndarray:
 
 
 def read_torch_image(path: str) -> torch.tensor:
-    
+    '''
+    이미지를 oepn-cv로 받아와서 arcface에서 사용하기 위한 이미지 텐서 프로세싱을 거친 후 
+    우리가 원하는 pytorch 포맷의 이미지 텐서로 출력을 하는 함수
+    '''
     image = cv2.imread(path)
     image = cv2.resize(image, (256, 256))
     image = Image.fromarray(image[:, :, ::-1])
@@ -84,7 +87,6 @@ def get_faceswap_(source_path: str, target_path: str,
     return np.concatenate((cv2.resize(source, (256, 256)), target, Yt), axis=1)  
 
 
-# Xt_f, Xs_f, id_embedding
 
 def get_faceswap(source_path: str, target_path: str, 
                  G: 'generator model', id_extractor: 'id_extractor', 

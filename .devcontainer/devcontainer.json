@@ -1,3 +1,5 @@
+//주석 메인: 호준, 부: 타키
+
 {
 	"name": "multigpu",
 	"build": {
@@ -8,12 +10,16 @@
 	"runArgs": [
 		// GPU 사용을 위한 옵션(nvidia 관련 설정 필요)
 		"--gpus",
+		// 여러 GPU를 사용하려면 아래와 같이 써야한다. 4번, 5번 GPU를 사용하려면 "\"device=4,5\"" 이렇게 써야한다
 		"\"device=4,5\"",
-		// 컨테이너의 이름을 짓는 옵션
+
+		// 컨테이너의 이름을 짓는 옵션. 맨 위의 "name"과 같아야 할 이유는 없는 것 같으나, 둘의 차이를 몰라서 일단 둘다 같이 multigpu로 써 놓았다.
 		"--name",
 		"multigpu",
+		// 일반 Docker에서처럼 -v는 볼륨 연결하는 옵션으로, 아래의 예시를 들면 로컬 머신의 /IM_data/에 있는 파일들을 도커 컨테이너 /datasets/DOB으로 볼륨 마운트 하라는 뜻이다.
 		"-v",
 		"/IM_data/:/datasets/DOB",
+		//여러개의 볼륨마운트를 설정하고 싶다면 아래처럼 여러개의 -v를 설정해주면 된다.
 		"-v",
 		"/dev_storage/tory/data/70000/FFHQ/images_1024:/datasets/FFHQ",
 		"-v",

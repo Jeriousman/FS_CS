@@ -11,6 +11,9 @@ l2_loss = torch.nn.MSELoss()
 
 
 def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/222666100291
+    '''
+    GANs 모델들의 큰 문제인 training unstability + mode collapsing을 완화하는 방법 중 하나가 hinge loss
+    '''
     if positive:
         return torch.relu(1-X) ##X = y_hat * true_y if normal hinge loss
     else:
@@ -21,8 +24,7 @@ def hinge_loss(X, positive=True): ## https://m.blog.naver.com/wooy0ng/2226661002
 
 
 
-# def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
-#                              diff_person, same_person, src_id_emb, tgt_id_emb, swapped_id_emb, mixed_id_embedding, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
+
 def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_heatmaps, loss_adv_accumulated, ##Y = swapped face ##Xt_attr = target image multi scale features
                              diff_person, same_person, mixed_id_embedding, src_id_emb, tgt_id_emb, swapped_id_emb, recon_source, recon_target, q_fuse, q_r, all_heatmaps, args):
     # adversarial loss
@@ -68,29 +70,20 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         
         
     ## Cycle GAN loss 
-    
     if args.cycle_loss:
-        # swapped_face, recon_src, recon_tgt = G(Xt, Xs, id_emb)
-        # cycleloss_src = l1_loss(swapped_face, recon_src)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
-        # cycleloss_tgt = l1_loss(swapped_face, recon_tgt)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         cycleloss_src = l1_loss(swapped_face, recon_source)  ##original cycle gan should be:  l1_loss(Xt, recon_src)
         cycleloss_tgt = l1_loss(swapped_face, recon_target)  ##original cycle gan should be:  l1_loss(Xs, recon_tgt)
         L_cycle = cycleloss_src + cycleloss_tgt
     
         ## identity loss (for cycle GAN)
-        # identityloss_src = l1_loss(Xs, recon_src)
-        # identityloss_tgt = l1_loss(Xt, recon_tgt) 
         identityloss_src = l1_loss(Xs_f, recon_source)
         identityloss_tgt = l1_loss(Xt_f, recon_target) 
         L_cycle_identity = identityloss_src + identityloss_tgt
     else:
         L_cycle = 0
         L_cycle_identity = 0
-        
-        
-    
-    ##저스틴에게서 코드 업데이트 받기 (tgt src embeddings)
-    
+
+
     if args.contrastive_loss:
         L_contrastive =  infoNce_id_loss(swapped_id_emb, src_id_emb, tgt_id_emb)
     else:
@@ -110,28 +103,14 @@ def compute_generator_losses(G, swapped_face, Xt_f, Xs_f, Xt_f_attrs, Di, eye_he
         L_shape = 0
         ## L1(Q_fuse, Q_r)
 
-        
-    # final loss of generator
-    # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_id*L_id + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes
-    
-    # test code
-    # lossG = args.weight_adv*L_adv + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle
-    # loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
-
-    # hojun code
-    # lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_constrasive*L_constrasive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet+ args.weight_landmarks*L_landmarks
     lossG = args.weight_adv*L_adv + args.weight_id*L_id + args.weight_attr*L_attr + args.weight_rec*L_rec + args.weight_eyes*L_l2_eyes + args.weight_cycle*L_cycle + args.weight_cycle_identity*L_cycle_identity  + args.weight_contrastive*L_contrastive  + args.weight_source_unet*L_source_unet + args.weight_target_unet*L_target_unet + args.weight_landmarks*L_landmarks + args.weight_shape*L_shape
     # loss_adv_accumulated = loss_adv_accumulated*0.98 + L_adv.item()*0.02
-    
-    # return lossG, loss_adv_accumulated, L_adv, L_attr, L_id, L_rec, L_l2_eyes
     return lossG, loss_adv_accumulated, L_adv, L_id, L_attr, L_rec, L_l2_eyes, L_cycle, L_cycle_identity, L_contrastive, L_source_unet, L_target_unet, L_landmarks, L_shape
 
 
 
 
 
-
-##Why id_embed?
 def compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_source, recon_target, diff_person, device):
     # fake part
     fake_D = D.module.forward(swapped_face.detach())
@@ -157,12 +136,6 @@ def compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_source, recon_
     disc_tgt_fake = disc_tgt(recon_target)
     disc_tgt_real = disc_tgt(Xt_f)
     
-    # disc_src_fake = disc_src(recon_src)
-    # disc_src_real = disc_src(Xs)
-    # disc_tgt_fake = disc_tgt(recon_tgt)
-    # disc_tgt_real = disc_tgt(Xt)
-    
-
     disc_src_fake_loss = l2_loss(disc_src_fake, torch.zeros_like(disc_src_fake))
     disc_src_real_loss = l2_loss(disc_src_real, torch.ones_like(disc_src_real))
     disc_src_loss = disc_src_fake_loss + disc_src_real_loss
@@ -176,9 +149,8 @@ def compute_discriminator_loss(D, swapped_face, Xs_f, Xt_f, recon_source, recon_
     return lossD + lossCycle.item()
 
 
-
+## 우리가 원하는 source face의 id embedding과 다른 embedding을 (target face) 네거티브 샘플로 삼고 info_nce 로스를 사용하여 source face에 더 faithful 하게 loss 구현 
 def infoNce_id_loss(swapped_ids, source_ids, negative_ids):  ##negative_ids = anything thats not swapped and source face. So in our case, it is target face 
-        
     loss = InfoNCE(negative_mode='unpaired') # negative_mode='unpaired' is the default value
 #     batch_size, num_negative, embedding_size = 32, 48, 128
 #     query = torch.randn(batch_size, embedding_size)
@@ -186,8 +158,3 @@ def infoNce_id_loss(swapped_ids, source_ids, negative_ids):  ##negative_ids = an
 #     negative_keys = torch.randn(num_negative, embedding_size)
     infonce_loss = loss(swapped_ids, source_ids, negative_ids)
     return infonce_loss
-#     result = -math.log(exp(F.cosine_similarity(swapepd, source))/(exp(F.cosine_similarity(swapped, target) + sigma(exp(F.cosine_similarity(swapped, negative))))
-    
-    
-
-#def shape_loss():
